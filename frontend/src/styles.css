@@ -45,3 +45,39 @@ body {
   font-size: 13px;
   text-align: center;
 }
+
+/* Pages, tables, level badges (icons + color, NFR-404) */
+.nav { display: flex; gap: 14px; padding: 10px 24px; background: var(--surface); border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+.nav a { color: var(--ink-soft); text-decoration: none; padding: 4px 8px; border-radius: 4px; }
+.nav a.active, .nav a:focus { color: var(--accent); outline: 2px solid var(--line); }
+.page { max-width: 1100px; margin: 0 auto; padding: 20px 24px 60px; }
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 8px; padding: 16px 20px; margin: 14px 0; }
+.drop { border-style: dashed; text-align: center; padding: 34px; }
+.linklike { color: var(--accent); cursor: pointer; text-decoration: underline; }
+.row { display: flex; gap: 12px; flex-wrap: wrap; align-items: flex-end; }
+.row label { display: flex; flex-direction: column; font-size: 13px; color: var(--ink-soft); min-width: 130px; }
+input, select { padding: 6px 8px; border: 1px solid var(--line); border-radius: 4px; font-size: 14px; }
+button, .button { display: inline-block; background: var(--accent); color: #fff; border: none; border-radius: 5px; padding: 8px 14px; font-size: 14px; cursor: pointer; text-decoration: none; }
+button.active { outline: 3px solid #b7d9cc; }
+button:disabled { background: var(--ink-soft); cursor: not-allowed; }
+.tbl { border-collapse: collapse; width: 100%; font-size: 13.5px; margin: 10px 0; background: var(--surface); }
+.tbl th, .tbl td { border: 1px solid var(--line); padding: 6px 9px; text-align: left; vertical-align: top; }
+.tbl.mini { font-size: 12.5px; }
+.rowlink { cursor: pointer; }
+.rowlink:focus { outline: 2px solid var(--accent); }
+.detail td { background: #fbfcfd; }
+.st, .lvl { white-space: nowrap; }
+.st-failed, .lvl-high { color: #a12622; }
+.st-needs_review, .lvl-medium { color: #8a6100; }
+.st-completed, .lvl-low { color: #1d6f54; }
+.bars { border-collapse: collapse; width: 100%; }
+.bars th { text-align: left; width: 200px; padding: 3px 6px; font-size: 13px; }
+.bars td { padding: 3px 6px; }
+.bar { background: var(--accent); height: 12px; border-radius: 2px; display: inline-block; margin-right: 8px; min-width: 2px; vertical-align: middle; }
+.error { color: #a12622; }
+.note { background: #eef6f2; border: 1px solid var(--line); padding: 8px 12px; border-radius: 6px; }
+.chapter h3 { border-bottom: 1px solid var(--line); padding-bottom: 4px; }
+.tablewrap { overflow-x: auto; }
+.review-card h3 { margin-top: 0; }
+dl dt { font-weight: 600; display: inline; }
+dl dd { display: inline; margin: 0 12px 0 4px; }

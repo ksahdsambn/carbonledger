@@ -27,6 +27,15 @@ export function buildApp() {
   const app = express();
   app.use(express.json({ limit: '12mb' }));
 
+  // Express 4 does not catch async rejections: auto-wrap async handlers.
+  const wrapAsync = (mw) => (mw.constructor && mw.constructor.name === 'AsyncFunction')
+    ? (req, res, next) => Promise.resolve(mw(req, res, next)).catch(next)
+    : mw;
+  for (const method of ['get', 'post', 'put', 'delete']) {
+    const orig = app[method].bind(app);
+    app[method] = (path, ...mws) => orig(path, ...mws.map(wrapAsync));
+  }
+
   app.use((req, _res, next) => {
     log.info('http_request', { method: req.method, path: req.path });
     next();
@@ -136,7 +145,12 @@ export function buildApp() {
     // documents, run the full pipeline, return the summary.
     const demoDir = join(repoRoot, 'data/demo');
     const manifest = JSON.parse(readFileSync(join(demoDir, 'manifest.json'), 'utf8'));
-    const task = await createTask(store, { ...manifest.company.reporting_period, entity_name: manifest.company.name, gwp_version: 'AR6' });
+    const task = await createTask(store, {
+      entity_name: manifest.company.name,
+      period_from: manifest.company.reporting_period.from,
+      period_to: manifest.company.reporting_period.to,
+      gwp_version: 'AR6',
+    });
     for (const d of manifest.documents) {
       const file = d.file.split('/').pop();
       await ingestFile({ store, storage, taskId: task.task_id, filename: file, buffer: readFileSync(join(repoRoot, d.file)) });

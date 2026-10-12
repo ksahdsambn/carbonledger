@@ -133,5 +133,5 @@ export async function recalculateTask({ store, taskId }) {
   const agg = aggregate(calcsWithMeta);
   const top = topEmitters(calcsWithMeta);
   const distribution = levelDistribution(records);
-  return { calcs, agg, top, distribution, total_kgco2e: calcs.reduce((a, c) => a + c.emission_kgco2e, 0) };
+  return { records, calcs, agg, top, distribution, total_kgco2e: calcs.reduce((a, c) => a + c.emission_kgco2e, 0) };
 }

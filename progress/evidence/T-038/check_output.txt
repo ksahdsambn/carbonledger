@@ -1,0 +1,6 @@
+=== HTTP smoke (mock adapter) ===
+POST /api/demo/load: 20 docs -> 20 records -> 20 calculated in 8.3s, scopes S1/S2/S3 populated
+GET report: chapters 1..10, citation coverage 100%, invalid 0, GWP AR6, 20 factors used
+GET export pdf: 38,908 B (page count >=6 proven in e2e); csv-detail 2,559 B correct rows
+GET review: 20 items (cross-GWP rule routes all AR5-library records into review for an AR6 task — by design)
+GET traces?stage=extraction: 20 records

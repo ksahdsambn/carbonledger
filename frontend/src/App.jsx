@@ -1,27 +1,36 @@
-// Application shell. Full page set (P1..P9 per PRD 9.1) is built from
-// stage 6 onward; this skeleton carries the identity and light theme base.
+// Application shell: hash router over the nine pages (PRD 9.1).
+import React, { useEffect, useState } from 'react';
+import { Nav, P1Home, P2Upload, P3Records, P4Matching, P5Dashboard, P6Scenarios, P7Report, P8Review, P9Traces } from './pages.jsx';
 
 export default function App() {
+  const [taskId, setTaskId] = useState(localStorage.getItem('cl_task') ?? null);
+  const [route, setRoute] = useState(location.hash.replace(/^#\/?/, '').split('?')[0] || '');
+  useEffect(() => {
+    const onHash = () => setRoute(location.hash.replace(/^#\/?/, '').split('?')[0]);
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+  const chooseTask = (id) => { setTaskId(id); localStorage.setItem('cl_task', id); };
+  const params = new URLSearchParams(location.hash.split('?')[1] ?? '');
+  let page = <P1Home onTask={chooseTask} />;
+  if (taskId) {
+    const map = {
+      upload: <P2Upload taskId={taskId} onProgress={() => {}} />,
+      records: <P3Records taskId={taskId} />,
+      match: <P4Matching taskId={taskId} params={params} />,
+      dashboard: <P5Dashboard taskId={taskId} />,
+      scenarios: <P6Scenarios taskId={taskId} />,
+      report: <P7Report taskId={taskId} />,
+      review: <P8Review taskId={taskId} />,
+      traces: <P9Traces taskId={taskId} />,
+    };
+    page = map[route] ?? <P1Home onTask={chooseTask} />;
+  }
   return (
     <div className="app">
-      <header className="app-header">
-        <span className="brand">CarbonLedger</span>
-        <span className="tagline">Scope 3 carbon accounting and disclosure agent</span>
-      </header>
-      <main className="app-main">
-        <section className="hero">
-          <h1>CarbonLedger</h1>
-          <p className="value-prop">
-            CarbonLedger compresses the cost of producing a Scope 3 report from
-            &quot;RMB 30,000 + 3 weeks&quot; to &quot;1 hour + near-zero marginal cost&quot;,
-            while making every single number traceable back to its source document.
-          </p>
-          <p className="hint">The workspace is being initialized. Task creation will be available here.</p>
-        </section>
-      </main>
-      <footer className="app-footer">
-        Track: Sustainability &amp; Social Impact
-      </footer>
+      <Nav taskId={taskId} route={route} />
+      {page}
+      <footer className="app-footer">CarbonLedger — Sustainability &amp; Social Impact</footer>
     </div>
   );
 }
