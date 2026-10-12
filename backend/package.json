@@ -1,0 +1,15 @@
+{
+  "name": "carbonledger-backend",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "CarbonLedger backend service (Cloud Run target)",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "test": "node --test \"test/*.test.js\""
+  },
+  "dependencies": {
+    "express": "^4.21.2"
+  }
+}

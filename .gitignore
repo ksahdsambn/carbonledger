@@ -1,0 +1,26 @@
+# Dependencies
+node_modules/
+
+# Build artifacts
+frontend/dist/
+backend/dist/
+*.tsbuildinfo
+
+# Local runtime state (dev/test storage, uploaded files, exports)
+data/.local-store/
+data/.uploads/
+exports/
+*.log
+
+# Secrets and credentials — never commit any of these
+.env
+.env.*
+*.key
+*.pem
+service-account*.json
+*credentials*.json
+firebase-adminsdk*.json
+
+# OS / editor noise
+.DS_Store
+Thumbs.db

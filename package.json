@@ -1,0 +1,21 @@
+{
+  "name": "carbonledger",
+  "private": true,
+  "version": "0.1.0",
+  "description": "CarbonLedger - Scope 3 carbon accounting and disclosure agent (Sustainability & Social Impact track)",
+  "type": "module",
+  "workspaces": [
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "build": "bash scripts/build.sh",
+    "test": "bash scripts/test.sh",
+    "smoke": "bash scripts/smoke.sh",
+    "print-config": "node scripts/print-config.js",
+    "scan-secrets": "bash scripts/scan-secrets.sh"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}
