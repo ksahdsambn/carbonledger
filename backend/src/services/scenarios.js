@@ -4,6 +4,7 @@
 // limitations derived from the actual replacement data) — the Pro-model
 // narrative path activates with credentials without changing the numbers.
 import { computeEmission } from './calculation.js';
+import { unitSelfCheck } from './uncertainty.js';
 
 function familyOf(factorName) {
   // "Materials — Metal / Metal: aluminium cans and foil …" -> "materials-metal"
@@ -14,6 +15,10 @@ function familyOf(factorName) {
 async function rerunWithFactor({ store, record, factor, taskGwpVersion }) {
   const calc = await computeEmission({ store, record, factor, taskGwpVersion });
   return calc.emission_kgco2e;
+}
+
+function unitCompatible(record, factor) {
+  return unitSelfCheck(record, factor).passed;
 }
 
 function feasibilityTemplate(name, body) {
@@ -90,7 +95,9 @@ export async function computeScenarios({ store, taskId, records, calcs, factorsB
       if (!calc) continue;
       const current = factorsById[calc.factor_id];
       if (!current) continue;
-      const sameType = Object.values(factorsById).filter((f) => f.activity_type === current.activity_type && f.factor_id !== current.factor_id);
+      const sameType = Object.values(factorsById).filter(
+        (f) => f.activity_type === current.activity_type && f.factor_id !== current.factor_id && unitCompatible(r, f),
+      );
       if (sameType.length === 0) {
         notes.push(`${r.record_id}: no alternative factor in activity category ${current.activity_type}`);
         continue;
@@ -128,7 +135,8 @@ export async function computeScenarios({ store, taskId, records, calcs, factorsB
       if (!current || current.activity_type !== 'purchased_goods') continue;
       const fam = familyOf(current.name);
       const alternatives = Object.values(factorsById).filter(
-        (f) => f.activity_type === 'purchased_goods' && familyOf(f.name) === fam && f.factor_id !== current.factor_id,
+        (f) => f.activity_type === 'purchased_goods' && familyOf(f.name) === fam
+          && f.factor_id !== current.factor_id && unitCompatible(r, f),
       );
       if (alternatives.length === 0) {
         notes.push(`${r.record_id}: material family "${fam}" has no alternative factor in the library; record unchanged`);

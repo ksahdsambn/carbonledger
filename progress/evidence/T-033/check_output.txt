@@ -1,0 +1,12 @@
+T-033/T-034/T-035 verification status (report generator + exports, mock-adapter run):
+[1] PASS (mechanics) — demo e2e: ten chapters present in strict order 1..10
+[2] PASS (mechanics) — citation scan: coverage 100%, invalid 0; injected dangling reference detected (AI-202)
+[3] PASS (mechanics) — PDF >= 6 pages with header + page numbers + TOC; two CSVs with UTF-8 BOM,
+    detail rows == record count, category summary contains all 15 categories
+[content items] chapter-by-chapter checklist built into reportService (cover declarations,
+   exec summary + 3x>=30-word recommendations, method incl. cross-GWP statement (zero written
+   as zero), 15-category table with zeros, supplier top-10, detail table, uncertainty table +
+   3 improvements, three scenarios with >=80-word feasibility, appendix factors, citation
+   index, disclaimer + excluded list)
+BLOCKED for final numbers: chapter-content check and citation metrics over the REAL-adapter
+report run (GEMINI_API_KEY pending); narrative adapter recorded per report.

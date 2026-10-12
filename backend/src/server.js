@@ -12,6 +12,14 @@ import { createStorage } from './storage/index.js';
 import { loadFactorLibrary, getFactorById, searchFactorsByKeyword } from './services/factorLibrary.js';
 import { createTask, getTask } from './services/taskService.js';
 import { ingestFile, resolveDuplicate, setDocumentStatus, getDocumentFile } from './services/fileService.js';
+import { runPipeline } from './services/pipeline.js';
+import { listReviewQueue, editRecordFields, assignFactorManually, excludeRecord, closeReviewItem, recalculateTask } from './services/reviewQueue.js';
+import { scanReportCitations } from './services/reportService.js';
+import { activityDetailCsv, categorySummaryCsv, reportPdf } from './services/exportService.js';
+import { buildMockCatalogFromDataset } from './services/mockCatalog.js';
+import { readFileSync } from 'node:fs';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 const upload = multer({ storage: multer.memoryStorage() });
 
@@ -107,6 +115,90 @@ export function buildApp() {
   app.post('/api/tasks/:taskId/documents/:docId/status', async (req, res) => {
     const doc = await setDocumentStatus(store, req.params.taskId, req.params.docId, req.body?.status);
     res.json(doc);
+  });
+
+  const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '../..');
+  const latestReport = async (taskId) => {
+    const reports = await store.query('reports', 'task_id', taskId);
+    return reports.sort((a, b) => String(b.generated_at).localeCompare(String(a.generated_at)))[0] ?? null;
+  };
+
+  app.post('/api/tasks/:taskId/run', async (req, res) => {
+    const catalog = req.body?.useMockCatalog
+      ? buildMockCatalogFromDataset(join(repoRoot, 'data/demo'), readFileSync)
+      : new Map();
+    const out = await runPipeline({ store, storage, taskId: req.params.taskId, mockCatalog: catalog });
+    res.json(out.summary);
+  });
+
+  app.post('/api/demo/load', async (_req, res) => {
+    // One-click demo dataset (FR-1203): create the task, upload all 20 demo
+    // documents, run the full pipeline, return the summary.
+    const demoDir = join(repoRoot, 'data/demo');
+    const manifest = JSON.parse(readFileSync(join(demoDir, 'manifest.json'), 'utf8'));
+    const task = await createTask(store, { ...manifest.company.reporting_period, entity_name: manifest.company.name, gwp_version: 'AR6' });
+    for (const d of manifest.documents) {
+      const file = d.file.split('/').pop();
+      await ingestFile({ store, storage, taskId: task.task_id, filename: file, buffer: readFileSync(join(repoRoot, d.file)) });
+    }
+    const out = await runPipeline({ store, storage, taskId: task.task_id, mockCatalog: buildMockCatalogFromDataset(demoDir, readFileSync) });
+    res.json({ task_id: task.task_id, ...out.summary });
+  });
+
+  app.get('/api/tasks/:taskId/dashboard', async (req, res) => {
+    res.json(await recalculateTask({ store, taskId: req.params.taskId }));
+  });
+
+  app.get('/api/tasks/:taskId/report', async (req, res) => {
+    const report = await latestReport(req.params.taskId);
+    if (!report) throw new AppError('ERR_TASK_NOT_FOUND', { hint: 'no report generated yet' });
+    const citations = await scanReportCitations(store, report);
+    res.json({ report, citations });
+  });
+
+  app.get('/api/tasks/:taskId/report/export', async (req, res) => {
+    const report = await latestReport(req.params.taskId);
+    if (!report) throw new AppError('ERR_TASK_NOT_FOUND', { hint: 'no report generated yet' });
+    const records = await store.query('activity_records', 'task_id', req.params.taskId);
+    const calcs = await store.query('calculations', 'task_id', req.params.taskId);
+    if (req.query.fmt === 'csv-detail') {
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="activity_detail.csv"');
+      res.send(activityDetailCsv(report, calcs, records));
+    } else if (req.query.fmt === 'csv-category') {
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      res.setHeader('Content-Disposition', 'attachment; filename="category_summary.csv"');
+      res.send(categorySummaryCsv(report));
+    } else {
+      const pdf = await reportPdf(report);
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', 'attachment; filename="carbonledger_report.pdf"');
+      res.send(pdf);
+    }
+  });
+
+  app.get('/api/tasks/:taskId/review', async (req, res) => {
+    res.json({ items: await listReviewQueue(store, req.params.taskId) });
+  });
+
+  app.post('/api/tasks/:taskId/review/:recordId', async (req, res) => {
+    const { action } = req.body ?? {};
+    const taskId = req.params.taskId;
+    const recordId = req.params.recordId;
+    if (action === 'edit') await editRecordFields({ store, taskId, recordId, patch: req.body.patch });
+    else if (action === 'assign') await assignFactorManually({ store, taskId, recordId, factorId: req.body.factor_id });
+    else if (action === 'exclude') await excludeRecord({ store, taskId, recordId, reason: req.body.reason });
+    else if (action === 'close') await closeReviewItem({ store, taskId, recordId, note: req.body.note });
+    else throw new AppError('ERR_ENUM_INVALID', { action });
+    const refreshed = await recalculateTask({ store, taskId });
+    res.json(refreshed);
+  });
+
+  app.get('/api/tasks/:taskId/traces', async (req, res) => {
+    const stage = req.query.stage;
+    let traces = await store.query('ai_traces', 'task_id', req.params.taskId);
+    if (stage) traces = traces.filter((t) => t.stage === stage);
+    res.json({ count: traces.length, traces });
   });
 
   app.use((_req, _res, next) => {

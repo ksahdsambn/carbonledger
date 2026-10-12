@@ -18,6 +18,9 @@ function activityBasis(record, factor) {
     return { value: km * (record.passengers ?? 1), detail: `${km ?? '?'} km x ${record.passengers ?? 1} passenger` };
   }
   if (ru === fu) return { value: q, detail: `${q} ${fu}` };
+  if (ru === 'kWh' && fu.startsWith('kWh (')) {
+    return { value: q, detail: `${q} kWh taken on the factor's ${fu} calorific basis` };
+  }
   if (ru === 'kg' && fu === 't') return { value: q / 1000, detail: `${q} kg -> ${q / 1000} t` };
   if (ru === 'kWh' && fu === 'MMBtu') return { value: q / 293, detail: `${q} kWh -> ${(q / 293).toFixed(6)} MMBtu` };
   if (ru === 'L' && fu === 'm3') return { value: q / 1000, detail: `${q} L -> ${q / 1000} m3` };
