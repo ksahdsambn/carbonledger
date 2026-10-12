@@ -204,3 +204,27 @@
 - 证据：`progress/evidence/T-006/`（check_output.txt + factor_library_evidence.md）
 
 ---
+
+## T-007 因子库装载与检索就绪
+
+- **日期**：2026-10-12
+- **结论**：**通过**（验证项 1、2、3 全部通过；首轮发现路径 bug，修复后全量重跑通过）
+
+### 验证结果明细
+
+| # | 验证项 | 结果 | 实际结果 |
+|---|---|---|---|
+| 1 | 20 个因子编号逐一查询，字段值与源文件一致 | **通过** | 20/20 逐字段一致 |
+| 2 | 关键词查询（electricity/air/metal/waste/hotel）返回非空 | **通过** | 5/14/28/148/39 条命中 |
+| 3 | 年份分布生成且各年条数之和 = 总条数 | **通过** | {2025:63, 2026:556}，sum=619=total |
+
+首轮暴露 CWD 相关路径 bug（workspace 测试时因子文件路径错解析至 backend/）；修复为模块相对路径后按协议**重跑该任务全部验证项**，全部通过，后端测试 9/9。
+
+### 产出物
+
+- `backend/src/services/factorLibrary.js`（装载、按编号查询、关键词查询、年份分布；embedding 字段预留至 T-021）
+- API：`GET /factors/:id`、`GET /factors?q=`（关键词通道）
+- `scripts/verify_factor_store.js` + 测试 `backend/test/factorLibrary.test.js`
+- 证据：`progress/evidence/T-007/check_output.txt`
+
+---

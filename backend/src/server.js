@@ -6,6 +6,8 @@ import { pathToFileURL } from 'node:url';
 import { log } from './logging.js';
 import { errorResponse, AppError } from './errors.js';
 import { getConfig } from './config.js';
+import { createStore } from './store/index.js';
+import { loadFactorLibrary, getFactorById, searchFactorsByKeyword } from './services/factorLibrary.js';
 
 export function buildApp() {
   const app = express();
@@ -28,6 +30,27 @@ export function buildApp() {
         Object.entries(entries).map(([k, e]) => [k, { value: e.value, default: e.default, overriddenByEnv: e.overriddenByEnv }]),
       ),
     });
+  });
+
+  const store = createStore();
+  loadFactorLibrary(store).catch((err) => log.error('factor_library_load_failed', { error: String(err) }));
+
+  app.get('/factors', async (req, res) => {
+    const q = String(req.query.q || '').trim();
+    if (!q) {
+      res.status(400).json({ error: { code: 'ERR_INTERNAL', message: 'Provide ?q=<keywords> (comma separated).' } });
+      return;
+    }
+    const terms = q.split(',').map((s) => s.trim()).filter(Boolean);
+    const hits = await searchFactorsByKeyword(store, terms);
+    res.json({ count: hits.length, factors: hits.map(({ embedding, ...f }) => f) });
+  });
+
+  app.get('/factors/:id', async (req, res) => {
+    const factor = await getFactorById(store, req.params.id);
+    if (!factor) throw new AppError('ERR_REFERENCE_INVALID', { factor_id: req.params.id });
+    const { embedding, ...rest } = factor;
+    res.json(rest);
   });
 
   app.use((_req, _res, next) => {

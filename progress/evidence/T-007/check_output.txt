@@ -1,0 +1,15 @@
+{"ts":"2026-10-12T16:05:28.327Z","level":"info","event":"factor_library_loaded","count":619}
+load: total=619 skipped=false
+[1] id_resolution: 20/20 field-identical
+[2] keyword ["electricity"] -> 5 hits
+[2] keyword ["air"] -> 14 hits
+[2] keyword ["metal"] -> 28 hits
+[2] keyword ["waste"] -> 148 hits
+[2] keyword ["hotel"] -> 39 hits
+[3] year_distribution={"2025":63,"2026":556} sum=619 total=619
+RESULT: PASS
+
+Note: an initial run exposed a CWD-dependent path bug (factor file resolved
+from backend/ during workspace tests); after fixing path resolution to be
+module-relative, the FULL verification was rerun: all items PASS and the
+backend suite reports 9/9 tests green.
