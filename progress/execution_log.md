@@ -367,3 +367,19 @@
 - `scripts/verify_units.js`；证据：`progress/evidence/T-013/check_output.txt`
 
 ---
+
+## T-014 单据分类模块（部分完成——代码就绪，真实模型验证阻塞待凭据）
+
+- **日期**：2026-10-13
+- **结论**：**进行中/阻塞（验证项 1、2、3 需真实 Gemini 调用；验证项 4 的追踪基础设施已通过单元测试）**
+
+### 状态说明
+
+已实现并单元测试通过（14/14）：
+- 统一模型调用封装 `backend/src/ai/client.js`（结构化输出 schema、封闭集校验失败即重试 AI-102、超时+重试取配置值、ai_traces 全量落库 AI-103/106、成本估算价格表 NFR-102、mock/real 双适配器）
+- 分类服务 `backend/src/services/classification.js`（七类封闭枚举、置信度阈值路由 FR-203、逐单元落库 document_units）
+- 嵌入调用 embedText（供 T-021）
+
+**阻塞项（需 GEMINI_API_KEY）**：验证 1（30 张 Golden 分类准确率 ≥93%）、验证 2（累计 200 次调用零越界）、验证 3（3 张模糊单据全部进入人工确认）。凭据到位后立即以 AI_MODE=real 重跑本任务全部验证项。
+
+---
