@@ -1,0 +1,10 @@
+T-031 verification status (scenario engine):
+[1] PASS — three scenarios auto-produced from records+calcs without user input
+[2] PASS — hand recomputation of S-1 (air->sea 3.195t, road->rail) and S-3 (aluminium
+    primary -> recycled closed-loop 0.994 t/t) matches engine output exactly (1e-6)
+[3] PASS — task without air/road records: S-1 yields zero affected + explicit reason, no error
+[4] PASS — all three feasibility texts >= 80 English words and state Assumptions/Limitations
+[5] PASS — ratio 0.5 halves every scenario reduction linearly (1e-6)
+NOTE: feasibility narratives are structured deterministic templates derived from the actual
+replacement data; the Pro-model narrative path activates with credentials (numbers unchanged).
+Suite 29/29 green.
