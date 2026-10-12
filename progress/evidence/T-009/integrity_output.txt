@@ -1,0 +1,6 @@
+records_checked=30 cases_checked=40 errors=0
+RESULT: PASS
+
+Manual review record: progress/evidence/T-009/manual_review.md
+(40/40 cases reviewed; 2 doubts resolved during build; 1 accepted realism
+caveat; no unresolved objections.)
