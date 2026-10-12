@@ -3,11 +3,17 @@
 
 import express from 'express';
 import { pathToFileURL } from 'node:url';
+import multer from 'multer';
 import { log } from './logging.js';
 import { errorResponse, AppError } from './errors.js';
 import { getConfig } from './config.js';
 import { createStore } from './store/index.js';
+import { createStorage } from './storage/index.js';
 import { loadFactorLibrary, getFactorById, searchFactorsByKeyword } from './services/factorLibrary.js';
+import { createTask, getTask } from './services/taskService.js';
+import { ingestFile, resolveDuplicate, setDocumentStatus, getDocumentFile } from './services/fileService.js';
+
+const upload = multer({ storage: multer.memoryStorage() });
 
 export function buildApp() {
   const app = express();
@@ -33,6 +39,7 @@ export function buildApp() {
   });
 
   const store = createStore();
+  const storage = createStorage();
   loadFactorLibrary(store).catch((err) => log.error('factor_library_load_failed', { error: String(err) }));
 
   app.get('/factors', async (req, res) => {
@@ -51,6 +58,55 @@ export function buildApp() {
     if (!factor) throw new AppError('ERR_REFERENCE_INVALID', { factor_id: req.params.id });
     const { embedding, ...rest } = factor;
     res.json(rest);
+  });
+
+  app.post('/api/tasks', async (req, res) => {
+    const task = await createTask(store, req.body || {});
+    res.status(201).json(task);
+  });
+
+  app.get('/api/tasks/:taskId', async (req, res) => {
+    const task = await getTask(store, req.params.taskId);
+    const documents = await store.query('documents', 'task_id', req.params.taskId);
+    res.json({ ...task, documents });
+  });
+
+  app.post('/api/tasks/:taskId/documents', upload.array('files', 50), async (req, res) => {
+    await getTask(store, req.params.taskId); // 404 if unknown task
+    const results = [];
+    for (const f of req.files || []) {
+      results.push(await ingestFile({
+        store, storage, taskId: req.params.taskId,
+        filename: f.originalname, buffer: f.buffer,
+      }));
+    }
+    res.json({ count: results.length, results });
+  });
+
+  app.get('/api/tasks/:taskId/documents', async (req, res) => {
+    res.json({ documents: await store.query('documents', 'task_id', req.params.taskId) });
+  });
+
+  app.get('/api/tasks/:taskId/documents/:docId/file', async (req, res) => {
+    const doc = await store.get('documents', req.params.docId);
+    if (!doc || doc.task_id !== req.params.taskId) {
+      throw new AppError('ERR_TASK_NOT_FOUND', { document_id: req.params.docId });
+    }
+    const buf = await getDocumentFile(storage, doc);
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.send(buf);
+  });
+
+  app.post('/api/tasks/:taskId/documents/:docId/duplicate', async (req, res) => {
+    const doc = await resolveDuplicate({
+      store, taskId: req.params.taskId, documentId: req.params.docId, keep: Boolean(req.body?.keep),
+    });
+    res.json(doc);
+  });
+
+  app.post('/api/tasks/:taskId/documents/:docId/status', async (req, res) => {
+    const doc = await setDocumentStatus(store, req.params.taskId, req.params.docId, req.body?.status);
+    res.json(doc);
   });
 
   app.use((_req, _res, next) => {

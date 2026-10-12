@@ -79,7 +79,7 @@ export class LocalFileStore {
 
 export function createStore(kind = process.env.STORE_KIND || 'local', options = {}) {
   if (kind === 'local') {
-    return new LocalFileStore(options.rootDir || 'data/.local-store');
+    return new LocalFileStore(options.rootDir || process.env.STORE_ROOT || 'data/.local-store');
   }
   if (kind === 'firestore') {
     // Production adapter is wired during deployment (T-043) together with

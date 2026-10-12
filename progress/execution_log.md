@@ -302,3 +302,27 @@
 ### 关卡判定：G1 通过（2026-10-13）
 
 ---
+
+## T-011 文件上传与持久化服务
+
+- **日期**：2026-10-13
+- **结论**：**通过**（验证项 1、2、3、4 全部通过，18/18 检查）
+
+### 验证结果明细
+
+| # | 验证项 | 结果 | 实际结果 |
+|---|---|---|---|
+| 1 | 五种格式样例上传成功入库，可取回且内容一致 | **通过** | PDF/JPG/PNG/XLSX/CSV 各一，逐字节回读一致（5/5） |
+| 2 | 11MB 拒绝且英文提示；损坏文件拒绝且同批其余成功 | **通过** | ERR_FILE_TOO_LARGE（"File exceeds the 10 MB per-file size limit."）；AN-01 → ERR_FILE_CORRUPT，同批 GD-04 成功 |
+| 3 | 重复上传触发提示；保留/不保留各执行一次 | **通过** | pending_duplicate 标记 + duplicate_of 指向；keep → 两份共存；discard → 仅存首次 |
+| 4 | 一次上传 20 个文件全部入库且状态排队中 | **通过** | 示例集 20 份全部 status=queued，零丢失 |
+
+### 产出物
+
+- `backend/src/services/fileService.js`（白名单校验、10MB 上限、sha256 去重、PDF 页数统计、七态状态机、坏文件批次隔离）
+- `backend/src/services/taskService.js`（任务创建，tasks 集合）、`backend/src/storage/index.js`（对象存储抽象，本地适配器）
+- API：POST /api/tasks、GET /api/tasks/:id、POST .../documents（multipart）、GET .../documents、GET .../documents/:id/file、POST .../duplicate、POST .../status
+- `scripts/verify_upload.js`（HTTP 级全量验证，临时存储隔离）
+- 证据：`progress/evidence/T-011/check_output.txt`
+
+---

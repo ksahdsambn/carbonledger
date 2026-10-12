@@ -1,0 +1,19 @@
+PASS  five formats accepted
+PASS  no ingestion failures
+PASS  roundtrip identical: GD-01_invoice_metal_scan.pdf
+PASS  roundtrip identical: GD-16_hand_delivery_note.jpg
+PASS  roundtrip identical: GD-18_hand_stock_card.png
+PASS  roundtrip identical: GD-02_po_polymer.xlsx
+PASS  roundtrip identical: GD-08_invoice_steel.csv
+PASS  11MB rejected with ERR_FILE_TOO_LARGE
+PASS  rejection message is English and states the limit
+PASS  corrupt file rejected with ERR_FILE_CORRUPT
+PASS  good file in same batch succeeds
+PASS  duplicate upload flagged pending_duplicate
+PASS  keep decision re-queues duplicate
+PASS  keep: two copies coexist
+PASS  discard: only first upload remains
+PASS  demo set has 20 files
+PASS  20 files all ingested
+PASS  all 20 status=queued, none lost
+RESULT: PASS
