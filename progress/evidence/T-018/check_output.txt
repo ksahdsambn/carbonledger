@@ -1,0 +1,8 @@
+T-018 verification status (normalization engine):
+[1] PASS — all 10 conversion pairs exact (t/lb/g->kg, MWh/GJ/BTU->kWh, m3/gal->L, mile/nmi->km)
+[2] PASS — '香港葵涌码头' and 'Hong Kong Kwai Chung' both -> 'HK/Kwai Chung'
+[3] BLOCKED — 100-call transport-mode enum stress requires real model calls (GEMINI_API_KEY pending);
+    closed-enum validator + retry path implemented and unit-tested
+[4] PASS — audit trail records from/to values and conversion relation per step
+[5] PASS — gap list flags missing activity_date etc.
+Unit tests: backend/test/normalization.test.js (5 tests, all green; suite total 19/19)
