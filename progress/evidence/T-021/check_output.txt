@@ -1,0 +1,8 @@
+T-021 verification status (dual-channel recall):
+[mechanics] PASS — index builds over 743 factors; keyword/semantic/both channels each return
+  non-empty windows <=15 with deduped merged ids; gibberish record on keyword-only triggers
+  relax-retry then insufficient-recall flag; embedding calls traced to ai_traces.
+[info] keyword-only channel over 40 golden cases: best-in-candidates 30/40 (75%), top-1 20/40.
+[quality] BLOCKED for final numbers — Top-3 >= 95% (38/40) is measured on the real embedding
+  model dual-channel run (GEMINI_API_KEY pending). Binding interim sanity threshold (>=24) passed.
+Unit tests: backend/test/recall.test.js (2 tests; suite 21/21).

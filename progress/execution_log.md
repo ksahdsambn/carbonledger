@@ -434,3 +434,14 @@
 - `scripts/verify_traceability.js`；证据：`progress/evidence/T-020/check_output.txt`
 
 ---
+
+## T-021 向量索引与双通道召回
+
+- **日期**：2026-10-13
+- **结论**：**部分通过**（机制项全部通过；最终召回质量指标阻塞待真实嵌入模型）
+
+机制验证：743 因子索引构建（mock 嵌入联调）、三通道（keyword/semantic/both）各自非空且 ≤15、合并去重、放宽重试、召回不足标注、嵌入调用入 ai_traces —— 全部通过（21/21 测试）。关键词通道 Golden 实测：best-in-candidates 30/40。最终 Top-3 ≥95% 指标待真实 gemini-embedding-001 双通道运行后回填（T-022 验证阻塞）。
+
+- 产出：`backend/src/services/recall.js`、`backend/test/recall.test.js`；证据：`progress/evidence/T-021/check_output.txt`
+
+---
