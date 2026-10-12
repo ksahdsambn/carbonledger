@@ -155,3 +155,27 @@
 - 证据：`progress/evidence/T-004/evaltool_evidence.md`
 
 ---
+
+## T-005 排放因子来源锁定（关卡 G0）
+
+- **日期**：2026-10-12
+- **结论**：**通过**（验证项 1、2、3 全部通过）；**G0 通过**
+
+### 验证结果明细
+
+| # | 验证项 | 结果 | 实际结果 |
+|---|---|---|---|
+| 1 | 来源记录文件包含名称、版本年份、链接、获取方式四要素且链接可访问 | **通过** | 三源（DESNZ 2026 全集、EPA Hub 2025、USEEIO）：HTTP 200×5；两份 XLSX 实际下载并校验为有效 Excel（2.1MB/1.0MB，41 个工作表） |
+| 2 | 5 个行业各有初步因子清单 | **通过** | `data/factors/initial_coverage.md`，条目均基于 DEFRA 工作簿实际存在的品类行（Material use 含 Clothing/Food and drink/Electrical items/Plastics 系列；Freighting goods 234 行），缺口与补充来源已记录 |
+| 3 | G0 准出条件逐项核对 | **通过** | 来源已记录 ✓；骨架一键构建+运行（T-003 三连证据）✓；自测脚本可执行（pass=8 fail=0）✓ → **G0 通过** |
+
+### 产出物
+
+- `data/factors/SOURCES.md`（三源锁定记录 + 链接可访问性证据 + 许可基础）
+- `data/factors/initial_coverage.md`（五行业初步清单 + 缺口记录）
+- `data/sources/*.xlsx`（两份原始数据随仓库，FR-605 离线原则）
+- 证据：`progress/evidence/T-005/source_lock_evidence.md`
+
+### 关卡判定：G0 通过（2026-10-12）
+
+---
