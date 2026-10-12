@@ -129,6 +129,27 @@ export function P2Upload({ taskId, onProgress }) {
   );
 }
 
+function AuditView({ taskId, recordId }) {
+  const [audit, setAudit] = useState(null);
+  const [open, setOpen] = useState(false);
+  const load = async () => { setOpen(!open); if (!audit) setAudit(await (await fetch(`/api/tasks/${taskId}/records/${recordId}/audit`)).json()); };
+  return (
+    <div>
+      <button className="linklike" onClick={load} aria-expanded={open}>{open ? 'Hide' : 'Show'} full audit calculation steps</button>
+      {open && audit && (
+        <div className="tablewrap"><table className="tbl mini"><tbody>
+          {(audit.calculation?.steps ?? []).map((s, i) => (
+            <tr key={i}><td>{s.action}</td><td>{JSON.stringify(s).slice(0, 160)}</td></tr>
+          ))}
+          {(audit.audit_trail ?? []).map((a, i) => (
+            <tr key={'a' + i}><td>{a.action_type}</td><td>{JSON.stringify(a.details).slice(0, 160)}</td></tr>
+          ))}
+        </tbody></table></div>
+      )}
+    </div>
+  );
+}
+
 // ---------------------------------------------------------------- P3 + P4
 async function loadRecords(taskId) {
   const [taskRes, dash] = await Promise.all([api.getTask(taskId), api.dashboard(taskId)]);
@@ -169,6 +190,7 @@ export function P3Records({ taskId }) {
                 </tbody></table>
                 <p><b>Unit self-check:</b> {r.unit_self_check ? `${r.unit_self_check.passed ? 'PASS' : 'FAIL'} — ${r.unit_self_check.detail}` : '—'}</p>
                 <p><b>Boundary rationale:</b> {r.boundary_rationale ?? '—'}</p>
+                <AuditView taskId={taskId} recordId={r.record_id} />
                 <a className="button" href={`#/match?record=${r.record_id}`}>Open matching viewer</a>{' '}
                 <a className="button" href={`/api/tasks/${taskId}/documents/${(r.source_ref ?? '').split('#')[0]}/file`} target="_blank" rel="noreferrer">View source document</a>
               </td></tr>

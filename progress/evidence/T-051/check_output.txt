@@ -1,0 +1,6 @@
+=== T-051 verification ===
+deck draft: 13 pages within the 10-14 requirement; cover carries value proposition verbatim + track
+video script: 180-second budget, 9 storyboard shots; 4/4 required shots checked (value numbers <=15s, continuous run, semantic-factor contrast, citation click)
+track labels identical in README/deck/video: 'Sustainability & Social Impact'
+voice-over and subtitle columns are English
+NOTE: actual PDF export and recording are manual steps (per plan T-051: script-ready counts as complete)

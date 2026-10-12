@@ -1,0 +1,7 @@
+=== T-048 code hygiene ===
+self-dev lines (excl deps/data/progress/lock): 6,768 — target <=7,000 PASS, hard cap 10,000 PASS
+NFR-501: +10 factors to data file -> library loads 753, all 10 retrievable via keyword search, ZERO code changed (library restored to 743 after test)
+NFR-502: EXTRACTION_MODEL=gemini-2.0-flash override reflected in config, system behavior unchanged
+forbidden providers scan (openai/anthropic/cohere endpoints): 0 hits; Gemini-only + official embeddings confirmed
+deployment targets: only Cloud Run/Firebase configured
+line-count method: git ls-files *.js/*.jsx/*.py/*.css excluding package-lock.json, data/, progress/

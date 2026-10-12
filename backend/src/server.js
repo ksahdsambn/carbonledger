@@ -208,6 +208,17 @@ export function buildApp() {
     res.json(refreshed);
   });
 
+  app.get('/api/tasks/:taskId/records/:recordId/audit', async (req, res) => {
+    const records = await store.query('activity_records', 'task_id', req.params.taskId);
+    const record = records.find((r) => r.record_id === req.params.recordId);
+    if (!record) throw new AppError('ERR_TASK_NOT_FOUND', { record_id: req.params.recordId });
+    const calc = await store.get('calculations', `calc_${record.record_id}`);
+    const audits = (await store.list('audit_trail')).filter(
+      (a) => a.object_id === record.record_id || a.object_id === `calc_${record.record_id}`,
+    );
+    res.json({ record, calculation: calc, audit_trail: audits });
+  });
+
   app.get('/api/tasks/:taskId/traces', async (req, res) => {
     const stage = req.query.stage;
     let traces = await store.query('ai_traces', 'task_id', req.params.taskId);
