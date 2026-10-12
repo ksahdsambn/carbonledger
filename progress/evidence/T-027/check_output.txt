@@ -1,0 +1,10 @@
+T-027 verification status (uncertainty grading rule engine + unit self-check):
+[1] PASS — rule branches covered: low/medium/high each >=3 constructed cases incl. multi-hit
+    worst-wins and boundary values (0.85 low-bound, 0.6499 high-bound); ordering high->medium->low
+[2] PASS — 3 constructed unit-unbridgeable cases all self-check fail -> high + forced review
+[3] PASS — unit_self_check is an explicit persisted field on assessed records
+[4] PASS — three-level distribution sums to record count
+[5] PASS — all-below-threshold case: no_high_confidence_factor flag + highest-value conservative
+    reference + forced review (three behaviors verified)
+Unit tests: backend/test/calculation.test.js (uncertainty block). Suite 27/27 + upload = 28/28.
+NOTE: full-corpus runs over Golden matches (T-028 verification) execute when model credentials arrive.

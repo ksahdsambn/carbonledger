@@ -1,0 +1,13 @@
+T-029 verification status (calculation & aggregation engine):
+[1] PASS — 10 known-answer problems all exact at 3-decimal tonne display, zero tolerance
+    (electricity 5.893 t, aluminium 22.784 t, water 0.163 t, heat 5.259 t, air freight 3.195 t,
+    sea freight 0.216 t, R-32 8.124 t, food waste landfill 1.681 t, EPA fold 4.281 t AR5,
+    HGV 0.299 t — computed via frozen library values)
+[2] PASS — four aggregation dimensions each sum to total (1e-6 float tolerance) and display parts
+    sum EXACTLY equals display total (largest-remainder adjustment, unrounded values untouched)
+[3] PASS — counterexample guard: awkward parts (1000.0004/2000.0004/3000.0006/0.0005 kg) verified —
+    naive per-part rounding breaks the total, engine output stays consistent
+[4] PASS — top emitters sorted descending, default top 10
+[5] PASS — GWP fold audit chain: AR5 (CH4=28, N2O=265) and AR6 (27.9/273) coefficients recorded
+    in audit trail with gas-wise source detail
+Unit tests: backend/test/calculation.test.js. Suite 28/28 green.
