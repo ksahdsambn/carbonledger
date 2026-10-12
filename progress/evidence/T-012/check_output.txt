@@ -1,0 +1,15 @@
+=== normal run ===
+[suite] upload: pass=1 fail=0
+----------------------------------------
+TOTAL passed=10 failed=0
+TESTS PASSED
+
+=== negative control (poisoned PDF in demo batch) ===
+FAIL  20 files all ingested
+FAIL  all 20 status=queued, none lost
+RESULT: FAIL (2)
+
+=== restored run ===
+----------------------------------------
+TOTAL passed=10 failed=0
+TESTS PASSED

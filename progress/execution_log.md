@@ -326,3 +326,24 @@
 - 证据：`progress/evidence/T-011/check_output.txt`
 
 ---
+
+## T-012 上传模块回归测试固化
+
+- **日期**：2026-10-13
+- **结论**：**通过**（验证项 1、2 全部通过；期间修复一个过期断言并全量重跑）
+
+### 验证结果明细
+
+| # | 验证项 | 结果 | 实际结果 |
+|---|---|---|---|
+| 1 | 一键测试脚本包含 T-011 全部用例且通过 | **通过** | scripts/test.sh 含 upload 脚本套件（隔离存储），TOTAL passed=10 failed=0 |
+| 2 | 注入坏文件后对应用例失败，移除后恢复 | **通过** | 负向对照（污染 demo 批次 PDF）→ 2 项 FAIL、退出码 1；移除 → 恢复全绿 |
+
+修复记录：backend 因子测试硬编码 619/FREIGHTINGGOODS-id 过期（库已扩至 743 且货运前缀细分），修正为阈值断言 + 当前 id 后**重跑全部验证项**通过。
+
+### 产出物
+
+- `scripts/verify_upload_isolated.sh`、test.sh 的 run_script_suite 机制、NEGATIVE_CONTROL 测试钩子
+- 证据：`progress/evidence/T-012/check_output.txt`
+
+---

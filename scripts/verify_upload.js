@@ -100,6 +100,11 @@ const demoDir = join(ROOT, 'data/demo/documents');
 const manifest = JSON.parse(readFileSync(join(ROOT, 'data/demo/manifest.json'), 'utf8'));
 const demoFiles = manifest.documents.map((d) => [d.file.split('/').pop(), readFileSync(join(ROOT, d.file))]);
 ok(demoFiles.length === 20, 'demo set has 20 files');
+if (process.env.NEGATIVE_CONTROL === 'corrupt-demo') {
+  // Test hook: poison one PDF entry so the "all 20 ingested" check must fail.
+  const pdfIdx = demoFiles.findIndex(([name]) => name.endsWith('.pdf'));
+  demoFiles[pdfIdx][1] = Buffer.from('%PDF-1.7 garbage bytes injected by negative control');
+}
 const r20 = await upload(`/api/tasks/${t4.task_id}/documents`, demoFiles);
 ok(r20.body.results.length === 20 && r20.body.results.every((x) => x.ok), '20 files all ingested');
 const docs20 = (await (await fetch(`${base}/api/tasks/${t4.task_id}/documents`)).json()).documents;

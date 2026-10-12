@@ -28,6 +28,23 @@ run_suite() {
 
 run_suite "backend" backend/test/*.test.js
 
+# Script suites: exit code decides; stats count each as one aggregated case.
+run_script_suite() {
+  local name="$1"; shift
+  local out
+  if out=$("$@" 2>&1); then
+    echo "[suite] $name: pass=1 fail=0"
+    TOTAL_PASSED=$((TOTAL_PASSED + 1))
+  else
+    echo "[suite] $name: pass=0 fail=1 (SUITE FAILED)"
+    TOTAL_FAILED=$((TOTAL_FAILED + 1))
+    STATUS=1
+    printf '%s\n' "$out" | grep '^FAIL' | head -5
+  fi
+}
+
+run_script_suite "upload" bash scripts/verify_upload_isolated.sh
+
 echo "----------------------------------------"
 echo "TOTAL passed=$TOTAL_PASSED failed=$TOTAL_FAILED"
 if [ "$STATUS" -ne 0 ] || [ "$TOTAL_FAILED" -ne 0 ]; then
