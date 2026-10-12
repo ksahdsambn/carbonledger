@@ -1,0 +1,36 @@
+{
+  "run_at": "2026-10-12T15:52:12.088Z",
+  "mode": "matching",
+  "rows": [
+    {
+      "id": "factor_match_top1",
+      "group": "matching",
+      "name": "Factor matching accuracy (Top-1)",
+      "target": ">= 85% (>= 34 of 40 Golden cases)",
+      "measured": "",
+      "pass": false,
+      "mandatory": true,
+      "veto": false,
+      "evidence": "not yet produced",
+      "result": "FAIL"
+    },
+    {
+      "id": "factor_match_top3",
+      "group": "matching",
+      "name": "Factor matching accuracy (Top-3 hit)",
+      "target": ">= 95% (>= 38 of 40 Golden cases)",
+      "measured": "",
+      "pass": false,
+      "mandatory": false,
+      "veto": false,
+      "evidence": "not yet produced",
+      "result": "FAIL"
+    }
+  ],
+  "summary": {
+    "passed": 0,
+    "failed": 2,
+    "overall": "FAIL",
+    "vetoed": false
+  }
+}
