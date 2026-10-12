@@ -1,0 +1,36 @@
+{"ts":"2026-10-12T16:31:30.285Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_42f937c8","format":"pdf","status":"queued"}
+{"ts":"2026-10-12T16:31:30.299Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_33e8b030","format":"xlsx","status":"queued"}
+{"ts":"2026-10-12T16:31:30.301Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_5b815d72","format":"pdf","status":"queued"}
+{"ts":"2026-10-12T16:31:30.306Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_ff52199e","format":"pdf","status":"queued"}
+{"ts":"2026-10-12T16:31:30.312Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_9cdadfee","format":"jpg","status":"queued"}
+{"ts":"2026-10-12T16:31:30.314Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_9e7f3fcf","format":"jpg","status":"queued"}
+{"ts":"2026-10-12T16:31:30.315Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_65025dad","format":"png","status":"queued"}
+{"ts":"2026-10-12T16:31:30.318Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_f4991bfd","format":"csv","status":"queued"}
+{"ts":"2026-10-12T16:31:30.321Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_fafac664","format":"pdf","status":"queued"}
+{"ts":"2026-10-12T16:31:30.335Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_4ca166af","format":"pdf","status":"queued"}
+{"ts":"2026-10-12T16:31:30.338Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_90036b83","format":"jpg","status":"queued"}
+{"ts":"2026-10-12T16:31:30.339Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_e033751b","format":"pdf","status":"queued"}
+{"ts":"2026-10-12T16:31:30.343Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_4cbf80b8","format":"png","status":"queued"}
+{"ts":"2026-10-12T16:31:30.344Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_c97c5e40","format":"csv","status":"queued"}
+{"ts":"2026-10-12T16:31:30.345Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_06da6e5c","format":"xlsx","status":"queued"}
+{"ts":"2026-10-12T16:31:30.347Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_67afe76d","format":"jpg","status":"queued"}
+{"ts":"2026-10-12T16:31:30.348Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_bacd6c1d","format":"jpg","status":"queued"}
+{"ts":"2026-10-12T16:31:30.349Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_b2b59bb2","format":"png","status":"queued"}
+{"ts":"2026-10-12T16:31:30.350Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_9ed3c605","format":"jpg","status":"queued"}
+{"ts":"2026-10-12T16:31:30.351Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_407572a0","format":"png","status":"queued"}
+{"ts":"2026-10-12T16:31:30.352Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_97223e5a","format":"jpg","status":"queued"}
+{"ts":"2026-10-12T16:31:30.353Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_f457b94c","format":"xlsx","status":"queued"}
+{"ts":"2026-10-12T16:31:30.354Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_063a8403","format":"xlsx","status":"queued"}
+{"ts":"2026-10-12T16:31:30.355Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_aea1d34b","format":"csv","status":"queued"}
+{"ts":"2026-10-12T16:31:30.356Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_ceb3ed9b","format":"jpg","status":"queued"}
+{"ts":"2026-10-12T16:31:30.357Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_96617d33","format":"pdf","status":"queued"}
+{"ts":"2026-10-12T16:31:30.361Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_761004e1","format":"xlsx","status":"queued"}
+{"ts":"2026-10-12T16:31:30.362Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_9c0ec25e","format":"pdf","status":"queued"}
+{"ts":"2026-10-12T16:31:30.365Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_e7c7d60b","format":"pdf","status":"queued"}
+{"ts":"2026-10-12T16:31:30.369Z","level":"info","event":"document_ingested","task_id":"task_trace","doc":"doc_c7657154","format":"jpg","status":"queued"}
+PASS  30 golden documents ingested with units
+PASS  scan covers 30 records (30)
+PASS  invalid references = 0 (resolved 30/30)
+PASS  10 sampled records open the correct source with valid locators
+PASS  negative control: 3/3 invalid references detected
+RESULT: PASS
