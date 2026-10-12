@@ -1,0 +1,167 @@
+[
+ {
+  "document_id": "GD-01",
+  "page": 1,
+  "doc_type": "supplier_invoice"
+ },
+ {
+  "document_id": "GD-02",
+  "page": 1,
+  "doc_type": "purchase_order"
+ },
+ {
+  "document_id": "GD-03",
+  "page": 1,
+  "doc_type": "logistics_waybill"
+ },
+ {
+  "document_id": "GD-04",
+  "page": 1,
+  "doc_type": "utility_bill"
+ },
+ {
+  "document_id": "GD-05",
+  "page": 1,
+  "doc_type": "utility_bill"
+ },
+ {
+  "document_id": "GD-06",
+  "page": 1,
+  "doc_type": "travel_expense"
+ },
+ {
+  "document_id": "GD-07",
+  "page": 1,
+  "doc_type": "packing_list"
+ },
+ {
+  "document_id": "GD-08",
+  "page": 1,
+  "doc_type": "supplier_invoice"
+ },
+ {
+  "document_id": "GD-09",
+  "page": 1,
+  "doc_type": "supplier_invoice"
+ },
+ {
+  "document_id": "GD-09",
+  "page": 2,
+  "doc_type": "logistics_waybill"
+ },
+ {
+  "document_id": "GD-09",
+  "page": 3,
+  "doc_type": "utility_bill"
+ },
+ {
+  "document_id": "GD-09",
+  "page": 4,
+  "doc_type": "supplier_invoice"
+ },
+ {
+  "document_id": "GD-10",
+  "page": 1,
+  "doc_type": "supplier_invoice"
+ },
+ {
+  "document_id": "GD-11",
+  "page": 1,
+  "doc_type": "other"
+ },
+ {
+  "document_id": "GD-12",
+  "page": 1,
+  "doc_type": "other"
+ },
+ {
+  "document_id": "GD-13",
+  "page": 1,
+  "doc_type": "other"
+ },
+ {
+  "document_id": "GD-14",
+  "page": 1,
+  "doc_type": "other"
+ },
+ {
+  "document_id": "GD-15",
+  "page": 1,
+  "doc_type": "other"
+ },
+ {
+  "document_id": "GD-16",
+  "page": 1,
+  "doc_type": "logistics_waybill"
+ },
+ {
+  "document_id": "GD-17",
+  "page": 1,
+  "doc_type": "travel_expense"
+ },
+ {
+  "document_id": "GD-18",
+  "page": 1,
+  "doc_type": "supplier_invoice"
+ },
+ {
+  "document_id": "GD-19",
+  "page": 1,
+  "doc_type": "supplier_invoice"
+ },
+ {
+  "document_id": "GD-20",
+  "page": 1,
+  "doc_type": "utility_bill"
+ },
+ {
+  "document_id": "GD-21",
+  "page": 1,
+  "doc_type": "logistics_waybill"
+ },
+ {
+  "document_id": "GD-22",
+  "page": 1,
+  "doc_type": "purchase_order"
+ },
+ {
+  "document_id": "GD-23",
+  "page": 1,
+  "doc_type": "supplier_invoice"
+ },
+ {
+  "document_id": "GD-24",
+  "page": 1,
+  "doc_type": "utility_bill"
+ },
+ {
+  "document_id": "GD-25",
+  "page": 1,
+  "doc_type": "travel_expense"
+ },
+ {
+  "document_id": "GD-26",
+  "page": 1,
+  "doc_type": "packing_list"
+ },
+ {
+  "document_id": "GD-27",
+  "page": 1,
+  "doc_type": "purchase_order"
+ },
+ {
+  "document_id": "GD-28",
+  "page": 1,
+  "doc_type": "supplier_invoice"
+ },
+ {
+  "document_id": "GD-29",
+  "page": 1,
+  "doc_type": "supplier_invoice"
+ },
+ {
+  "document_id": "GD-30",
+  "page": 1,
+  "doc_type": "logistics_waybill"
+ }
+]

@@ -1,0 +1,222 @@
+{
+ "documents": [
+  {
+   "id": "GD-01",
+   "file": "data/golden/documents/GD-01_invoice_metal_scan.pdf",
+   "format": "pdf",
+   "style": "scan",
+   "pages": 1
+  },
+  {
+   "id": "GD-02",
+   "file": "data/golden/documents/GD-02_po_polymer.xlsx",
+   "format": "xlsx",
+   "style": "clean",
+   "pages": 1
+  },
+  {
+   "id": "GD-03",
+   "file": "data/golden/documents/GD-03_awb_air_hk_tyo_scan.pdf",
+   "format": "pdf",
+   "style": "scan",
+   "pages": 1
+  },
+  {
+   "id": "GD-04",
+   "file": "data/golden/documents/GD-04_utility_electricity.pdf",
+   "format": "pdf",
+   "style": "clean",
+   "pages": 1
+  },
+  {
+   "id": "GD-05",
+   "file": "data/golden/documents/GD-05_utility_gas_photo.jpg",
+   "format": "jpg",
+   "style": "photo",
+   "pages": 1
+  },
+  {
+   "id": "GD-06",
+   "file": "data/golden/documents/GD-06_travel_flight_photo.jpg",
+   "format": "jpg",
+   "style": "photo",
+   "pages": 1
+  },
+  {
+   "id": "GD-07",
+   "file": "data/golden/documents/GD-07_packing_cartons.png",
+   "format": "png",
+   "style": "clean",
+   "pages": 1
+  },
+  {
+   "id": "GD-08",
+   "file": "data/golden/documents/GD-08_invoice_steel.csv",
+   "format": "csv",
+   "style": "clean",
+   "pages": 1
+  },
+  {
+   "id": "GD-09",
+   "file": "data/golden/documents/GD-09_mixed_four_pages.pdf",
+   "format": "pdf",
+   "style": "scan",
+   "pages": 4
+  },
+  {
+   "id": "GD-10",
+   "file": "data/golden/documents/GD-10_invoice_multiline.pdf",
+   "format": "pdf",
+   "style": "clean",
+   "pages": 1
+  },
+  {
+   "id": "GD-11",
+   "file": "data/golden/documents/GD-11_quality_certificate.jpg",
+   "format": "jpg",
+   "style": "photo",
+   "pages": 1
+  },
+  {
+   "id": "GD-12",
+   "file": "data/golden/documents/GD-12_cover_letter.pdf",
+   "format": "pdf",
+   "style": "clean",
+   "pages": 1
+  },
+  {
+   "id": "GD-13",
+   "file": "data/golden/documents/GD-13_blank_scan.png",
+   "format": "png",
+   "style": "scan",
+   "pages": 1
+  },
+  {
+   "id": "GD-14",
+   "file": "data/golden/documents/GD-14_policy_notice.csv",
+   "format": "csv",
+   "style": "clean",
+   "pages": 1
+  },
+  {
+   "id": "GD-15",
+   "file": "data/golden/documents/GD-15_expense_policy.xlsx",
+   "format": "xlsx",
+   "style": "clean",
+   "pages": 1
+  },
+  {
+   "id": "GD-16",
+   "file": "data/golden/documents/GD-16_hand_delivery_note.jpg",
+   "format": "jpg",
+   "style": "handwritten",
+   "pages": 1
+  },
+  {
+   "id": "GD-17",
+   "file": "data/golden/documents/GD-17_hand_rail_receipt.jpg",
+   "format": "jpg",
+   "style": "handwritten",
+   "pages": 1
+  },
+  {
+   "id": "GD-18",
+   "file": "data/golden/documents/GD-18_hand_stock_card.png",
+   "format": "png",
+   "style": "handwritten",
+   "pages": 1
+  },
+  {
+   "id": "GD-19",
+   "file": "data/golden/documents/GD-19_blurry_invoice.jpg",
+   "format": "jpg",
+   "style": "blurry",
+   "pages": 1
+  },
+  {
+   "id": "GD-20",
+   "file": "data/golden/documents/GD-20_blurry_water.png",
+   "format": "png",
+   "style": "blurry",
+   "pages": 1
+  },
+  {
+   "id": "GD-21",
+   "file": "data/golden/documents/GD-21_blurry_rail.jpg",
+   "format": "jpg",
+   "style": "blurry",
+   "pages": 1
+  },
+  {
+   "id": "GD-22",
+   "file": "data/golden/documents/GD-22_po_servers.xlsx",
+   "format": "xlsx",
+   "style": "clean",
+   "pages": 1
+  },
+  {
+   "id": "GD-23",
+   "file": "data/golden/documents/GD-23_invoice_shrimp.xlsx",
+   "format": "xlsx",
+   "style": "clean",
+   "pages": 1
+  },
+  {
+   "id": "GD-24",
+   "file": "data/golden/documents/GD-24_utility_heat.csv",
+   "format": "csv",
+   "style": "clean",
+   "pages": 1
+  },
+  {
+   "id": "GD-25",
+   "file": "data/golden/documents/GD-25_travel_train.jpg",
+   "format": "jpg",
+   "style": "clean",
+   "pages": 1
+  },
+  {
+   "id": "GD-26",
+   "file": "data/golden/documents/GD-26_packing_drums.pdf",
+   "format": "pdf",
+   "style": "clean",
+   "pages": 1
+  },
+  {
+   "id": "GD-27",
+   "file": "data/golden/documents/GD-27_po_tshirts.xlsx",
+   "format": "xlsx",
+   "style": "clean",
+   "pages": 1
+  },
+  {
+   "id": "GD-28",
+   "file": "data/golden/documents/GD-28_invoice_refrigerant.pdf",
+   "format": "pdf",
+   "style": "clean",
+   "pages": 1
+  },
+  {
+   "id": "GD-29",
+   "file": "data/golden/documents/GD-29_invoice_waste.pdf",
+   "format": "pdf",
+   "style": "clean",
+   "pages": 1
+  },
+  {
+   "id": "GD-30",
+   "file": "data/golden/documents/GD-30_awb_express.jpg",
+   "format": "jpg",
+   "style": "clean",
+   "pages": 1
+  }
+ ],
+ "records_count": 30,
+ "cases_count": 40,
+ "answers": {
+  "classifications": "data/golden/answers/doc_classifications.json",
+  "activity_records": "data/golden/answers/activity_records.json",
+  "matching_cases": "data/golden/answers/matching_cases.json",
+  "anomalies": "data/golden/answers/anomalies.json"
+ }
+}

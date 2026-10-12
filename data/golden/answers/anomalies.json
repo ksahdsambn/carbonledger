@@ -1,0 +1,20 @@
+[
+ {
+  "id": "AN-01",
+  "file": "AN-01_corrupted.pdf",
+  "kind": "corrupt_file",
+  "expected": "upload accepted but parse must fail with ERR_FILE_CORRUPT; batch unaffected"
+ },
+ {
+  "id": "AN-02",
+  "file": "AN-02_missing_required.csv",
+  "kind": "missing_required_fields",
+  "expected": "upload accepted; extraction yields no calculable record; missing fields flagged, no fabricated values"
+ },
+ {
+  "id": "AN-03",
+  "file": "AN-03_duplicate_of_GD01.pdf",
+  "kind": "duplicate_upload",
+  "expected": "content hash matches GD-01; duplicate prompt raised for user decision"
+ }
+]

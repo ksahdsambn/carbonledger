@@ -132,13 +132,34 @@ DEFRA_SHEETS = [
          total_cols={"D": ("Well-to-tank", "well-to-tank (upstream fuel production and distribution)")},
          activity_type="fuel_upstream", name_prefix="Fuel upstream (WTT) —", ind=lambda c: ALL5,
          skip=True),
-    dict(sheet="Freighting goods", header=25, type_col="B", unit_col="C",
+    dict(sheet="Freighting goods", header=25, type_col="B", unit_col="C", slug="ROADFREIGHT",
+         row_filter=lambda rec: rec["unit"] in ("tonne.km", "km", "miles")
+                                and "flight" not in rec["top"].lower(),
          total_cols={"T": ("Fleet average fuel (unknown mix)", "tank-to-wheel (direct combustion)"),
                      "D": ("Diesel", "tank-to-wheel (direct combustion, diesel)")},
          activity_type="freight_transport", name_prefix="Freight —", ind=lambda c: [LOGISTICS]),
-    dict(sheet="WTT- delivery vehs & freight", header=20, type_col="B", unit_col="C",
+    dict(sheet="Freighting goods", header=25, type_col="B", unit_col="C", slug="AIRFREIGHT",
+         row_filter=lambda rec: "flight" in rec["top"].lower(),
+         total_cols={"D": ("Air freight incl. radiative forcing (RF)", "tank-to-wheel (combustion + radiative forcing)"),
+                     "H": ("Air freight excl. radiative forcing (RF)", "tank-to-wheel (combustion only, no RF)")},
+         activity_type="freight_transport", name_prefix="Freight —", ind=lambda c: [LOGISTICS]),
+    dict(sheet="Freighting goods", header=25, type_col="B", type2_col="C", unit_col="D", slug="SEAFREIGHT",
+         row_filter=lambda rec: rec["unit"] == "tonne.km",
+         total_cols={"E": ("Sea shipping (direct combustion)", "tank-to-wheel (direct combustion)")},
+         activity_type="freight_transport", name_prefix="Freight —", ind=lambda c: [LOGISTICS]),
+    dict(sheet="WTT- delivery vehs & freight", header=20, type_col="B", unit_col="C", slug="WTTROADFREIGHT",
+         row_filter=lambda rec: rec["unit"] in ("tonne.km", "km", "miles")
+                                and "flight" not in rec["top"].lower(),
          total_cols={"H": ("Fleet average fuel (unknown mix)", "well-to-tank (upstream fuel production)"),
                      "D": ("Diesel", "well-to-tank (upstream fuel production, diesel)")},
+         activity_type="freight_upstream", name_prefix="Freight upstream (WTT) —", ind=lambda c: [LOGISTICS]),
+    dict(sheet="WTT- delivery vehs & freight", header=20, type_col="B", unit_col="C", slug="WTTAIRFREIGHT",
+         row_filter=lambda rec: "flight" in rec["top"].lower(),
+         total_cols={"D": ("WTT freight flights (upstream fuel production)", "well-to-tank (upstream fuel production)")},
+         activity_type="freight_upstream", name_prefix="Freight upstream (WTT) —", ind=lambda c: [LOGISTICS]),
+    dict(sheet="WTT- delivery vehs & freight", header=20, type_col="B", type2_col="C", unit_col="D", slug="WTTSEAFREIGHT",
+         row_filter=lambda rec: rec["unit"] == "tonne.km",
+         total_cols={"E": ("WTT sea shipping (upstream fuel production)", "well-to-tank (upstream fuel production)")},
          activity_type="freight_upstream", name_prefix="Freight upstream (WTT) —", ind=lambda c: [LOGISTICS]),
     dict(sheet="UK electricity", header=24, type_col="B", unit_col="C",
          total_cols={"E": ("UK grid electricity", "generation (grid average, including T&D losses excluded)")},
@@ -160,7 +181,8 @@ DEFRA_SHEETS = [
          total_cols={"D": ("Refrigerant leak", "fugitive emission (refrigerant release, AR5 GWP)")},
          activity_type="refrigerant", name_prefix="Refrigerant —", ind=lambda c: [FOOD, LOGISTICS, OFFICE]),
     dict(sheet="Business travel- air", header=22, type_col="B", type2_col="C", unit_col="D",
-         total_cols={"E": ("Flights (with RF where stated)", "tank-to-wheel (flight combustion + contrails where stated)")},
+         total_cols={"E": ("Flights incl. radiative forcing (RF)", "tank-to-wheel (flight combustion + radiative forcing)"),
+                     "I": ("Flights excl. radiative forcing (RF)", "tank-to-wheel (flight combustion only, no RF)")},
          activity_type="business_travel_air", name_prefix="Business travel air —",
          ind=lambda c: ALL5),
     dict(sheet="Business travel- land", header=24, type_col="B", unit_col="C",
@@ -228,6 +250,8 @@ def build_defra(factors):
         sheet_seq = 0
         for rec in sheet_rows(wb[cfg["sheet"]], header, cfg["type_col"], cfg["unit_col"],
                               cfg.get("type2_col"), cfg.get("loc_col")):
+            if cfg.get("row_filter") and not cfg["row_filter"](rec):
+                continue
             for col, (variant, boundary) in cfg["total_cols"].items():
                 value = num(rec["row_cells"][ci(col) - 1])
                 if value is None or value <= 0:
@@ -236,7 +260,7 @@ def build_defra(factors):
                 label = " / ".join(x for x in (rec["top"], rec["type"], rec["type2"]) if x)
                 name = f'{cfg["name_prefix"]} {label} — {variant} ({norm_unit(rec["unit"])})'
                 sheet_seq += 1
-                slug = re.sub(r"[^A-Za-z0-9]+", "", cfg["sheet"]).upper()
+                slug = re.sub(r"[^A-Za-z0-9]+", "", cfg.get("slug") or cfg["sheet"]).upper()
                 fid = f'{DEFRA_SRC["prefix"]}-{slug}-{sheet_seq:03d}'
                 factors.append({
                     "factor_id": fid,

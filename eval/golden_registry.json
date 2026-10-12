@@ -1,0 +1,10 @@
+{
+ "golden_answers": {
+  "classifications": "data/golden/answers/doc_classifications.json",
+  "activity_records": "data/golden/answers/activity_records.json",
+  "matching_cases": "data/golden/answers/matching_cases.json",
+  "anomalies": "data/golden/answers/anomalies.json"
+ },
+ "factor_library": "data/factors/emission_factors.json",
+ "note": "Registered by T-008; consumed by evaluation metric collectors."
+}

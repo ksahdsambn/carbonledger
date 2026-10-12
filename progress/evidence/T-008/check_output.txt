@@ -1,0 +1,22 @@
+[1] documents=30 formats=5 types=7 mixed_pdf=4pages/3types handwritten=3 blurry=3 missing_field_docs=5 files=OK
+[2] records=30 fields_exact=True transport_records=5
+[3] cases=40 factor_ids_valid=True
+[4] difficulty_counts={'exact_match': 8, 'boundary_inference': 8, 'unit_conversion': 8, 'semantic_inference': 8, 'boundary_caliber': 8}
+[5] anomalies=3 files=OK
+RESULT: PASS
+
+== Vision QA (delegated to multimodal agent per workspace rules) ==
+GD-16_hand_delivery_note.jpg: all 5 lines transcribed correctly ("Delivery note #162 / date
+12 May 2026 / from Guangzhou warehouse to Dongguan plant / cargo 5 tonnes machine parts
+~300 km by truck / freight CNY 1,200"); legible to a multimodal reader; not blank/corrupted.
+GD-19_blurry_invoice.jpg: all 4 lines transcribed ("VIDRA PORTUGAL - INVOICE VP-3391 /
+Date: 2026-05-22 / Amber glass bottles 330 ml / Quantity: 1,100 kg Amount: EUR 2,300.00");
+deliberately OCR-hostile blur confirmed human/multimodal-readable; not blank/corrupted.
+
+== Build provenance ==
+- Builder: scripts/build_golden_dataset.py + scripts/golden/{render_docs,curated_data}.py
+- All 40 cases' factor ids resolved from the 743-factor library at build time
+  (resolve-or-die; predicate mismatches were fixed against real library names).
+- Factor library was extended in this task (619 -> 743) with sea freight
+  (tanker/cargo/container TEU classes/refrigerated cargo), air freight with/without
+  radiative forcing, and their WTT counterparts; T-006 verification suite re-run: PASS.
