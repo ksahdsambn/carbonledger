@@ -1,0 +1,11 @@
+[1] sample=50 attribute-completeness: 50/50 complete
+[2] counts_by_industry={'electronics_manufacturing': 326, 'apparel_textiles': 325, 'food_processing': 333, 'logistics_transportation': 407, 'general_office_services': 437} total_unique=619
+[3] duplicate_factor_ids=0
+[4] offline_load=OK (619 factors, meta.total_factors=619)
+RESULT: PASS
+
+VALUE AUDIT (vs raw workbooks):
+  ('EF-D26-MATERIALUSE-001', 'Materials — Construction / Aggregates — Primary material production (t', 7.80307)
+  ('EF-D26-FREIGHTINGGOODS-001', 'Freight — Vans / Class I (up to 1.305 tonnes) — Diesel (t.km)', 0.87948)
+  ('EF-E25-FUEL-001', 'Fuel — Anthracite (Stationary Combustion, per MMBtu)', 104.422)
+EPA anthracite expected = 103.69 + 11*28/1000 + 1.6*265/1000 = 104.422 -> 104.422

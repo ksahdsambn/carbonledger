@@ -179,3 +179,28 @@
 ### 关卡判定：G0 通过（2026-10-12）
 
 ---
+
+## T-006 因子库数据文件构建
+
+- **日期**：2026-10-12
+- **结论**：**通过**（验证项 1、2、3、4 全部通过）
+
+### 验证结果明细
+
+| # | 验证项 | 结果 | 实际结果 |
+|---|---|---|---|
+| 1 | 随机抽检 50 条，13 项属性完整率 100% | **通过** | 固定种子抽样 50/50 完整（`scripts/check_factor_library.py`） |
+| 2 | 每行业 ≥40、总数 ≤1200 | **通过** | 电子 326 / 服装 325 / 食品 333 / 物流 407 / 办公 437，总 619 |
+| 3 | 因子编号全库唯一 | **通过** | duplicate=0（构建时断言 + 独立检查双重确认） |
+| 4 | 断网状态因子文件可完整加载 | **通过** | socket 守卫下纯本地 JSON 解析 619 条成功，零网络调用 |
+
+补充：3 条因子与原始 workbook 逐值人工核对一致（Material 7.80307 / Freight 0.87948 / EPA 折算 104.422）。
+
+### 产出物
+
+- `data/factors/emission_factors.json`（619 条，DEFRA 2026 十九表 + EPA Hub 2025 燃烧表程序化抽取）
+- `scripts/build_factor_library.py`（可重复构建）、`scripts/check_factor_library.py`（四项验证）
+- 边界口径对（Fuels 燃烧 vs WTT- fuels 上游）、材料多变体、废弃物七种处置路径、EPA 气种拆分因子（含 gas_breakdown，引擎侧 GWP 折算入审计轨迹）
+- 证据：`progress/evidence/T-006/`（check_output.txt + factor_library_evidence.md）
+
+---
