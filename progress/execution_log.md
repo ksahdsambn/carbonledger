@@ -347,3 +347,23 @@
 - 证据：`progress/evidence/T-012/check_output.txt`
 
 ---
+
+## T-013 PDF 分页拆分与页面单元
+
+- **日期**：2026-10-13
+- **结论**：**通过**（验证项 1、2、3 全部通过）
+
+### 验证结果明细
+
+| # | 验证项 | 结果 | 实际结果 |
+|---|---|---|---|
+| 1 | Golden 4 页混合 PDF 拆出 4 单元，页码连续，归属正确 | **通过** | 4 单元、页码 1..4、document_id 全部正确；每单元为合法单页 PDF（pdf-lib 校验） |
+| 2 | XLSX、CSV、单页图片各生成且仅生成 1 单元 | **通过** | 3/3 均恰好 1 单元（页码 1，引用原文件） |
+| 3 | 单元总数 = 各文件页数之和；抽样 5 单元可回溯 | **通过** | 7=7；5 个样本全部回溯到文档+页码 |
+
+### 产出物
+
+- `backend/src/services/documentUnits.js`（pdf-lib 逐页拷贝为单页 PDF 作为模型可处理表示；document_units 集合；resolveUnit 回溯）
+- `scripts/verify_units.js`；证据：`progress/evidence/T-013/check_output.txt`
+
+---

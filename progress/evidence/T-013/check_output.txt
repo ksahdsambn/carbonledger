@@ -1,0 +1,14 @@
+{"ts":"2026-10-12T16:27:43.015Z","level":"info","event":"document_ingested","task_id":"task_units1","doc":"doc_cc4b2c63","format":"pdf","status":"queued"}
+PASS  GD-09 splits into 4 units
+PASS  page numbers consecutive 1..4
+PASS  all units point to the parent document
+PASS  each unit representation is a valid 1-page PDF (model-ready)
+{"ts":"2026-10-12T16:27:43.054Z","level":"info","event":"document_ingested","task_id":"task_units1","doc":"doc_21e5a1ad","format":"xlsx","status":"queued"}
+PASS  GD-02_po_polymer.xlsx -> exactly 1 unit
+{"ts":"2026-10-12T16:27:43.056Z","level":"info","event":"document_ingested","task_id":"task_units1","doc":"doc_8f52b8e9","format":"csv","status":"queued"}
+PASS  GD-08_invoice_steel.csv -> exactly 1 unit
+{"ts":"2026-10-12T16:27:43.058Z","level":"info","event":"document_ingested","task_id":"task_units1","doc":"doc_d4ea3449","format":"png","status":"queued"}
+PASS  GD-07_packing_cartons.png -> exactly 1 unit
+PASS  unit total 7 == sum of page counts 7
+PASS  sampled 5 units resolve back to document + page
+RESULT: PASS
