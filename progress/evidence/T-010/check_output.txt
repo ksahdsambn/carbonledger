@@ -1,0 +1,4 @@
+[1] documents=20 formats=5 files_on_disk=OK
+[2] records=20 scope_breakdown={'Scope 1': 2, 'Scope 2': 2, 'Scope 3': 16} scope3_categories=7
+[3] G1: golden=30docs/30records/40cases on disk; factor library 743 factors loadable offline
+RESULT: PASS — G1 conditions met

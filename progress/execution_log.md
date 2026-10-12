@@ -279,3 +279,26 @@
 - 证据：`progress/evidence/T-009/`（integrity_output.txt + manual_review.md）
 
 ---
+
+## T-010 示例演示数据集制作（关卡 G1）
+
+- **日期**：2026-10-13
+- **结论**：**通过**（验证项 1、2、3 全部通过）；**G1 通过**
+
+### 验证结果明细
+
+| # | 验证项 | 结果 | 实际结果 |
+|---|---|---|---|
+| 1 | 文件计数 20、格式覆盖五种 | **通过** | 20 份（pdf 9/jpg 4/png 2/xlsx 3/csv 2），全部在盘 |
+| 2 | 预期结果：S1×2、S2×2、S3 六类以上 | **通过** | 20 条记录；S1=2、S2=2、S3=16 覆盖 7 个类别（Cat-1×8、Cat-2、Cat-3、Cat-4×3、Cat-5、Cat-6、Cat-7） |
+| 3 | G1 准出条件：因子库导入可查询、Golden 30 张及答案就位 | **通过** | 因子库 743 条离线可载（T-007 查询验证）；Golden 30 文档/30 记录/40 案例全部在盘 → **G1 通过** |
+
+### 产出物
+
+- data/demo/documents/（20 份混合格式单据）、data/demo/expected_records.json（20 条完整字段）、data/demo/manifest.json（虚构企业 Meridian Electronics Manufacturing Co., Ltd.，深圳南山，2026 上半年报告期，含机器可读预期结果）
+- `scripts/build_demo_dataset.py`、`scripts/check_demo_dataset.py`
+- 证据：`progress/evidence/T-010/check_output.txt`
+
+### 关卡判定：G1 通过（2026-10-13）
+
+---

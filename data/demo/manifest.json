@@ -1,0 +1,272 @@
+{
+ "company": {
+  "name": "Meridian Electronics Manufacturing Co., Ltd.",
+  "address": "88 Keji Avenue, Nanshan District, Shenzhen, Guangdong, China",
+  "industry": "Electronics manufacturing",
+  "reporting_period": {
+   "from": "2026-01-01",
+   "to": "2026-06-30"
+  },
+  "gwp_version_default": "AR6"
+ },
+ "documents": [
+  {
+   "file": "data/demo/documents/D-01_fleet_diesel_invoice.pdf",
+   "format": "pdf",
+   "doc_type": "supplier_invoice",
+   "records": [
+    "DR-01"
+   ]
+  },
+  {
+   "file": "data/demo/documents/D-02_refrigerant_service.png",
+   "format": "png",
+   "doc_type": "supplier_invoice",
+   "records": [
+    "DR-02"
+   ]
+  },
+  {
+   "file": "data/demo/documents/D-03_electricity.xlsx",
+   "format": "xlsx",
+   "doc_type": "utility_bill",
+   "records": [
+    "DR-03"
+   ]
+  },
+  {
+   "file": "data/demo/documents/D-04_district_heat.csv",
+   "format": "csv",
+   "doc_type": "utility_bill",
+   "records": [
+    "DR-04"
+   ]
+  },
+  {
+   "file": "data/demo/documents/D-05_aluminium_invoice.pdf",
+   "format": "pdf",
+   "doc_type": "supplier_invoice",
+   "records": [
+    "DR-05"
+   ]
+  },
+  {
+   "file": "data/demo/documents/D-06_polymer_po.pdf",
+   "format": "pdf",
+   "doc_type": "purchase_order",
+   "records": [
+    "DR-06",
+    "DR-07",
+    "DR-08"
+   ]
+  },
+  {
+   "file": "data/demo/documents/D-07_pcb_invoice.jpg",
+   "format": "jpg",
+   "doc_type": "supplier_invoice",
+   "records": [
+    "DR-09"
+   ]
+  },
+  {
+   "file": "data/demo/documents/D-08_cnc_invoice.pdf",
+   "format": "pdf",
+   "doc_type": "supplier_invoice",
+   "records": [
+    "DR-10"
+   ]
+  },
+  {
+   "file": "data/demo/documents/D-09_fuel_upstream.xlsx",
+   "format": "xlsx",
+   "doc_type": "utility_bill",
+   "records": [
+    "DR-11"
+   ]
+  },
+  {
+   "file": "data/demo/documents/D-10_sea_freight_bl.pdf",
+   "format": "pdf",
+   "doc_type": "logistics_waybill",
+   "records": [
+    "DR-12"
+   ]
+  },
+  {
+   "file": "data/demo/documents/D-11_road_freight.jpg",
+   "format": "jpg",
+   "doc_type": "logistics_waybill",
+   "records": [
+    "DR-13"
+   ]
+  },
+  {
+   "file": "data/demo/documents/D-12_waste_invoice.pdf",
+   "format": "pdf",
+   "doc_type": "supplier_invoice",
+   "records": [
+    "DR-14"
+   ]
+  },
+  {
+   "file": "data/demo/documents/D-13_air_travel.jpg",
+   "format": "jpg",
+   "doc_type": "travel_expense",
+   "records": [
+    "DR-15"
+   ]
+  },
+  {
+   "file": "data/demo/documents/D-14_pallets_packing.pdf",
+   "format": "pdf",
+   "doc_type": "packing_list",
+   "records": [
+    "DR-16"
+   ]
+  },
+  {
+   "file": "data/demo/documents/D-15_commuting_rail.pdf",
+   "format": "pdf",
+   "doc_type": "travel_expense",
+   "records": [
+    "DR-17"
+   ]
+  },
+  {
+   "file": "data/demo/documents/D-16_express_courier.jpg",
+   "format": "jpg",
+   "doc_type": "logistics_waybill",
+   "records": [
+    "DR-18"
+   ]
+  },
+  {
+   "file": "data/demo/documents/D-17_glass_supplier.csv",
+   "format": "csv",
+   "doc_type": "supplier_invoice",
+   "records": [
+    "DR-19"
+   ]
+  },
+  {
+   "file": "data/demo/documents/D-18_cover_page.pdf",
+   "format": "pdf",
+   "doc_type": "other",
+   "records": []
+  },
+  {
+   "file": "data/demo/documents/D-19_certificate.png",
+   "format": "png",
+   "doc_type": "other",
+   "records": []
+  },
+  {
+   "file": "data/demo/documents/D-20_office_supplies.xlsx",
+   "format": "xlsx",
+   "doc_type": "purchase_order",
+   "records": [
+    "DR-20"
+   ]
+  }
+ ],
+ "expected_results": {
+  "record_count": 20,
+  "scope_breakdown": {
+   "Scope 1": 2,
+   "Scope 2": 2,
+   "Scope 3": 16
+  },
+  "scope3_category_coverage": {
+   "Cat-1": 8,
+   "Cat-2": 1,
+   "Cat-3": 1,
+   "Cat-4": 3,
+   "Cat-5": 1,
+   "Cat-6": 1,
+   "Cat-7": 1
+  }
+ },
+ "expected_records_file": "data/demo/expected_records.json",
+ "expected_scope_map": {
+  "DR-01": [
+   "Scope 1",
+   null
+  ],
+  "DR-02": [
+   "Scope 1",
+   null
+  ],
+  "DR-03": [
+   "Scope 2",
+   null
+  ],
+  "DR-04": [
+   "Scope 2",
+   null
+  ],
+  "DR-05": [
+   "Scope 3",
+   "Cat-1"
+  ],
+  "DR-06": [
+   "Scope 3",
+   "Cat-1"
+  ],
+  "DR-07": [
+   "Scope 3",
+   "Cat-1"
+  ],
+  "DR-08": [
+   "Scope 3",
+   "Cat-1"
+  ],
+  "DR-09": [
+   "Scope 3",
+   "Cat-1"
+  ],
+  "DR-10": [
+   "Scope 3",
+   "Cat-2"
+  ],
+  "DR-11": [
+   "Scope 3",
+   "Cat-3"
+  ],
+  "DR-12": [
+   "Scope 3",
+   "Cat-4"
+  ],
+  "DR-13": [
+   "Scope 3",
+   "Cat-4"
+  ],
+  "DR-14": [
+   "Scope 3",
+   "Cat-5"
+  ],
+  "DR-15": [
+   "Scope 3",
+   "Cat-6"
+  ],
+  "DR-16": [
+   "Scope 3",
+   "Cat-1"
+  ],
+  "DR-17": [
+   "Scope 3",
+   "Cat-7"
+  ],
+  "DR-18": [
+   "Scope 3",
+   "Cat-4"
+  ],
+  "DR-19": [
+   "Scope 3",
+   "Cat-1"
+  ],
+  "DR-20": [
+   "Scope 3",
+   "Cat-1"
+  ]
+ }
+}
