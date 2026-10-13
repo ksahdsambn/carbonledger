@@ -120,6 +120,17 @@ export async function runPipeline({ store, storage, taskId, mockCatalog = new Ma
             expectedSelection: mockMeta.records?.find((r) => r.item_description === raw.item_description)?.expected_selection,
           });
           const factor = factorsById[selection.selected_factor_id];
+          // FR-702 / AI-204: the factor actually used for the calculation must
+          // be the one the selection named and the one written to the match.
+          if (!factor || factor.factor_id !== selection.selected_factor_id) {
+            log.error('selection_factor_mismatch', {
+              task_id: taskId, record: record.record_id,
+              selected: selection.selected_factor_id,
+              resolved: factor ? factor.factor_id : null,
+              resolved_value: factor ? factor.value : null,
+              library_size: Object.keys(factorsById).length,
+            });
+          }
           const assessment = assessRecord({
             match: { confidence: selection.confidence },
             record, factor,

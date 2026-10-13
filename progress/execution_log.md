@@ -775,3 +775,43 @@ deck 文稿 13 页（10-14 区间）、视频脚本 180 秒 9 镜头且 PRD 四�
 - **结果**：10 次运行 9 次通过；**P90 = 66.4s ≤ 180s**；首屏 5 次平均 **128ms ≤ 3000ms**；3 并发 3/3 完成且无服务端错误；单张成本 **$0.00058 ≤ $0.03**。
 - **未通过项**：run2 因上述 `withStatus` 缺陷停留 19/20（报告本身十章齐全、引用有效）。修复并重新部署后重跑全量（见下一条）。
 
+
+## T-046 容错、安全与隐私测试（线上全量通过）
+
+- **日期**：2026-10-14
+- **结论**：**通过**——`scripts/verify_public_faults.js` 全部 5 项 PASS：
+
+| 项 | 实测 |
+|---|---|
+| NFR-201 | 20 文件批次混入 3 个损坏文件：**17 接受 / 3 拒绝**（全部 `ERR_FILE_CORRUPT` 且带英文描述）；17 张单据全部处理完成，0 failed |
+| NFR-202 | `backend/test/aiRetry.test.js` 3/3：超时后**恰好 3 次尝试**（1+2 重试）→ `ERR_MODEL_TIMEOUT`；非重试型失败 → `ERR_MODEL_CALL_FAILED`；每次尝试均落 trace 带错误码 |
+| NFR-204 | 错误码登记表 **13 条**，全部机读且英文；README 逐条列出；线上未知路由 → 404/`ERR_TASK_NOT_FOUND`；非法枚举 → 422/`ERR_ENUM_INVALID` |
+| NFR-301 | 跨任务取文件 404；同任务错身份 404；**伪造 `x-user-uid` 头 404**；本人 200；跨任务取记录审计 404 |
+| NFR-303 | 连续 44 次请求触发 **429 `ERR_RATE_LIMITED`** |
+
+## T-043 补齐：Firebase 匿名认证真正落地
+
+- **日期**：2026-10-14
+- **背景**：此前"无登录流程也能用"，但**并未真正实现** Firebase Auth 匿名登录（前端无任何 auth 代码，`x-user-uid` 由客户端自填，可伪造）。
+- **实施**：
+  1. 通过 Identity Toolkit Admin API 初始化项目认证配置并**启用 Anonymous 提供方**（`identityPlatform:initializeAuth` + `signIn.anonymous.enabled=true`）。
+  2. 前端 `frontend/src/auth.js`：进入即调 `accounts:signUp` 完成匿名登录，会话（uid + refresh token）存 localStorage 并静默续期（refresh token 换新 ID token，**uid 稳定不漂移**）；`App.jsx` 挂载时调用，页脚显示会话状态。
+  3. 后端：`Authorization: Bearer <idToken>` 由 **firebase-admin `verifyIdToken` 校验**，校验通过的 uid 作为任务 owner；不再信任客户端自填头。无 token 请求仍可用（owner 为空），便于脚本与离线运行。
+  4. 公开的 Firebase Web 配置（浏览器密钥，非机密）**构建期注入**，来源是 gitignore 的 `frontend/.env`——仓库内零密钥材料（`npm run scan-secrets` 仍 0 命中）。
+- **验证**：真机实测——匿名登录返回 uid，用其 ID token 建任务 `owner` 等于该 uid；仅伪造 `x-user-uid` 建任务 `owner` 为 null；NFR-301 五项全部按预期拒绝。
+
+## 复核闭环补齐：复核动作同步刷新报告（FR-706/FR-1102）
+
+- **日期**：2026-10-14
+- **问题**：复核编辑只触发重算并返回看板，**已存报告不会重建**，阅读视图会显示过期报告，不满足验收清单"复核修改触发重算并同步刷新报告"。
+- **修复**：抽出 `generateReportForTask()`，报告 GET 的懒生成与复核 POST 的刷新共用同一路径；复核动作在同一请求内重建并持久化报告。
+
+## 代码规模口径（NFR-504）
+
+- **日期**：2026-10-14
+- 新增 `scripts/count_lines.sh`，输出三档口径并全部落盘可审计：
+  - **A 应用代码**（backend/src + frontend/src + eval）：**4,132 行**
+  - **B A + scripts 全部 JS 校验/构建工具**：**6,373 行**（≤7,000 目标 ✓）
+  - **C B + 离线 Python 数据集工具链**：**8,168 行**（<10,000 硬上限 ✓）
+- 方法：`git ls-files` 统计已跟踪源码，排除依赖、lockfile、构建产物、`data/**` 数据文件、`progress/**` 产物。Python 工具链负责生成 `data/` 下的已提交数据资产，其产物是数据，且不进入容器镜像（`.gcloudignore` 排除 `scripts/`）。
+

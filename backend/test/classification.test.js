@@ -22,7 +22,7 @@ test('wrapper enforces closed-set validation with retry, then fails loudly', asy
     return { doc_type: 'other', confidence: 0.8 };
   };
   const okRes = await callModel({
-    taskId: 't1', stage: 'classification', model: 'gemini-2.5-flash',
+    taskId: 't1', stage: 'classification', model: 'gemini-3.5-flash-lite',
     parts: [{ text: 'x' }], schema: {}, validator: (r) => {
       if (!DOC_TYPE_ENUM.includes(r.doc_type)) throw new Error('outside enum');
     },
@@ -36,7 +36,7 @@ test('wrapper enforces closed-set validation with retry, then fails loudly', asy
   // Always-invalid responses exhaust retries and raise ERR_ENUM_INVALID.
   await assert.rejects(
     callModel({
-      taskId: 't1', stage: 'classification', model: 'gemini-2.5-flash',
+      taskId: 't1', stage: 'classification', model: 'gemini-3.5-flash-lite',
       parts: [{ text: 'x' }], schema: {},
       validator: (r) => { if (!DOC_TYPE_ENUM.includes(r.doc_type)) throw new Error('outside enum'); },
       mockFn: () => ({ doc_type: 'still_bad', confidence: 0.9 }), traceStore: store,
@@ -49,7 +49,7 @@ test('wrapper enforces closed-set validation with retry, then fails loudly', asy
 test('wrapper records latency, usage estimate and adapter in traces', async () => {
   const store = new LocalFileStore(mkdtempSync(join(tmpdir(), 'aimock2-')));
   await callModel({
-    taskId: 't2', stage: 'classification', model: 'gemini-2.5-flash',
+    taskId: 't2', stage: 'classification', model: 'gemini-3.5-flash-lite',
     parts: [{ text: 'input' }], schema: {}, validator: () => {},
     mockFn: () => ({ doc_type: 'other', confidence: 0.9 }), traceStore: store,
   });
@@ -66,10 +66,8 @@ test('wrapper records latency, usage estimate and adapter in traces', async () =
   rmSync(store.rootDir, { recursive: true, force: true });
 });
 
-test('price table covers all configured models', () => {
-  for (const m of ['gemini-2.5-flash', 'gemini-2.5-pro', 'gemini-embedding-001']) {
-    assert.ok(DEFAULT_PRICES[m], m);
-  }
+test('price table covers exactly the models the single-model policy permits', () => {
+  assert.deepEqual(Object.keys(DEFAULT_PRICES).sort(), ['gemini-3.5-flash-lite', 'gemini-embedding-001']);
 });
 
 test('classification flags sub-threshold confidence for manual confirmation', async () => {

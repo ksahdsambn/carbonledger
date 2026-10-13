@@ -23,6 +23,12 @@ const DEFINITIONS = [
     description: 'Google Cloud official text embedding model used for semantic recall',
   },
   {
+    key: 'AI_MODEL_ALLOWLIST',
+    type: 'string',
+    default: 'gemini-3.5-flash-lite,gemini-embedding-001',
+    description: 'Models a real call may use (comma separated). The single-model mandate permits only gemini-3.5-flash-lite for generative work plus the official embedding model; widening this list is a config change, never a code change',
+  },
+  {
     key: 'BATCH_SIZE',
     type: 'int',
     default: 10,

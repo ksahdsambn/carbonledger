@@ -1,20 +1,21 @@
 {
-  "measured": "66.4s (P90 of 9 public one-click runs)",
-  "pass": false,
+  "measured": "66.8s (P90 of 10 public one-click runs)",
+  "pass": true,
   "detail": {
     "runs_seconds": [
-      61.8,
-      61.5,
-      61.5,
-      61.4,
-      65.4,
-      66.4,
-      61.4,
-      61.5,
-      61.4
+      72.9,
+      66.8,
+      61.3,
+      65.8,
+      66.7,
+      65.8,
+      65.9,
+      64.5,
+      65.5,
+      66.4
     ],
-    "runs_passed": 9,
+    "runs_passed": 10,
     "runs_expected": 10,
-    "first_screen_avg_ms": 128
+    "first_screen_avg_ms": 164
   }
 }

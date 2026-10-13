@@ -8,7 +8,7 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { LocalFileStore } from '../src/store/index.js';
-import { callModel } from '../src/ai/client.js';
+import { callModel, assertModelAllowed } from '../src/ai/client.js';
 
 const RETRYABLE_CALL = {
   taskId: 't-retry',
@@ -92,6 +92,28 @@ test('a non-retryable transport failure still surfaces a machine-readable code',
       callModel({ ...RETRYABLE_CALL, traceStore: store }),
       (err) => err.code === 'ERR_MODEL_CALL_FAILED' && err.details.attempts === 3,
     );
+  } finally {
+    restore();
+    rmSync(store.rootDir, { recursive: true, force: true });
+  }
+});
+
+// Single-model mandate: a real call must name a model the allow-list permits,
+// so a Pro or Flash model can never be reached by accident.
+test('a model outside the configured allow-list is refused before any request', async () => {
+  const store = new LocalFileStore(mkdtempSync(join(tmpdir(), 'retry-policy-')));
+  let requests = 0;
+  const restore = useRealTransportWith(async () => { requests += 1; throw new Error('should never be reached'); });
+  try {
+    for (const model of ['gemini-2.5-pro', 'gemini-2.5-flash', 'gemini-2.0-flash']) {
+      await assert.rejects(
+        callModel({ ...RETRYABLE_CALL, model, traceStore: store }),
+        (err) => err.code === 'ERR_MODEL_CALL_FAILED' && /single-model policy/.test(err.details.detail),
+      );
+    }
+    assert.equal(requests, 0, 'no HTTP request may be made for a non-permitted model');
+    assert.equal(assertModelAllowed('gemini-3.5-flash-lite'), 'gemini-3.5-flash-lite');
+    assert.equal(assertModelAllowed('gemini-embedding-001'), 'gemini-embedding-001');
   } finally {
     restore();
     rmSync(store.rootDir, { recursive: true, force: true });

@@ -1,152 +1,162 @@
 {
   "base_url": "https://myproject-dc19d.web.app",
-  "generated_at": "2026-10-13T17:29:01.918Z",
+  "generated_at": "2026-10-13T18:27:06.458Z",
   "runs": [
     {
       "label": "run1",
       "ok": true,
-      "task_id": "task_5fbb7081",
-      "seconds": 61.8,
+      "task_id": "task_17c4b39b",
+      "seconds": 72.9,
       "documents_terminal": "20/20",
+      "stuck": null,
       "chapters": "1,2,3,4,5,6,7,8,9,10",
       "citations": "100% valid, 0 invalid"
     },
     {
       "label": "run2",
-      "ok": false,
-      "task_id": "task_bde1da45",
-      "seconds": 302.4,
-      "documents_terminal": "19/20",
+      "ok": true,
+      "task_id": "task_e5ffb6b8",
+      "seconds": 66.8,
+      "documents_terminal": "20/20",
+      "stuck": null,
       "chapters": "1,2,3,4,5,6,7,8,9,10",
       "citations": "100% valid, 0 invalid"
     },
     {
       "label": "run3",
       "ok": true,
-      "task_id": "task_0227e6aa",
-      "seconds": 61.5,
+      "task_id": "task_3740ac21",
+      "seconds": 61.3,
       "documents_terminal": "20/20",
+      "stuck": null,
       "chapters": "1,2,3,4,5,6,7,8,9,10",
       "citations": "100% valid, 0 invalid"
     },
     {
       "label": "run4",
       "ok": true,
-      "task_id": "task_943bd3a9",
-      "seconds": 61.5,
+      "task_id": "task_b6bb0f65",
+      "seconds": 65.8,
       "documents_terminal": "20/20",
+      "stuck": null,
       "chapters": "1,2,3,4,5,6,7,8,9,10",
       "citations": "100% valid, 0 invalid"
     },
     {
       "label": "run5",
       "ok": true,
-      "task_id": "task_991fe563",
-      "seconds": 61.4,
+      "task_id": "task_715b7096",
+      "seconds": 66.7,
       "documents_terminal": "20/20",
+      "stuck": null,
       "chapters": "1,2,3,4,5,6,7,8,9,10",
       "citations": "100% valid, 0 invalid"
     },
     {
       "label": "run6",
       "ok": true,
-      "task_id": "task_fcefe2e1",
-      "seconds": 65.4,
+      "task_id": "task_27095e37",
+      "seconds": 65.8,
       "documents_terminal": "20/20",
+      "stuck": null,
       "chapters": "1,2,3,4,5,6,7,8,9,10",
       "citations": "100% valid, 0 invalid"
     },
     {
       "label": "run7",
       "ok": true,
-      "task_id": "task_b0474ebc",
-      "seconds": 66.4,
+      "task_id": "task_1ecb4698",
+      "seconds": 65.9,
       "documents_terminal": "20/20",
+      "stuck": null,
       "chapters": "1,2,3,4,5,6,7,8,9,10",
       "citations": "100% valid, 0 invalid"
     },
     {
       "label": "run8",
       "ok": true,
-      "task_id": "task_9cb4ee1f",
-      "seconds": 61.4,
+      "task_id": "task_44b33b44",
+      "seconds": 64.5,
       "documents_terminal": "20/20",
+      "stuck": null,
       "chapters": "1,2,3,4,5,6,7,8,9,10",
       "citations": "100% valid, 0 invalid"
     },
     {
       "label": "run9",
       "ok": true,
-      "task_id": "task_56c13a8b",
-      "seconds": 61.5,
+      "task_id": "task_48b44e6e",
+      "seconds": 65.5,
       "documents_terminal": "20/20",
+      "stuck": null,
       "chapters": "1,2,3,4,5,6,7,8,9,10",
       "citations": "100% valid, 0 invalid"
     },
     {
       "label": "run10",
       "ok": true,
-      "task_id": "task_725fb347",
-      "seconds": 61.4,
+      "task_id": "task_34795cc2",
+      "seconds": 66.4,
       "documents_terminal": "20/20",
+      "stuck": null,
       "chapters": "1,2,3,4,5,6,7,8,9,10",
       "citations": "100% valid, 0 invalid"
     }
   ],
-  "runs_passed": 9,
-  "p90_seconds": 66.4,
-  "runs_pass": false,
+  "runs_passed": 10,
+  "p90_seconds": 66.8,
+  "runs_pass": true,
   "first_screen_ms": [
-    335,
+    509,
+    79,
+    78,
     77,
-    76,
-    77,
-    77
+    76
   ],
-  "first_screen_avg_ms": 128,
+  "first_screen_avg_ms": 164,
   "first_screen_pass": true,
   "concurrent": [
     {
       "i": 1,
       "kickoff": 202,
-      "taskId": "task_3766cdb9",
+      "taskId": "task_1c236791",
       "ok": true,
-      "seconds": 66.2,
+      "seconds": 65.5,
       "documents_terminal": "20/20",
       "chapters": "1,2,3,4,5,6,7,8,9,10"
     },
     {
       "i": 2,
       "kickoff": 202,
-      "taskId": "task_0673c2b9",
+      "taskId": "task_b25c20e2",
       "ok": true,
-      "seconds": 66.8,
+      "seconds": 65.9,
       "documents_terminal": "20/20",
       "chapters": "1,2,3,4,5,6,7,8,9,10"
     },
     {
       "i": 3,
       "kickoff": 202,
-      "taskId": "task_ab10f719",
+      "taskId": "task_64eaf844",
       "ok": true,
-      "seconds": 66.2,
+      "seconds": 65.7,
       "documents_terminal": "20/20",
       "chapters": "1,2,3,4,5,6,7,8,9,10"
     }
   ],
   "concurrent_pass": true,
   "cost": {
-    "task_id": "task_725fb347",
-    "calls": 101,
-    "total_usd": 0.011696,
-    "per_document_usd": 0.000585,
+    "task_id": "task_34795cc2",
+    "calls": 102,
+    "total_usd": 0.011823,
+    "per_document_usd": 0.000591,
     "by_stage": {
-      "classification": 0.001564,
-      "extraction": 0.004103,
-      "boundary": 0.000992,
+      "classification": 0.001568,
+      "extraction": 0.004067,
+      "boundary": 0.000999,
       "embedding": 0,
-      "factor_selection": 0.004826,
-      "report_narrative": 0.000211
+      "factor_selection": 0.004778,
+      "report_narrative": 0.000411
     }
   },
   "cost_pass": true

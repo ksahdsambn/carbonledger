@@ -15,12 +15,11 @@ import { log } from '../logging.js';
 
 // Public list prices (USD per 1M tokens) used for cost estimation (NFR-102).
 // Source: Google AI / Gemini API pricing page; overridable via env JSON.
+// Only the models the single-model policy permits appear here, so the price
+// table and the allow-list cannot drift apart.
 export const DEFAULT_PRICES = {
   // Public list prices, USD per 1M tokens (ai.google.dev/gemini-api/docs/pricing).
   'gemini-3.5-flash-lite': { input: 0.10, output: 0.40 },
-  'gemini-2.5-flash-lite': { input: 0.10, output: 0.40 },
-  'gemini-2.5-flash': { input: 0.30, output: 2.50 },
-  'gemini-2.5-pro': { input: 1.25, output: 10.00 },
   'gemini-embedding-001': { input: 0.15, output: 0 },
 };
 
@@ -29,6 +28,23 @@ function prices() {
     try { return { ...DEFAULT_PRICES, ...JSON.parse(process.env.AI_PRICES_JSON) }; } catch { /* fall through */ }
   }
   return DEFAULT_PRICES;
+}
+
+/**
+ * Single-model policy guard. Every real (non-mock) call must name a model the
+ * configured allow-list permits, so a stale env value or an accidental edit
+ * cannot start calling a Pro or Flash model. Mock calls are exempt because they
+ * never leave the process.
+ */
+export function assertModelAllowed(model) {
+  const allowed = String(getConfig().values.AI_MODEL_ALLOWLIST ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+  if (!allowed.includes(model)) {
+    throw new AppError('ERR_MODEL_CALL_FAILED', {
+      stage: 'model-policy', model, allowed,
+      detail: 'model not permitted by the configured single-model policy',
+    });
+  }
+  return model;
 }
 
 export function mode() {
@@ -66,6 +82,9 @@ function summarize(obj, limit = 300) {
 export async function callModel({ taskId, stage, model, parts, schema, validator, mockFn, traceStore, mockContext }) {
   const cfg = getConfig().values;
   const attempts = cfg.AI_RETRY_COUNT + 1;
+  // The single-model policy is checked once, before the retry loop: a
+  // configuration violation is not a transient failure worth retrying.
+  if (mode() === 'real') assertModelAllowed(model);
   let lastErr = null;
 
   for (let attempt = 1; attempt <= attempts; attempt += 1) {
@@ -113,6 +132,9 @@ export async function callModel({ taskId, stage, model, parts, schema, validator
       if (attempt === attempts) {
         if (isTimeout) throw new AppError('ERR_MODEL_TIMEOUT', { stage, model, attempts });
         if (lastErr.kind === 'invalid') throw new AppError('ERR_ENUM_INVALID', { stage, model, detail: lastErr.message });
+        // An error that already carries a code and details (the policy guard,
+        // for example) is rethrown unchanged so its diagnostics survive.
+        if (lastErr instanceof AppError) throw lastErr;
         throw new AppError('ERR_MODEL_CALL_FAILED', { stage, model, attempts, detail: String(err.message).slice(0, 200) });
       }
     }
@@ -177,6 +199,7 @@ export async function embedTexts({ taskId, texts, traceStore }) {
     for (const text of texts) all.push(await embedText({ taskId, text, traceStore: null }));
   } else {
     const key = getSecret('GEMINI_API_KEY');
+    assertModelAllowed(model); // single-model policy, checked before any request
     for (let i = 0; i < texts.length; i += 50) {
       const chunk = texts.slice(i, i + 50);
       const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:batchEmbedContents`, {
@@ -216,6 +239,7 @@ export async function embedText({ taskId, text, traceStore }) {
     result = v.map((x) => x / norm);
   } else {
     const key = getSecret('GEMINI_API_KEY');
+    assertModelAllowed(model); // single-model policy, checked before any request
     const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:embedContent`, {
       method: 'POST',
       headers: { 'content-type': 'application/json', 'x-goog-api-key': key },

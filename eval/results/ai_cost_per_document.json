@@ -1,8 +1,18 @@
 {
-  "measured": "$0.00059",
+  "measured": "$0.00059/document (102 model calls, $0.0118 total over 20 documents)",
   "pass": true,
   "detail": {
-    "total": 0.011718,
-    "docs": 20
+    "task_id": "task_34795cc2",
+    "calls": 102,
+    "total_usd": 0.011823,
+    "per_document_usd": 0.000591,
+    "by_stage": {
+      "classification": 0.001568,
+      "extraction": 0.004067,
+      "boundary": 0.000999,
+      "embedding": 0,
+      "factor_selection": 0.004778,
+      "report_narrative": 0.000411
+    }
   }
 }
