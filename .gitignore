@@ -24,3 +24,6 @@ firebase-adminsdk*.json
 # OS / editor noise
 .DS_Store
 Thumbs.db
+
+# firebase deploy cache
+.firebase/

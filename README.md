@@ -39,9 +39,9 @@ ten-chapter English report with PDF/CSV exports and a full audit trail.
 - Structured output (`responseSchema`) on **every** generative call — classification,
   extraction, boundary decision, factor selection, report narratives; no free-text
   parsing anywhere in the codebase.
-- Gemini model split per task economics: Flash tier (`gemini-2.5-flash`) for
-  classification/extraction/boundary, Pro tier (`gemini-2.5-pro`) for factor selection
-  reasoning (40+ word comparative rationale, runner-up retained) and report narratives.
+- Gemini model split per task economics: A single mandated Flash-Lite model (`gemini-3.5-flash-lite`) serves classification,
+  extraction, boundary decisions, factor-selection reasoning (40+ word comparative
+  rationale, runner-up retained) and report narratives.
 - Google official embedding model (`gemini-embedding-001`) for the semantic recall channel.
 - Deterministic rule engines where models add no value (uncertainty grading, unit
   self-checks, GWP folding, rounding) — auditable and reproducible by design.
@@ -62,6 +62,12 @@ processing, logistics, general office services), each ≥ 40 factors, 743 unique
 in total. Data years: 2025 (63) and 2026 (680). All factors are AR5-labelled per the
 sources; tasks selecting AR6 exercise the cross-version disclosure rule.
 
+## Live demo
+
+**Public site: https://myproject-dc19d.web.app** — open it, click "Load demo dataset
+(one click)" on P2, and watch the 20-document pipeline run to a ten-chapter report with
+PDF/CSV exports. No registration required.
+
 ## Build and run locally
 
 ```bash
@@ -79,7 +85,7 @@ never computed from mock runs.
 
 ## Deployment (Cloud Run + Firebase)
 
-1. `gcloud run deploy carbonledger-backend --source backend/ --region asia-east2 --set-env-vars "GEMINI_API_KEY=<key>,GCP_PROJECT_ID=<project>,STORAGE_BUCKET_NAME=<bucket>" --allow-unauthenticated --min-instances 0 --max-instances 10`
+1. `gcloud run deploy carbonledger-backend --source . --region asia-southeast1 --no-cpu-throttling --allow-unauthenticated --set-env-vars "GEMINI_API_KEY=<key>,GCP_PROJECT_ID=<project>,STORAGE_BUCKET_NAME=<bucket>" --allow-unauthenticated --min-instances 0 --max-instances 10`
 2. `firebase init` (Hosting + Auth anonymous + Storage + Firestore), then `firebase deploy` from `frontend/` with rewrites pointing at the Cloud Run service URL.
 3. Environment variables are injected at runtime only — no secrets live in the repository.
 
@@ -87,8 +93,8 @@ never computed from mock runs.
 
 | Variable | Default | Meaning |
 |---|---|---|
-| EXTRACTION_MODEL | gemini-2.5-flash | Gemini Flash-tier model for classification/extraction/boundary |
-| REASONING_MODEL | gemini-2.5-pro | Gemini Pro-tier model for selection reasoning and narratives |
+| EXTRACTION_MODEL | gemini-3.5-flash-lite | Gemini Flash-tier model for classification/extraction/boundary |
+| REASONING_MODEL | gemini-3.5-flash-lite | Gemini Pro-tier model for selection reasoning and narratives |
 | EMBEDDING_MODEL | gemini-embedding-001 | Google official embedding model for semantic recall |
 | BATCH_SIZE | 10 | Units per batch call |
 | CLASSIFICATION_CONFIDENCE_THRESHOLD | 0.7 | Below this a unit routes to manual confirmation |
