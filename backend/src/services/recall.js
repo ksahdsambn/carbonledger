@@ -88,7 +88,7 @@ export async function recallCandidates({ store, record, channel = process.env.RE
     const qv = await embedText({ taskId, text: factorText({ ...record, name: record.item_description }), traceStore: store });
     const sims = factors.map((f) => ({ id: f.factor_id, sim: vectors.get(f.factor_id) ? cosine(qv, vectors.get(f.factor_id)) : -1 }))
       .sort((a, b) => b.sim - a.sim);
-    const top = sims.slice(0, 20);
+    const top = sims.slice(0, 30);
     for (const { id, sim } of top) {
       const existing = merged.get(id);
       if (existing) {

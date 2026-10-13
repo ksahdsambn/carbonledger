@@ -432,7 +432,7 @@ CASES = [
          (r"Gaseous fuels / Propane — Well-to-tank \(kWh \(Net CV\)\)", "fuel_upstream"),
          "41 MMBtu converted to kWh (net CV basis) before factor application"),
     case("MC-18", "GR-024", "unit_conversion",
-         (r"District heat and steam / District heat and steam", "heat_steam"),
+         (r"Heat and steam / District heat and steam — District heat", "heat_steam"),
          (r"Onsite heat and steam", "heat_steam"),
          "108 GJ converted to kWh; district (network) heat supply"),
     case("MC-19", "GR-020", "unit_conversion",

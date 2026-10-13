@@ -37,12 +37,12 @@ Counts (must match): FR = 57, NFR = 21, AI = 13, EV = 6, M = 5, D = 5, L = 3.
 | FR-601 | Factor library from public sources, documented (name, year, link) | T-005 | T-049 | verified |
 | FR-602 | 5 industries × ≥40 factors each, total ≤1,200 | T-006 | T-006 | verified |
 | FR-603 | Each factor has all 13 attributes; 100% completeness on 50-sample check | T-006 | T-006 | verified |
-| FR-604 | Keyword + semantic vector dual recall channels, independently toggleable | T-021 | T-022 | in_progress |
+| FR-604 | Keyword + semantic vector dual recall channels, independently toggleable | T-021 | T-022 | verified |
 | FR-605 | Factor library shipped as data files, no runtime network fetch | T-006 | T-006 | verified |
 | FR-606 | Factor data-year labels; year distribution disclosed in report | T-007 | T-033 | verified |
-| FR-701 | Three-stage matching pipeline; ≤8 s per record end-to-end | T-021/T-025 | T-025 | in_progress |
-| FR-702 | Selected factor id always exists in candidate list (0 invalid refs) | T-025 | T-025 | in_progress |
-| FR-703 | English rationale ≥40 words incl. why-not-runner-up comparison | T-025 | T-025 | in_progress |
+| FR-701 | Three-stage matching pipeline; ≤8 s per record end-to-end | T-021/T-025 | T-025 | verified |
+| FR-702 | Selected factor id always exists in candidate list (0 invalid refs) | T-025 | T-025 | verified |
+| FR-703 | English rationale ≥40 words incl. why-not-runner-up comparison | T-025 | T-025 | verified |
 | FR-704 | Three-level uncertainty distribution disclosed in report | T-027 | T-033 | verified |
 | FR-705 | Runner-up retained; manual re-selection triggers recalculation | T-025/T-036 | T-036 | verified |
 | FR-706 | Batch recalculation with synchronized aggregate/chart refresh | T-036 | T-036 | verified |

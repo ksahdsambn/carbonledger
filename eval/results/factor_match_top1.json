@@ -1,11 +1,11 @@
 {
-  "measured": "27/40 (67.5%)",
-  "pass": false,
+  "measured": "34/40 (85.0%)",
+  "pass": true,
   "detail": {
-    "top1": 27,
-    "top3": 38,
+    "top1": 34,
+    "top3": 39,
     "invalidRef": 0,
-    "maxLatency": 2549,
-    "est_cost_usd": 0.007944
+    "maxLatency": 5319,
+    "est_cost_usd": 0.00889
   }
 }

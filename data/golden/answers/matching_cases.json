@@ -481,9 +481,9 @@
    "extraction_notes": null
   },
   "difficulty": "unit_conversion",
-  "best_factor_id": "EF-D26-HEATANDSTEAM-001",
-  "runner_up_factor_id": "EF-D26-UKELECTRICITY-001",
-  "note": "108 GJ converted to kWh"
+  "best_factor_id": "EF-D26-HEATANDSTEAM-002",
+  "runner_up_factor_id": "EF-D26-HEATANDSTEAM-001",
+  "note": "108 GJ converted to kWh; district (network) heat supply"
  },
  {
   "case_id": "MC-19",

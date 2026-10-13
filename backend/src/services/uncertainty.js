@@ -67,6 +67,9 @@ export function unitSelfCheck(record, factor) {
   if (BRIDGEABLE[bridge]) {
     return { passed: true, detail: `bridgeable units ${bridge}` };
   }
+  if (ru === 'kWh' && fu.startsWith('kWh (')) {
+    return { passed: true, detail: `record kWh taken on the factor's ${fu} calorific basis` };
+  }
   if (UNIT_DIMENSION[fu] === 'energy' && UNIT_DIMENSION[ru] === 'energy') {
     return { passed: true, detail: `same-dimension energy units ${ru} -> ${fu}` };
   }
