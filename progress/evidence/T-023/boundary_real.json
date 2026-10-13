@@ -5,7 +5,7 @@
       "exp": "Scope 1",
       "got": "Scope 1",
       "cat": null,
-      "rationale": "Emissions from diesel fuel combusted in the reporting company's own fleet are direct greenhouse gas emissions.",
+      "rationale": "Direct emissions from the combustion of diesel fuel in the company's own fleet fall under Scope 1 mobile combustion.",
       "ok": true
     },
     {
@@ -13,7 +13,7 @@
       "exp": "Scope 1",
       "got": "Scope 1",
       "cat": null,
-      "rationale": "Refrigerant HFC-32 top-up for plant HVAC represents fugitive emissions, which are direct emissions from equipment owned or controlled by the reporting company.",
+      "rationale": "Refrigerant top-ups for plant HVAC systems result in direct fugitive emissions of HFC-32 owned or controlled by the reporting company, which falls under Scope 1.",
       "ok": true
     },
     {
@@ -21,7 +21,7 @@
       "exp": "Scope 2",
       "got": "Scope 2",
       "cat": null,
-      "rationale": "Purchased electricity from the grid for factory operations falls under Scope 2 indirect emissions.",
+      "rationale": "Purchased electricity consumed in the reporting company's own facilities falls under Scope 2.",
       "ok": true
     },
     {
@@ -29,7 +29,7 @@
       "exp": "Scope 2",
       "got": "Scope 2",
       "cat": null,
-      "rationale": "District heat purchased and consumed for office campus operations falls under Scope 2 indirect emissions from acquired energy.",
+      "rationale": "District heat supply purchased for office campus consumption represents indirect emissions from the generation of acquired electricity, steam, heating, and cooling.",
       "ok": true
     },
     {
@@ -37,7 +37,7 @@
       "exp": "Scope 3",
       "got": "Scope 3",
       "cat": "Cat-1",
-      "rationale": "Purchased raw materials such as aluminium sheets are upstream emissions associated with the production of goods bought by the reporting company.",
+      "rationale": "Purchased raw materials such as aluminium sheets are part of a company's upstream value chain emissions.",
       "ok": true
     },
     {
@@ -45,7 +45,7 @@
       "exp": "Scope 3",
       "got": "Scope 3",
       "cat": "Cat-4",
-      "rationale": "Emissions from upstream air freight of electronic components operated by a third-party logistics provider fall under Scope 3, Category 4 (Upstream Transportation and Distribution).",
+      "rationale": "Emissions from upstream air freight services operated by a third-party logistics provider (Nippon Air Cargo) fall under Scope 3, Category 4 (Upstream Transportation and Distribution).",
       "ok": true
     },
     {
@@ -53,7 +53,7 @@
       "exp": "Scope 3",
       "got": "Scope 2",
       "cat": null,
-      "rationale": "Purchased grid electricity consumption falls under Scope 2 emissions.",
+      "rationale": "Purchased electricity from the grid consumed by the reporting company falls under Scope 2 emissions.",
       "ok": false
     },
     {
@@ -61,7 +61,7 @@
       "exp": "Scope 3",
       "got": "Scope 3",
       "cat": "Cat-4",
-      "rationale": "Ocean freight provided by a third-party logistics supplier falls under Scope 3, specifically upstream transportation and distribution.",
+      "rationale": "Upstream transportation and distribution of goods purchased by the reporting company, operated by a third-party logistics provider (MSC Line), falls under Scope 3, Category 4.",
       "ok": true
     },
     {
@@ -69,7 +69,7 @@
       "exp": "Scope 3",
       "got": "Scope 3",
       "cat": "Cat-4",
-      "rationale": "Road freight of machine parts provided by a third-party logistics service falls under upstream transportation and distribution.",
+      "rationale": "Road freight of machine parts provided by a third-party logistics supplier falls under Scope 3, specifically upstream transportation and distribution.",
       "ok": true
     },
     {
@@ -77,7 +77,7 @@
       "exp": "Scope 3",
       "got": "Scope 3",
       "cat": "Cat-5",
-      "rationale": "Landfill disposal of waste generated in operations is an indirect greenhouse gas emission that falls under Scope 3, specifically under Category 5 (Waste generated in operations).",
+      "rationale": "Landfill disposal of waste generated in operations falls under Scope 3, specifically Category 5: Waste generated in operations.",
       "ok": true
     },
     {
@@ -85,7 +85,7 @@
       "exp": "Cat-1",
       "got": "Cat-1",
       "scope": "Scope 3",
-      "rationale": "Purchased raw materials such as aluminium sheets are upstream value chain activities and fall under Scope 3.",
+      "rationale": "Purchased aluminium sheets from a supplier fall under Scope 3, specifically embodied emissions from purchased goods and services.",
       "ok": true
     },
     {
@@ -93,7 +93,7 @@
       "exp": "Cat-4",
       "got": "Cat-4",
       "scope": "Scope 3",
-      "rationale": "Emissions from upstream or downstream transportation and distribution of goods in vehicles not owned or controlled by the reporting company fall under Scope 3.",
+      "rationale": "Emissions from upstream and downstream transportation and distribution of goods in vehicles not owned or controlled by the reporting company fall under Scope 3.",
       "ok": true
     },
     {
@@ -101,7 +101,7 @@
       "exp": "Cat-4",
       "got": "Cat-4",
       "scope": "Scope 3",
-      "rationale": "Upstream transportation and distribution of goods purchased by the reporting company, operated by a third-party logistics provider (MSC Line).",
+      "rationale": "Ocean freight provided by a third-party logistics supplier falls under upstream or downstream transportation and distribution.",
       "ok": true
     },
     {
@@ -109,7 +109,7 @@
       "exp": "Cat-4",
       "got": "Cat-4",
       "scope": "Scope 3",
-      "rationale": "Road freight of machine parts provided by a third-party logistics supplier falls under upstream transportation and distribution in Scope 3.",
+      "rationale": "Road freight of machine parts provided by a third-party logistics supplier falls under upstream transportation and distribution.",
       "ok": true
     },
     {
@@ -117,7 +117,7 @@
       "exp": "Cat-1",
       "got": "Cat-1",
       "scope": "Scope 3",
-      "rationale": "Purchased finished goods (cotton t-shirts) from a supplier fall under Scope 3, specifically Category 1 (Purchased Goods and Services).",
+      "rationale": "Purchased finished goods (cotton t-shirts) from a supplier fall under Scope 3, Category 1 (Purchased Goods and Services).",
       "ok": true
     },
     {
@@ -125,7 +125,7 @@
       "exp": "Cat-5",
       "got": "Cat-5",
       "scope": "Scope 3",
-      "rationale": "Disposal of waste generated in operations is classified as a Scope 3 indirect emission source.",
+      "rationale": "Disposal of waste generated in operations is classified under Scope 3, specifically as an upstream or downstream outsourced activity.",
       "ok": true
     },
     {
@@ -133,7 +133,7 @@
       "exp": "Cat-2",
       "got": "Cat-2",
       "scope": "Scope 3",
-      "rationale": "The procurement of a CNC machining centre classified as capital equipment falls under Scope 3, Category 2 (Capital Goods) of the GHG Protocol.",
+      "rationale": "The purchase of a CNC machining centre classified as capital equipment falls under Scope 3, Category 2 (Capital Goods) of the GHG Protocol.",
       "ok": true
     },
     {
@@ -141,7 +141,7 @@
       "exp": "Cat-3",
       "got": "Cat-3",
       "scope": "Scope 3",
-      "rationale": "Well-to-tank upstream emissions associated with the extraction, production, and transportation of diesel fuel purchased for the fleet fall under Scope 3, Category 3 (Fuel- and Energy-Related Activities Not Included in Scope 1 or Scope 2).",
+      "rationale": "Well-to-tank upstream emissions associated with the production and transportation of fleet diesel fall under Scope 3, Category 3 (Fuel- and energy-related activities not included in Scope 1 or Scope 2).",
       "ok": true
     },
     {
@@ -149,7 +149,7 @@
       "exp": "Cat-4",
       "got": "Cat-4",
       "scope": "Scope 3",
-      "rationale": "Ocean freight of goods operated by a third-party logistics provider (COSCO) falls under Scope 3, specifically upstream or downstream transportation and distribution.",
+      "rationale": "Ocean freight provided by a third-party supplier (COSCO) for transporting goods falls under upstream or downstream transportation and distribution, which is categorized as Scope 3.",
       "ok": true
     },
     {
@@ -157,7 +157,7 @@
       "exp": "Cat-5",
       "got": "Cat-5",
       "scope": "Scope 3",
-      "rationale": "Landfill disposal of waste generated in operations falls under Scope 3, specifically under Category 5 (Waste generated in operations).",
+      "rationale": "Landfill disposal of mixed production waste is an upstream or downstream activity occurring outside the reporting company's direct operations, specifically falling under waste generated in operations.",
       "ok": true
     },
     {
@@ -165,7 +165,7 @@
       "exp": "Cat-6",
       "got": "Cat-6",
       "scope": "Scope 3",
-      "rationale": "Business travel by employees on commercial flights falls under Scope 3, Category 6 (Business Travel).",
+      "rationale": "Business travel by employees on commercial airlines falls under Scope 3, Category 6 (Business Travel).",
       "ok": true
     },
     {
@@ -173,12 +173,12 @@
       "exp": "Cat-7",
       "got": "Cat-7",
       "scope": "Scope 3",
-      "rationale": "Employee commuting falls under Scope 3, specifically Category 7 (Employee Commuting), as it involves transportation of employees for commuting between their homes and their worksites in vehicles not owned or operated by the reporting company.",
+      "rationale": "Employee commuting falls under Scope 3, Category 7 of the GHG Protocol.",
       "ok": true
     }
   ],
   "scopeCorrect": 9,
   "catCorrect": 12,
-  "cost": 0.0008699999999999999,
+  "cost": 0.0008559999999999998,
   "pass": true
 }

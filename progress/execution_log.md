@@ -744,3 +744,34 @@ deck 文稿 13 页（10-14 区间）、视频脚本 180 秒 9 镜头且 PRD 四�
 **11/11 全部 PASS，整体结论：合格**——分类 28/30、抽取五字段 100%、Top-1 34/40、Top-3 39/40、Scope 9/10+12/12、计算 10/10 零容差、汇总 0 不一致、引用 100%、失效 0（一票否决未触发）、E2E 147.4s、成本 $0.00058/张。输出：eval/results/run-full/。累计 Gemini 成本 ≈ **$0.13**。
 
 ---
+
+## T-043 线上恢复：生成式调用 429 月度支出上限（阻塞→已解决）
+
+- **日期**：2026-10-14
+- **现象**：公开网址全流程复测时 20 张单据**全部 failed**。Cloud Logging（`gcloud logging read`）显示 `ai_call_failed`：`HTTP 429: Your project has exceeded its monthly spending cap`。
+- **根因**：`.env` 与 Cloud Run 使用的 API Key 属于 **AI Studio 默认项目** `gen-lang-client-0858912082`，该项目月度支出上限已用尽。模型 `gemini-2.5-flash-lite` 同时返回 404（对新用户已下线），代码已使用 `gemini-3.5-flash-lite`。
+- **处置**（均不改变 PRD 约束）：
+  1. 在部署项目 `myproject-dc19d`（已绑定有效结算账号）创建仅限 `generativelanguage.googleapis.com` 的 API Key，作为运行时环境变量注入 Cloud Run；本地 `.env` 同步更新（`.env` 已被 gitignore，仓库扫描零命中）。
+  2. 顺带启用 `aiplatform.googleapis.com` 作为**备用服务通道**（PRD M-2 允许 Agent Platform/官方接口路径），实测 Vertex AI `gemini-3.5-flash-lite` 与嵌入模型可用；主通道仍为 Gemini API。
+- **结论**：**通过**——恢复后全流程 20/20 completed、十章报告、引用 100%/失效 0。
+
+## T-044 性能缺陷修复（真机取数驱动）
+
+- **日期**：2026-10-14
+- **现象**：恢复后单次全流程 **412s**（目标 ≤180s）。
+- **取证与修复**：
+  1. 阶段计时日志显示 `index_ms≈4`、`documents_ms≈167s`（20 单据）、`tail_ms≈6s`。逐条审查发现 `recallCandidates` **每条记录**两次 `store.list('emission_factors')`，每次返回 743 条、每条含 3072 维向量（约 18 MB），且 Firestore 位于 `asia-east2` 而 Cloud Run 位于 `asia-southeast1`。→ 因子库改为**按 store 记忆化**（WeakMap，写入时失效），索引构建 5s→4ms。
+  2. 单据循环为严格串行（约 8.4s/单据）。→ 改为**有界工作池**（`PIPELINE_CONCURRENCY` 默认 4），结果按单据顺序回并，报告保持可复现。
+- **附带修复**：
+  - `withStatus` 原先对 `ERR_ENUM_INVALID` **不标记 failed**，而模型校验失败同样抛该码，导致单据永久停留在非终态（首轮 10 次运行中第 2 次出现 19/20 卡死、脚本等满 300s）。→ 任何处理失败均标记 `failed`（NFR-202、FR-1201）。
+  - 单条记录解析失败不再拖垮整份单据：该记录标记失败并进入复核（NFR-202「文件或记录」口径）。
+  - 报告叙事调用失败后**回退到确定性模板**（adapter 记为 `template_fallback`），一次抖动不再丢整份报告。
+  - 引用校验的锚点集合改为**按任务限定**（原先取全库 activity_records，跨任务 id 会被误判为有效），强化 AI-202。
+- **结论**：单次全流程 **412s → 52~67s**；33/33 自动化测试通过。
+
+## T-044/T-045 首轮线上全量（发现问题并已修复）
+
+- **日期**：2026-10-14
+- **结果**：10 次运行 9 次通过；**P90 = 66.4s ≤ 180s**；首屏 5 次平均 **128ms ≤ 3000ms**；3 并发 3/3 完成且无服务端错误；单张成本 **$0.00058 ≤ $0.03**。
+- **未通过项**：run2 因上述 `withStatus` 缺陷停留 19/20（报告本身十章齐全、引用有效）。修复并重新部署后重跑全量（见下一条）。
+

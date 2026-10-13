@@ -1,0 +1,67 @@
+[
+  {
+    "code": "ERR_FILE_FORMAT_UNSUPPORTED",
+    "message": "Unsupported file format. Allowed formats are PDF, JPG, PNG, XLSX and CSV.",
+    "http": 415
+  },
+  {
+    "code": "ERR_FILE_TOO_LARGE",
+    "message": "File exceeds the 10 MB per-file size limit.",
+    "http": 413
+  },
+  {
+    "code": "ERR_FILE_CORRUPT",
+    "message": "The file is corrupted and cannot be processed.",
+    "http": 422
+  },
+  {
+    "code": "ERR_PARSE_FAILED",
+    "message": "The document could not be parsed.",
+    "http": 422
+  },
+  {
+    "code": "ERR_EXTRACTION_FAILED",
+    "message": "Activity data extraction failed for this document.",
+    "http": 422
+  },
+  {
+    "code": "ERR_MODEL_CALL_FAILED",
+    "message": "The AI model call failed after all retry attempts.",
+    "http": 502
+  },
+  {
+    "code": "ERR_MODEL_TIMEOUT",
+    "message": "The AI model call timed out after all retry attempts.",
+    "http": 504
+  },
+  {
+    "code": "ERR_ENUM_INVALID",
+    "message": "The model returned a value outside the allowed enumeration.",
+    "http": 422
+  },
+  {
+    "code": "ERR_CANDIDATES_INSUFFICIENT",
+    "message": "Fewer than five candidate factors were recalled; the record is flagged with an insufficient-recall marker.",
+    "http": 200
+  },
+  {
+    "code": "ERR_NO_CONFIDENT_FACTOR",
+    "message": "No candidate factor reached the confidence threshold; the record requires manual confirmation.",
+    "http": 200
+  },
+  {
+    "code": "ERR_REFERENCE_INVALID",
+    "message": "A reference points to an object that does not exist.",
+    "http": 422
+  },
+  {
+    "code": "ERR_STORAGE_ACCESS",
+    "message": "Object storage or database access failed.",
+    "http": 502
+  },
+  {
+    "code": "ERR_TASK_NOT_FOUND",
+    "message": "The requested accounting task does not exist.",
+    "http": 404
+  }
+]

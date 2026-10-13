@@ -1,10 +1,16 @@
 // Application shell: hash router over the nine pages (PRD 9.1).
 import React, { useEffect, useState } from 'react';
 import { Nav, P1Home, P2Upload, P3Records, P4Matching, P5Dashboard, P6Scenarios, P7Report, P8Review, P9Traces } from './pages.jsx';
+import { ensureAnonymousSession } from './auth.js';
 
 export default function App() {
   const [taskId, setTaskId] = useState(localStorage.getItem('cl_task') ?? null);
+  const [identity, setIdentity] = useState('pending');
   const [route, setRoute] = useState(location.hash.replace(/^#\/?/, '').split('?')[0] || '');
+  // Entering the site completes anonymous sign-in: no form, no credential.
+  useEffect(() => {
+    ensureAnonymousSession().then((uid) => setIdentity(uid ?? 'none')).catch(() => setIdentity('none'));
+  }, []);
   useEffect(() => {
     const onHash = () => setRoute(location.hash.replace(/^#\/?/, '').split('?')[0]);
     window.addEventListener('hashchange', onHash);
@@ -30,7 +36,12 @@ export default function App() {
     <div className="app">
       <Nav taskId={taskId} route={route} />
       {page}
-      <footer className="app-footer">CarbonLedger — Sustainability &amp; Social Impact</footer>
+      <footer className="app-footer">
+        CarbonLedger — Sustainability &amp; Social Impact
+        {identity !== 'pending' && (
+          <span className="anon-note"> · anonymous session{identity !== 'none' ? ` ${identity.slice(0, 6)}…` : ' unavailable'}</span>
+        )}
+      </footer>
     </div>
   );
 }

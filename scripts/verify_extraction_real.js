@@ -63,6 +63,14 @@ for (const group of extracted) {
   }
 }
 console.log(`extracted records: ${normed.length} (expected 30)`);
+const perDoc = {};
+for (const r of normed) perDoc[r._gd] = (perDoc[r._gd] ?? 0) + 1;
+const expectedPerDoc = {};
+for (const ans of answers) { const gd = ans.source_ref.split('#')[0]; expectedPerDoc[gd] = (expectedPerDoc[gd] ?? 0) + 1; }
+const countMismatch = Object.keys({ ...expectedPerDoc, ...perDoc }).filter((gd) => (expectedPerDoc[gd] ?? 0) !== (perDoc[gd] ?? 0));
+console.log('documents whose record count differs from the golden set:', countMismatch.length === 0
+  ? 'none'
+  : countMismatch.map((gd) => `${gd} expected=${expectedPerDoc[gd] ?? 0} got=${perDoc[gd] ?? 0}`).join(', '));
 
 // --- 1: field accuracy against the 30 answer records ---
 const fieldOk = { quantity: 0, unit: 0, amount: 0, currency: 0, activity_date: 0 };
@@ -82,7 +90,7 @@ for (const ans of answers) {
       ok = got?.[f] != null && Math.abs(got[f] - ans[f]) / Math.max(ans[f], 1e-9) < 0.005;
     } else ok = got?.[f] === ans[f];
     if (ok) fieldOk[f] += 1;
-    else mistakes.push(`${ans.record_id}.${f}: exp=${JSON.stringify(ans[f])} got=${JSON.stringify(got?.[f])}`);
+    else mistakes.push(`${ans.record_id}.${f}: exp=${JSON.stringify(ans[f])} got=${JSON.stringify(got?.[f])} | ${gd}#${page} candidates=${JSON.stringify(cands.map((c) => ({ q: c.quantity, u: c.unit, d: c.item_description })))}`);
   }
 }
 const rates = Object.fromEntries(Object.keys(fieldOk).map((f) => [f, fieldTotal[f] ? fieldOk[f] / fieldTotal[f] : 1]));

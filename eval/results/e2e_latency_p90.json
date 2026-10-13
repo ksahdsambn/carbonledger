@@ -1,9 +1,20 @@
 {
- "measured": "147.4s (single real-adapter run, local; P90 on public site re-measured at T-044)",
- "pass": true,
- "detail": {
-  "runs": 1,
-  "seconds": 147.4,
-  "note": "within 180s target"
- }
+  "measured": "66.4s (P90 of 9 public one-click runs)",
+  "pass": false,
+  "detail": {
+    "runs_seconds": [
+      61.8,
+      61.5,
+      61.5,
+      61.4,
+      65.4,
+      66.4,
+      61.4,
+      61.5,
+      61.4
+    ],
+    "runs_passed": 9,
+    "runs_expected": 10,
+    "first_screen_avg_ms": 128
+  }
 }

@@ -15,7 +15,7 @@
 //
 // Usage: node scripts/verify_public_faults.js
 // Evidence: progress/evidence/T-046/public_faults.json
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
@@ -26,6 +26,31 @@ const BASE = process.env.PUBLIC_BASE || 'https://myproject-dc19d.web.app';
 const TERMINAL = ['completed', 'needs_review', 'failed'];
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+// The public Firebase web configuration lives in the gitignored frontend/.env;
+// it is a public browser key, not a secret.
+function firebaseWebKey() {
+  if (process.env.FIREBASE_WEB_API_KEY) return process.env.FIREBASE_WEB_API_KEY;
+  const envPath = join(ROOT, 'frontend/.env');
+  if (!existsSync(envPath)) throw new Error('frontend/.env missing: set FIREBASE_WEB_API_KEY to run the isolation checks');
+  const line = readFileSync(envPath, 'utf8').split('\n').find((l) => l.startsWith('VITE_FIREBASE_API_KEY='));
+  if (!line) throw new Error('VITE_FIREBASE_API_KEY missing from frontend/.env');
+  return line.split('=')[1].trim();
+}
+
+/** Creates a real Firebase anonymous account and returns its verified uid. */
+async function anonymousIdentity(label) {
+  const res = await fetch(`https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=${firebaseWebKey()}`, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify({ returnSecureToken: true }),
+  });
+  if (!res.ok) throw new Error(`${label}: anonymous sign-in failed with HTTP ${res.status}`);
+  const d = await res.json();
+  return { label, uid: d.localId, token: d.idToken };
+}
+
+const bearer = (identity) => (identity?.token ? { authorization: `Bearer ${identity.token}` } : {});
+
 async function api(path, opts = {}) {
   const res = await fetch(BASE + path, {
     ...opts,
@@ -34,22 +59,22 @@ async function api(path, opts = {}) {
   return { status: res.status, body: await res.json().catch(() => null) };
 }
 
-async function createTask(entity, uid) {
+async function createTask(entity, identity) {
   const r = await api('/api/tasks', {
     method: 'POST',
-    headers: uid ? { 'x-user-uid': uid } : {},
+    headers: bearer(identity),
     body: JSON.stringify({ entity_name: entity, period_from: '2026-01-01', period_to: '2026-06-30', gwp_version: 'AR6' }),
   });
   if (r.status !== 201) throw new Error(`task creation failed: HTTP ${r.status}`);
   return r.body.task_id;
 }
 
-async function upload(taskId, uid, files) {
+async function upload(taskId, identity, files) {
   const form = new FormData();
   for (const f of files) form.append('files', new Blob([f.buffer]), f.name);
   const res = await fetch(`${BASE}/api/tasks/${taskId}/documents`, {
     method: 'POST',
-    headers: uid ? { 'x-user-uid': uid } : {},
+    headers: bearer(identity),
     body: form,
   });
   return { status: res.status, body: await res.json().catch(() => null) };
@@ -136,37 +161,40 @@ record(
 );
 
 // ---------------------------------------------------- NFR-301 task isolation
-const uidA = 'judge-uid-alpha';
-const uidB = 'judge-uid-beta';
-const taskA = await createTask('Isolation Alpha', uidA);
-const taskB = await createTask('Isolation Beta', uidB);
+const judgeA = await anonymousIdentity('judge A');
+const judgeB = await anonymousIdentity('judge B');
+const taskA = await createTask('Isolation Alpha', judgeA);
+const taskB = await createTask('Isolation Beta', judgeB);
 const singleFile = [{ name: demoFiles[0].name, buffer: demoFiles[0].buffer }];
-await upload(taskA, uidA, singleFile);
-const docsA = (await api(`/api/tasks/${taskA}/documents`, { headers: { 'x-user-uid': uidA } })).body.documents;
+await upload(taskA, judgeA, singleFile);
+const docsA = (await api(`/api/tasks/${taskA}/documents`, { headers: bearer(judgeA) })).body.documents;
 const docA = docsA[0].id;
 
-const fetchFile = async (taskId, docId, uid) => {
-  const res = await fetch(`${BASE}/api/tasks/${taskId}/documents/${docId}/file`, { headers: uid ? { 'x-user-uid': uid } : {} });
+const fetchFile = async (taskId, docId, identity, extraHeaders = {}) => {
+  const res = await fetch(`${BASE}/api/tasks/${taskId}/documents/${docId}/file`, { headers: { ...bearer(identity), ...extraHeaders } });
   return res.status;
 };
-const crossTask = await fetchFile(taskB, docA, uidB); // right identity, other task's document
-const crossUser = await fetchFile(taskA, docA, uidB); // right task, other identity
-const ownerAccess = await fetchFile(taskA, docA, uidA); // positive control
+const crossTask = await fetchFile(taskB, docA, judgeB); // right identity, other task's document
+const crossUser = await fetchFile(taskA, docA, judgeB); // right task, other identity
+const ownerAccess = await fetchFile(taskA, docA, judgeA); // positive control
+// A forged owner header must not be accepted now that the uid comes from a
+// verified Firebase ID token.
+const spoofed = await fetchFile(taskA, docA, null, { 'x-user-uid': judgeA.uid });
 
-await api(`/api/tasks/${taskA}/run`, { method: 'POST', body: JSON.stringify({}) });
+await api(`/api/tasks/${taskA}/run`, { method: 'POST', headers: bearer(judgeA), body: JSON.stringify({}) });
 const docsAResolved = await waitForDocuments(taskA, Date.now() + 300_000);
 let crossRecord = 'n/a';
-const dashboardA = (await api(`/api/tasks/${taskA}/dashboard`)).body;
+const dashboardA = (await api(`/api/tasks/${taskA}/dashboard`, { headers: bearer(judgeA) })).body;
 const recordA = dashboardA?.records?.[0]?.record_id ?? null;
 if (recordA) {
-  const r = await api(`/api/tasks/${taskB}/records/${recordA}/audit`, { headers: { 'x-user-uid': uidB } });
+  const r = await api(`/api/tasks/${taskB}/records/${recordA}/audit`, { headers: bearer(judgeB) });
   crossRecord = `${r.status}/${r.body?.error?.code}`;
 }
 record(
   'NFR-301',
-  'Uploaded files and records are only reachable from their owning task and identity',
-  crossTask === 404 && crossUser === 404 && ownerAccess === 200 && crossRecord.startsWith('404'),
-  `other task's file -> HTTP ${crossTask}; wrong identity on owning task -> HTTP ${crossUser}; owner -> HTTP ${ownerAccess}; other task's record audit -> ${crossRecord}; task A documents=${docsAResolved.length}`,
+  'Uploaded files and records are only reachable from their owning task and identity (verified Firebase uid, not a client-asserted header)',
+  crossTask === 404 && crossUser === 404 && ownerAccess === 200 && spoofed === 404 && crossRecord.startsWith('404'),
+  `identities: A=${judgeA.uid.slice(0, 8)}… B=${judgeB.uid.slice(0, 8)}…; other task's file -> HTTP ${crossTask}; wrong identity on owning task -> HTTP ${crossUser}; owner -> HTTP ${ownerAccess}; forged x-user-uid header -> HTTP ${spoofed}; other task's record audit -> ${crossRecord}; task A documents=${docsAResolved.length}`,
 );
 
 // --------------------------------------------------------- NFR-303 rate limit
@@ -201,7 +229,7 @@ const summary = {
   checks,
   error_registry: registry,
   batch_task: { task_id: batchTask, accepted: accepted.length, rejected: rejected.length, rejected_codes: rejectedCodes },
-  isolation: { task_a: taskA, task_b: taskB, cross_task_status: crossTask, cross_user_status: crossUser, owner_status: ownerAccess, cross_record_audit: crossRecord },
+  isolation: { task_a: taskA, task_b: taskB, identity_a: judgeA.uid, identity_b: judgeB.uid, cross_task_status: crossTask, cross_user_status: crossUser, owner_status: ownerAccess, forged_header_status: spoofed, cross_record_audit: crossRecord },
   rate_limit: { limited: rateLimited, requests_until_429: requests },
   retry_simulation: { suite: 'backend/test/aiRetry.test.js', passed: retryTestPass },
   overall: allPass ? 'PASS' : 'FAIL',

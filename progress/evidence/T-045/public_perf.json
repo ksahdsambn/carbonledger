@@ -1,0 +1,153 @@
+{
+  "base_url": "https://myproject-dc19d.web.app",
+  "generated_at": "2026-10-13T17:29:01.918Z",
+  "runs": [
+    {
+      "label": "run1",
+      "ok": true,
+      "task_id": "task_5fbb7081",
+      "seconds": 61.8,
+      "documents_terminal": "20/20",
+      "chapters": "1,2,3,4,5,6,7,8,9,10",
+      "citations": "100% valid, 0 invalid"
+    },
+    {
+      "label": "run2",
+      "ok": false,
+      "task_id": "task_bde1da45",
+      "seconds": 302.4,
+      "documents_terminal": "19/20",
+      "chapters": "1,2,3,4,5,6,7,8,9,10",
+      "citations": "100% valid, 0 invalid"
+    },
+    {
+      "label": "run3",
+      "ok": true,
+      "task_id": "task_0227e6aa",
+      "seconds": 61.5,
+      "documents_terminal": "20/20",
+      "chapters": "1,2,3,4,5,6,7,8,9,10",
+      "citations": "100% valid, 0 invalid"
+    },
+    {
+      "label": "run4",
+      "ok": true,
+      "task_id": "task_943bd3a9",
+      "seconds": 61.5,
+      "documents_terminal": "20/20",
+      "chapters": "1,2,3,4,5,6,7,8,9,10",
+      "citations": "100% valid, 0 invalid"
+    },
+    {
+      "label": "run5",
+      "ok": true,
+      "task_id": "task_991fe563",
+      "seconds": 61.4,
+      "documents_terminal": "20/20",
+      "chapters": "1,2,3,4,5,6,7,8,9,10",
+      "citations": "100% valid, 0 invalid"
+    },
+    {
+      "label": "run6",
+      "ok": true,
+      "task_id": "task_fcefe2e1",
+      "seconds": 65.4,
+      "documents_terminal": "20/20",
+      "chapters": "1,2,3,4,5,6,7,8,9,10",
+      "citations": "100% valid, 0 invalid"
+    },
+    {
+      "label": "run7",
+      "ok": true,
+      "task_id": "task_b0474ebc",
+      "seconds": 66.4,
+      "documents_terminal": "20/20",
+      "chapters": "1,2,3,4,5,6,7,8,9,10",
+      "citations": "100% valid, 0 invalid"
+    },
+    {
+      "label": "run8",
+      "ok": true,
+      "task_id": "task_9cb4ee1f",
+      "seconds": 61.4,
+      "documents_terminal": "20/20",
+      "chapters": "1,2,3,4,5,6,7,8,9,10",
+      "citations": "100% valid, 0 invalid"
+    },
+    {
+      "label": "run9",
+      "ok": true,
+      "task_id": "task_56c13a8b",
+      "seconds": 61.5,
+      "documents_terminal": "20/20",
+      "chapters": "1,2,3,4,5,6,7,8,9,10",
+      "citations": "100% valid, 0 invalid"
+    },
+    {
+      "label": "run10",
+      "ok": true,
+      "task_id": "task_725fb347",
+      "seconds": 61.4,
+      "documents_terminal": "20/20",
+      "chapters": "1,2,3,4,5,6,7,8,9,10",
+      "citations": "100% valid, 0 invalid"
+    }
+  ],
+  "runs_passed": 9,
+  "p90_seconds": 66.4,
+  "runs_pass": false,
+  "first_screen_ms": [
+    335,
+    77,
+    76,
+    77,
+    77
+  ],
+  "first_screen_avg_ms": 128,
+  "first_screen_pass": true,
+  "concurrent": [
+    {
+      "i": 1,
+      "kickoff": 202,
+      "taskId": "task_3766cdb9",
+      "ok": true,
+      "seconds": 66.2,
+      "documents_terminal": "20/20",
+      "chapters": "1,2,3,4,5,6,7,8,9,10"
+    },
+    {
+      "i": 2,
+      "kickoff": 202,
+      "taskId": "task_0673c2b9",
+      "ok": true,
+      "seconds": 66.8,
+      "documents_terminal": "20/20",
+      "chapters": "1,2,3,4,5,6,7,8,9,10"
+    },
+    {
+      "i": 3,
+      "kickoff": 202,
+      "taskId": "task_ab10f719",
+      "ok": true,
+      "seconds": 66.2,
+      "documents_terminal": "20/20",
+      "chapters": "1,2,3,4,5,6,7,8,9,10"
+    }
+  ],
+  "concurrent_pass": true,
+  "cost": {
+    "task_id": "task_725fb347",
+    "calls": 101,
+    "total_usd": 0.011696,
+    "per_document_usd": 0.000585,
+    "by_stage": {
+      "classification": 0.001564,
+      "extraction": 0.004103,
+      "boundary": 0.000992,
+      "embedding": 0,
+      "factor_selection": 0.004826,
+      "report_narrative": 0.000211
+    }
+  },
+  "cost_pass": true
+}

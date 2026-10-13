@@ -5,7 +5,7 @@
     "top1": 34,
     "top3": 39,
     "invalidRef": 0,
-    "maxLatency": 5319,
-    "est_cost_usd": 0.00889
+    "maxLatency": 2584,
+    "est_cost_usd": 0.008906
   }
 }

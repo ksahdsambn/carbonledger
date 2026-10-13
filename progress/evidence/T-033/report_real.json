@@ -3,7 +3,7 @@
     "documents": 20,
     "records": 20,
     "calculated": 20,
-    "total_kgco2e": 550574.1481705998,
+    "total_kgco2e": 646692.0475695999,
     "scopes": [
       {
         "key": "Scope 1",
@@ -15,7 +15,7 @@
       },
       {
         "key": "Scope 3",
-        "value": 139646.2216346
+        "value": 235764.1210336
       }
     ]
   },
@@ -26,7 +26,7 @@
     "invalid_count": 0,
     "invalid": []
   },
-  "elapsedS": 147.372,
-  "cost": 0.011664999999999998,
+  "elapsedS": 48.744,
+  "cost": 0.011717999999999994,
   "fails": []
 }

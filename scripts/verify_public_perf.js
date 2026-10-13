@@ -37,12 +37,23 @@ async function api(path, opts = {}) {
 
 /** Waits until every document of the task reaches a terminal state. */
 async function waitForDocuments(taskId, deadline) {
+  const STALL_MS = 90_000;
+  let lastTerminal = -1;
+  let lastProgress = Date.now();
   for (;;) {
     const t = await api(`/api/tasks/${taskId}`);
     const docs = t.body?.documents ?? [];
     const terminal = docs.filter((d) => TERMINAL.includes(d.status)).length;
+    if (terminal !== lastTerminal) {
+      lastTerminal = terminal;
+      lastProgress = Date.now();
+    }
     if (docs.length > 0 && terminal === docs.length) return { terminal, total: docs.length };
-    if (Date.now() > deadline) return { terminal, total: docs.length, timedOut: true };
+    if (Date.now() > deadline) return { terminal, total: docs.length, timedOut: true, stalledMs: Date.now() - lastProgress };
+    if (Date.now() - lastProgress > STALL_MS) {
+      const stuck = docs.filter((d) => !TERMINAL.includes(d.status)).map((d) => `${d.original_filename}:${d.status}`);
+      return { terminal, total: docs.length, stalledMs: Date.now() - lastProgress, stuck };
+    }
     await sleep(POLL_MS);
   }
 }
@@ -77,13 +88,14 @@ async function timedDemoRun(label) {
   const docs = await waitForDocuments(taskId, deadline);
   const report = await waitForReport(taskId, deadline);
   const seconds = Number(((Date.now() - t0) / 1000).toFixed(1));
-  const ok = !docs.timedOut && report.ready && seconds <= 180;
+  const ok = !docs.timedOut && !docs.stuck && report.ready && seconds <= 180;
   return {
     label,
     ok,
     task_id: taskId,
     seconds,
     documents_terminal: `${docs.terminal}/${docs.total}`,
+    stuck: docs.stuck ?? null,
     chapters: report.chapters,
     citations: report.citations ? `${report.citations.coverage_pct}% valid, ${report.citations.invalid_count} invalid` : 'n/a',
   };

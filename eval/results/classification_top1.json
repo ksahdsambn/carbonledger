@@ -1,14 +1,14 @@
 {
-  "measured": "28/30 documents (93.3%), pages 31/33",
+  "measured": "29/30 documents (96.7%), pages 32/33",
   "pass": true,
   "detail": {
-    "docsCorrect": 28,
-    "pageCorrect": 31,
+    "docsCorrect": 29,
+    "pageCorrect": 32,
     "pages": 33,
     "out_of_enum": 0,
     "blurry_flagged": 3,
     "calls": 200,
-    "est_cost_usd": 0.017141
+    "est_cost_usd": 0.017123
   },
   "evidence": "progress/evidence/T-014/"
 }

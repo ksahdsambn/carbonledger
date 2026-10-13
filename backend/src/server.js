@@ -9,13 +9,12 @@ import { errorResponse, AppError } from './errors.js';
 import { getConfig } from './config.js';
 import { createStore } from './store/index.js';
 import { createStorage } from './storage/index.js';
-import { loadFactorLibrary, getFactorById, searchFactorsByKeyword, listFactors } from './services/factorLibrary.js';
+import { loadFactorLibrary, getFactorById, searchFactorsByKeyword } from './services/factorLibrary.js';
 import { createTask, getTask } from './services/taskService.js';
 import { ingestFile, resolveDuplicate, setDocumentStatus, getDocumentFile } from './services/fileService.js';
 import { runPipeline } from './services/pipeline.js';
 import { listReviewQueue, editRecordFields, assignFactorManually, excludeRecord, closeReviewItem, recalculateTask } from './services/reviewQueue.js';
-import { scanReportCitations, assembleReport } from './services/reportService.js';
-import { computeScenarios } from './services/scenarios.js';
+import { scanReportCitations, generateReportForTask } from './services/reportService.js';
 import { activityDetailCsv, categorySummaryCsv, reportPdf } from './services/exportService.js';
 import { buildMockCatalogFromDataset } from './services/mockCatalog.js';
 import { readFileSync } from 'node:fs';
@@ -39,7 +38,6 @@ export async function buildApp() {
 
   app.use((req, res, next) => {
     log.info('http_request', { method: req.method, path: req.path });
-    req.uid = req.headers['x-user-uid'] ?? null; // anonymous-auth identity
     res.setHeader('Cache-Control', 'no-store'); // dynamic API responses must bypass CDNs
     next();
   });
@@ -61,6 +59,26 @@ export async function buildApp() {
   const store = await createStore();
   const storage = await createStorage();
 
+  // Anonymous Firebase identity (M-3, D-10): the SPA's ID token is verified
+  // with Firebase Authentication and the verified uid becomes the task owner,
+  // so a task and its files are reachable only by the identity that created
+  // them (NFR-301). A request without a token stays allowed but unowned, which
+  // keeps the API usable from the verification scripts and offline runs.
+  app.use(async (req, _res, next) => {
+    req.uid = null;
+    const header = req.headers.authorization ?? '';
+    if (header.startsWith('Bearer ')) {
+      try {
+        const { getAuth } = await import('firebase-admin/auth');
+        const decoded = await getAuth().verifyIdToken(header.slice(7));
+        req.uid = decoded.uid;
+      } catch (err) {
+        log.warn('id_token_rejected', { error: String(err.message).slice(0, 120) });
+      }
+    }
+    next();
+  });
+
   // CORS for the Firebase Hosting origin (and local dev).
   const allowed = (process.env.CORS_ORIGINS || 'http://localhost:5173').split(',');
   app.use((req, res, next) => {
@@ -68,7 +86,7 @@ export async function buildApp() {
     if (origin && (allowed.includes(origin) || /\.web\.app$|\.firebaseapp\.com$/.test(new URL(origin).hostname))) {
       res.setHeader('Access-Control-Allow-Origin', origin);
       res.setHeader('Vary', 'Origin');
-      res.setHeader('Access-Control-Allow-Headers', 'content-type,x-user-uid');
+      res.setHeader('Access-Control-Allow-Headers', 'content-type,authorization');
       res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
       if (req.method === 'OPTIONS') { res.status(204).end(); return; }
     }
@@ -143,7 +161,7 @@ export async function buildApp() {
     const doc = await store.get('documents', req.params.docId);
     const task = await store.get('tasks', req.params.taskId);
     // NFR-301: uploaded files are only accessible within their owning task.
-    if (!doc || doc.task_id !== req.params.taskId || (task?.owner && task.owner !== req.headers['x-user-uid'])) {
+    if (!doc || doc.task_id !== req.params.taskId || (task?.owner && task.owner !== req.uid)) {
       throw new AppError('ERR_TASK_NOT_FOUND', { document_id: req.params.docId });
     }
     const buf = await getDocumentFile(storage, doc);
@@ -212,24 +230,7 @@ export async function buildApp() {
       // Lazy self-healing generation: if the background job was interrupted
       // (e.g. instance scaled to zero), assemble the report on demand from
       // the persisted records and calculations.
-      const task = await getTask(store, req.params.taskId);
-      const records = await store.query('activity_records', 'task_id', req.params.taskId);
-      if (records.length === 0) throw new AppError('ERR_TASK_NOT_FOUND', { hint: 'no report can be generated yet' });
-      const { aggregate, topEmitters } = await import('./services/calculation.js');
-      const calcsWithMeta = [];
-      for (const r of records) {
-        if (r.excluded_from_calc) continue;
-        const calc = await store.get('calculations', `calc_${r.record_id}`);
-        if (calc) calcsWithMeta.push({ calc, meta: r });
-      }
-      const factorsById = Object.fromEntries((await listFactors(store)).map((f) => [f.factor_id, f]));
-      const agg = aggregate(calcsWithMeta);
-      const top = topEmitters(calcsWithMeta);
-      const scenarioOut = await computeScenarios({
-        store, taskId: req.params.taskId, records: records.filter((r) => !r.excluded_from_calc),
-        calcs: calcsWithMeta.map((x) => x.calc), factorsById, taskGwpVersion: task.gwp_version,
-      });
-      report = await assembleReport({ store, taskId: req.params.taskId, task, records, calcs: calcsWithMeta.map((x) => x.calc), calcsWithMeta, agg, top, scenarios: scenarioOut, factorsById });
+      report = await generateReportForTask({ store, taskId: req.params.taskId });
       log.info('report_lazy_generated', { task_id: req.params.taskId });
     }
     const citations = await scanReportCitations(store, report);
@@ -271,6 +272,9 @@ export async function buildApp() {
     else if (action === 'close') await closeReviewItem({ store, taskId, recordId, note: req.body.note });
     else throw new AppError('ERR_ENUM_INVALID', { action });
     const refreshed = await recalculateTask({ store, taskId });
+    // A review action changes the ledger, so the stored report is rebuilt in
+    // the same step and the reader never shows a stale report (FR-706).
+    await generateReportForTask({ store, taskId });
     res.json(refreshed);
   });
 

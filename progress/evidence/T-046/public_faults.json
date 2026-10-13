@@ -1,0 +1,137 @@
+{
+  "base_url": "https://myproject-dc19d.web.app",
+  "generated_at": "2026-10-13T18:05:41.033Z",
+  "checks": [
+    {
+      "id": "NFR-201",
+      "requirement": "A single bad file never blocks the batch: 17 of 20 files succeed with 3 corrupt files mixed in",
+      "pass": true,
+      "detail": "upload HTTP 200; accepted=17, rejected=3 codes=[ERR_FILE_CORRUPT], each rejection carries an English message: true"
+    },
+    {
+      "id": "NFR-201-processing",
+      "requirement": "The 17 surviving documents of the mixed batch all reach a terminal state without failing",
+      "pass": true,
+      "detail": "documents persisted=17, failed=0, statuses={\"completed\":17}"
+    },
+    {
+      "id": "NFR-202",
+      "requirement": "A timed-out model call is retried exactly twice (3 attempts) and then marked failed with an error code and English description",
+      "pass": true,
+      "detail": "backend/test/aiRetry.test.js: 3/3 assertions passed (3 attempts, ERR_MODEL_TIMEOUT, ERR_MODEL_CALL_FAILED, per-attempt traces)"
+    },
+    {
+      "id": "NFR-204",
+      "requirement": "Every failure returns a machine-readable code with an English description; the registry covers every known failure type and is documented in the README",
+      "pass": true,
+      "detail": "registry codes=13 all machine-readable and English; README lists all: true; live unknown route -> 404/ERR_TASK_NOT_FOUND; live invalid enum -> 422/ERR_ENUM_INVALID"
+    },
+    {
+      "id": "NFR-301",
+      "requirement": "Uploaded files and records are only reachable from their owning task and identity (verified Firebase uid, not a client-asserted header)",
+      "pass": true,
+      "detail": "identities: A=AyTY5XDi… B=6weM0VJJ…; other task's file -> HTTP 404; wrong identity on owning task -> HTTP 404; owner -> HTTP 200; forged x-user-uid header -> HTTP 404; other task's record audit -> 404/ERR_TASK_NOT_FOUND; task A documents=1"
+    },
+    {
+      "id": "NFR-303",
+      "requirement": "The public URL enforces basic rate limiting (HTTP 429 with a machine-readable code)",
+      "pass": true,
+      "detail": "HTTP 429 after 44 rapid requests (last status: 429 ERR_RATE_LIMITED)"
+    }
+  ],
+  "error_registry": [
+    {
+      "code": "ERR_FILE_FORMAT_UNSUPPORTED",
+      "message": "Unsupported file format. Allowed formats are PDF, JPG, PNG, XLSX and CSV.",
+      "http": 415
+    },
+    {
+      "code": "ERR_FILE_TOO_LARGE",
+      "message": "File exceeds the 10 MB per-file size limit.",
+      "http": 413
+    },
+    {
+      "code": "ERR_FILE_CORRUPT",
+      "message": "The file is corrupted and cannot be processed.",
+      "http": 422
+    },
+    {
+      "code": "ERR_PARSE_FAILED",
+      "message": "The document could not be parsed.",
+      "http": 422
+    },
+    {
+      "code": "ERR_EXTRACTION_FAILED",
+      "message": "Activity data extraction failed for this document.",
+      "http": 422
+    },
+    {
+      "code": "ERR_MODEL_CALL_FAILED",
+      "message": "The AI model call failed after all retry attempts.",
+      "http": 502
+    },
+    {
+      "code": "ERR_MODEL_TIMEOUT",
+      "message": "The AI model call timed out after all retry attempts.",
+      "http": 504
+    },
+    {
+      "code": "ERR_ENUM_INVALID",
+      "message": "The model returned a value outside the allowed enumeration.",
+      "http": 422
+    },
+    {
+      "code": "ERR_CANDIDATES_INSUFFICIENT",
+      "message": "Fewer than five candidate factors were recalled; the record is flagged with an insufficient-recall marker.",
+      "http": 200
+    },
+    {
+      "code": "ERR_NO_CONFIDENT_FACTOR",
+      "message": "No candidate factor reached the confidence threshold; the record requires manual confirmation.",
+      "http": 200
+    },
+    {
+      "code": "ERR_REFERENCE_INVALID",
+      "message": "A reference points to an object that does not exist.",
+      "http": 422
+    },
+    {
+      "code": "ERR_STORAGE_ACCESS",
+      "message": "Object storage or database access failed.",
+      "http": 502
+    },
+    {
+      "code": "ERR_TASK_NOT_FOUND",
+      "message": "The requested accounting task does not exist.",
+      "http": 404
+    }
+  ],
+  "batch_task": {
+    "task_id": "task_41e972c4",
+    "accepted": 17,
+    "rejected": 3,
+    "rejected_codes": [
+      "ERR_FILE_CORRUPT"
+    ]
+  },
+  "isolation": {
+    "task_a": "task_5ec82c8f",
+    "task_b": "task_c23c69d2",
+    "identity_a": "AyTY5XDi9dYrdabpujtGAoHnA8s1",
+    "identity_b": "6weM0VJJEVatfMvTCkmgJ8GhmLI3",
+    "cross_task_status": 404,
+    "cross_user_status": 404,
+    "owner_status": 200,
+    "forged_header_status": 404,
+    "cross_record_audit": "404/ERR_TASK_NOT_FOUND"
+  },
+  "rate_limit": {
+    "limited": true,
+    "requests_until_429": 44
+  },
+  "retry_simulation": {
+    "suite": "backend/test/aiRetry.test.js",
+    "passed": true
+  },
+  "overall": "PASS"
+}

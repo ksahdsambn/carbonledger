@@ -5,8 +5,10 @@
 // and structured deterministic templates otherwise (adapter recorded).
 import { mode } from '../ai/client.js';
 import { log } from '../logging.js';
-import { toDisplayTons, displayConsistent } from './calculation.js';
+import { AppError } from '../errors.js';
+import { toDisplayTons, displayConsistent, aggregate, topEmitters } from './calculation.js';
 import { SCOPE3_CATEGORIES } from './pipelineModelCalls.js';
+import { computeScenarios } from './scenarios.js';
 import { listFactors } from './factorLibrary.js';
 
 const TRACK = 'Sustainability & Social Impact';
@@ -213,11 +215,47 @@ export async function assembleReport({ store, taskId, task, records, calcs, calc
   return report;
 }
 
+/**
+ * Assembles and persists a fresh report from the task's persisted records and
+ * calculations. Used when no report exists yet, and after every review action
+ * so the report always reflects the current ledger (FR-706, FR-1102).
+ */
+export async function generateReportForTask({ store, taskId }) {
+  const task = await store.get('tasks', taskId);
+  if (!task) throw new AppError('ERR_TASK_NOT_FOUND', { task_id: taskId });
+  const records = await store.query('activity_records', 'task_id', taskId);
+  if (records.length === 0) throw new AppError('ERR_TASK_NOT_FOUND', { hint: 'no report can be generated yet' });
+  const calcsWithMeta = [];
+  for (const r of records) {
+    if (r.excluded_from_calc) continue;
+    const calc = await store.get('calculations', `calc_${r.record_id}`);
+    if (calc) calcsWithMeta.push({ calc, meta: r });
+  }
+  const factorsById = Object.fromEntries((await listFactors(store)).map((f) => [f.factor_id, f]));
+  const agg = aggregate(calcsWithMeta);
+  const top = topEmitters(calcsWithMeta);
+  const scenarioOut = await computeScenarios({
+    store, taskId, records: records.filter((r) => !r.excluded_from_calc),
+    calcs: calcsWithMeta.map((x) => x.calc), factorsById, taskGwpVersion: task.gwp_version,
+  });
+  return assembleReport({
+    store, taskId, task, records, calcs: calcsWithMeta.map((x) => x.calc),
+    calcsWithMeta, agg, top, scenarios: scenarioOut, factorsById,
+  });
+}
+
 /** AI-201/AI-202 checks: coverage and validity of numeric-conclusion anchors. */
 export async function scanReportCitations(store, report) {
-  const records = new Set((await store.list('activity_records')).map((r) => r.record_id));
+  // Anchors are resolved inside the report's own task: a record id that exists
+  // only in another task is a dangling reference, not a valid anchor (AI-202).
+  const taskId = report.task_id;
+  const ownRecords = taskId
+    ? await store.query('activity_records', 'task_id', taskId)
+    : await store.list('activity_records');
+  const records = new Set(ownRecords.map((r) => r.record_id));
   const factors = new Set((await listFactors(store)).map((f) => f.factor_id));
-  const scenarios = new Set((await store.list('scenarios')).map((s) => s.id));
+  const ownScenarios = taskId ? await store.query('scenarios', 'task_id', taskId) : await store.list('scenarios');
+  const scenarios = new Set(ownScenarios.map((s) => s.id));
   let covered = 0;
   const invalid = [];
   for (const n of report.numeric_conclusions) {

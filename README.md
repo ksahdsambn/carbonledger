@@ -25,6 +25,12 @@ ten-chapter English report with PDF/CSV exports and a full audit trail.
   structured output (response schemas), closed-set validation with retry, timeouts and
   retries from configuration, and records every call (input/output summary, latency, token
   usage, cost estimate) into the `ai_traces` collection.
+- **Identity**: entering the site completes a Firebase Authentication *anonymous* sign-in,
+  so a judge reaches the whole flow with no registration and no credential. The SPA sends
+  its ID token with every API call; the backend verifies it with Firebase Authentication
+  and the verified uid owns the task, so one visitor can never read another visitor's files
+  or records. Requests without a token stay allowed but unowned, which keeps the API usable
+  from scripts and offline runs.
 - **Factor library**: 743 curated factors from public sources, shipped as a static JSON
   file (`data/factors/emission_factors.json`) — loading never touches the network.
   Dual-channel recall: keyword/structured matching + semantic vector search
@@ -85,9 +91,32 @@ never computed from mock runs.
 
 ## Deployment (Cloud Run + Firebase)
 
-1. `gcloud run deploy carbonledger-backend --source . --region asia-southeast1 --no-cpu-throttling --allow-unauthenticated --set-env-vars "GEMINI_API_KEY=<key>,GCP_PROJECT_ID=<project>,STORAGE_BUCKET_NAME=<bucket>" --allow-unauthenticated --min-instances 0 --max-instances 10`
-2. `firebase init` (Hosting + Auth anonymous + Storage + Firestore), then `firebase deploy` from `frontend/` with rewrites pointing at the Cloud Run service URL.
-3. Environment variables are injected at runtime only — no secrets live in the repository.
+1. Backend to Cloud Run. CPU must stay allocated because the pipeline continues after the
+   HTTP response returns:
+
+   ```bash
+   gcloud run deploy carbonledger-backend --source . --region asia-southeast1 \
+     --allow-unauthenticated --no-cpu-throttling --min-instances 0 --max-instances 3 \
+     --set-env-vars "GEMINI_API_KEY=<key>,STORE_KIND=firestore,STORAGE_KIND=firebase,\
+   STORAGE_BUCKET_NAME=<bucket>,GCP_PROJECT_ID=<project>,AI_TIMEOUT_SECONDS=60,DEFAULT_GWP_VERSION=AR6"
+   ```
+
+2. Firebase: enable Hosting, Firestore, Storage and the **Anonymous** sign-in provider.
+3. Build the frontend with the public Firebase web configuration. It is injected at build
+   time from a gitignored `frontend/.env`, so no key material is ever committed:
+
+   ```bash
+   # frontend/.env
+   VITE_FIREBASE_API_KEY=<public web api key>
+   VITE_FIREBASE_AUTH_DOMAIN=<project>.firebaseapp.com
+   VITE_FIREBASE_PROJECT_ID=<project>
+   npm run build --workspace carbonledger-frontend
+   firebase deploy --only hosting
+   ```
+
+   Without that file the SPA still runs, just without an anonymous identity.
+4. `firebase.json` rewrites `/api/**` and `/factors/**` to the Cloud Run service. Every
+   secret is injected at runtime only — the repository contains none (`npm run scan-secrets`).
 
 ## Environment variables (11, PRD 8.3)
 
@@ -106,7 +135,11 @@ never computed from mock runs.
 | GCP_PROJECT_ID | carbonledger | Google Cloud project id |
 
 Additional runtime switches: `AI_MODE` (real/mock), `RECALL_CHANNEL` (both/keyword/semantic),
-`STORE_KIND`/`STORAGE_KIND` (local/firestore/firebase), `STORE_ROOT`/`STORAGE_ROOT`.
+`STORE_KIND`/`STORAGE_KIND` (local/firestore/firebase), `STORE_ROOT`/`STORAGE_ROOT`,
+`RATE_LIMIT_PER_MIN` (per-IP request budget on the public deployment, default 60),
+`PIPELINE_CONCURRENCY` (documents processed in parallel, default 4), `AI_PRICES_JSON`
+(price-table override), `FACTOR_FILE` (factor data file), `CORS_ORIGINS`, and the
+build-time `VITE_FIREBASE_*` trio described under Deployment.
 
 ## Error codes (machine-readable)
 
@@ -134,7 +167,9 @@ citation coverage, veto logic) are covered by 30 automated tests that run offlin
 
 User-uploaded documents and all derived data are used only to produce the user's own
 report. **No user data is used for model training.** Uploaded files are isolated per
-accounting task; cross-task access is rejected.
+accounting task: the task owner is the uid of the verified Firebase anonymous session, and
+a request from another task or another identity is rejected with `ERR_TASK_NOT_FOUND`.
+The public deployment also applies a per-IP rate limit (`ERR_RATE_LIMITED`).
 
 ## Repository layout
 

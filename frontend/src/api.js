@@ -1,8 +1,10 @@
 // Backend API helpers. All calls are same-origin (dev proxy /api -> 8080).
+// The Firebase anonymous ID token is attached when a session exists; the
+// backend verifies it and uses the verified uid as the task owner.
 const base = '';
+const authHeaders = () => (window.__idToken ? { authorization: `Bearer ${window.__idToken}` } : {});
 const json = async (path, opts = {}) => {
-  const headers = { 'content-type': 'application/json' };
-  if (window.__userUid) headers['x-user-uid'] = window.__userUid;
+  const headers = { 'content-type': 'application/json', ...authHeaders() };
   const res = await fetch(base + path, {
     headers,
     ...opts,
@@ -17,9 +19,7 @@ export const api = {
   uploadFiles: async (taskId, files) => {
     const fd = new FormData();
     for (const f of files) fd.append('files', f, f.name);
-    const headers = {};
-    if (window.__userUid) headers['x-user-uid'] = window.__userUid;
-    const res = await fetch(`/api/tasks/${taskId}/documents`, { method: 'POST', body: fd, headers });
+    const res = await fetch(`/api/tasks/${taskId}/documents`, { method: 'POST', body: fd, headers: authHeaders() });
     return res.json();
   },
   resolveDuplicate: (taskId, docId, keep) => json(`/api/tasks/${taskId}/documents/${docId}/duplicate`, { method: 'POST', body: { keep } }),
