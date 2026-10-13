@@ -70,7 +70,7 @@ export function P1Home({ onTask }) {
 
 // ---------------------------------------------------------------- P2
 const STATUS_ICON = { queued: '…', parsing: '⧉', extracting: '✎', matching: '⇄', completed: '✓', needs_review: '!', failed: '✗', pending_duplicate: '?' };
-export function P2Upload({ taskId, onProgress }) {
+export function P2Upload({ taskId, onProgress, chooseTaskIfSet }) {
   const [docs, setDocs] = useState([]);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState(null);
@@ -89,18 +89,20 @@ export function P2Upload({ taskId, onProgress }) {
     await refresh(); setBusy(false);
   };
   const run = async () => {
-    setBusy(true); setNote('Processing — the pipeline is running…');
+    setBusy(true); setNote('Processing — statuses below update live; totals appear on P5 when done.');
     try {
-      const summary = await api.runPipeline(taskId);
-      setNote(`Done: ${summary.records} records, ${summary.calculated} calculated, total ${t3(summary.total_kgco2e)} t CO2e.`);
-      onProgress();
+      await api.runPipeline(taskId);
+      await refresh();
     } catch (ex) { setNote(ex.message); }
     setBusy(false);
   };
   const demo = async () => {
-    setBusy(true); setNote('Loading demo dataset and running the full pipeline…');
-    try { const s = await api.loadDemo(); setNote(`Demo task ${s.task_id}: ${s.records} records, total ${t3(s.total_kgco2e)} t CO2e.`); }
-    catch (ex) { setNote(ex.message); }
+    setBusy(true); setNote('Demo task created — the pipeline is running in the background; statuses update live below.');
+    try {
+      const s = await api.loadDemo();
+      if (s.task_id && s.task_id !== taskId) { chooseTaskIfSet?.(s.task_id); }
+      await refresh();
+    } catch (ex) { setNote(ex.message); }
     setBusy(false);
   };
   return (

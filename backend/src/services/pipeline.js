@@ -163,7 +163,7 @@ export async function runPipeline({ store, storage, taskId, mockCatalog = new Ma
         await setDocumentStatus(store, taskId, doc.id, needsReview ? 'needs_review' : 'completed');
       });
     } catch (err) {
-      log.error('document_pipeline_failed', { task_id: taskId, doc: doc.id, error: String(err.message).slice(0, 200) });
+      log.error('document_pipeline_failed', { task_id: taskId, doc: doc.id, error: String(err.message).slice(0, 200), stack: String(err.stack).split('\n').slice(0, 6).join(' | ') });
     }
   }
 

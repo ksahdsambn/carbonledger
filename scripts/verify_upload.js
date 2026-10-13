@@ -19,7 +19,7 @@ const failures = [];
 const ok = (cond, label) => { console.log(`${cond ? 'PASS' : 'FAIL'}  ${label}`); if (!cond) failures.push(label); };
 
 // Boot the app on an ephemeral port with isolated store/storage.
-const app = buildApp();
+const app = await buildApp();
 // Re-wire the app-internal store? buildApp creates its own; for this test we
 // let it use env-driven dirs instead:
 // (buildApp reads STORE_KIND/STORAGE_ROOT via createStore/createStorage)

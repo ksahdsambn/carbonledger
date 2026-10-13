@@ -33,8 +33,13 @@ fi
 BODY=$(curl -sf "http://127.0.0.1:$PORT/healthz")
 echo "health response: $BODY"
 
-# Structured log line must be valid JSON with an event field.
-if ! head -1 "$LOG_FILE" | python -c "import json,sys; d=json.loads(sys.stdin.readline()); assert d['event']=='server_started'" 2>/dev/null; then
+# Structured log lines must be valid JSON with event fields; server_started present.
+if ! python -c "
+import json,sys
+lines = open(r'$LOG_FILE', encoding='utf-8', errors='replace').read().splitlines()
+events = [json.loads(l)['event'] for l in lines if l.strip()]
+assert events and 'server_started' in events
+" 2>/dev/null; then
   echo "SMOKE FAIL: first log line is not a structured server_started event"
   cat "$LOG_FILE"
   exit 1

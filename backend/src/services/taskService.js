@@ -4,7 +4,7 @@ import { AppError } from '../errors.js';
 
 const GWP_VERSIONS = ['AR5', 'AR6'];
 
-export async function createTask(store, { entity_name, period_from, period_to, gwp_version }) {
+export async function createTask(store, { entity_name, period_from, period_to, gwp_version, owner_uid }) {
   if (!entity_name || !period_from || !period_to || !GWP_VERSIONS.includes(gwp_version)) {
     throw new AppError('ERR_ENUM_INVALID', {
       hint: 'entity_name, period_from, period_to are required; gwp_version must be AR5 or AR6',
@@ -20,6 +20,7 @@ export async function createTask(store, { entity_name, period_from, period_to, g
     status: 'created',
     created_at: new Date().toISOString(),
     created_by: 'anonymous',
+    owner: owner_uid ?? null,
   };
   await store.put('tasks', id, task);
   return task;

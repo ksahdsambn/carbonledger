@@ -25,12 +25,13 @@ export class LocalFileStorage {
   }
 }
 
-export function createStorage(kind = process.env.STORAGE_KIND || 'local', options = {}) {
+export async function createStorage(kind = process.env.STORAGE_KIND || 'local', options = {}) {
   if (kind === 'local') {
     return new LocalFileStorage(options.rootDir || process.env.STORAGE_ROOT || 'data/.uploads');
   }
   if (kind === 'firebase') {
-    throw new Error('Firebase Storage adapter is wired during deployment (T-043).');
+    const { createFirebaseStorage } = await import('../store/firestore.js');
+    return createFirebaseStorage(options.bucket || process.env.STORAGE_BUCKET_NAME);
   }
   throw new Error(`Unknown storage kind '${kind}'`);
 }

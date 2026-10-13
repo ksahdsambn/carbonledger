@@ -167,6 +167,40 @@ async function dispatch({ model, parts, schema, mockFn, mockContext, timeoutMs }
   }
 }
 
+/** Batched embedding calls (semantic index build). */
+export async function embedTexts({ taskId, texts, traceStore }) {
+  const cfg = getConfig().values;
+  const model = cfg.EMBEDDING_MODEL;
+  const started = Date.now();
+  const all = [];
+  if (mode() === 'mock') {
+    for (const text of texts) all.push(await embedText({ taskId, text, traceStore: null }));
+  } else {
+    const key = getSecret('GEMINI_API_KEY');
+    for (let i = 0; i < texts.length; i += 50) {
+      const chunk = texts.slice(i, i + 50);
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:batchEmbedContents`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
+        body: JSON.stringify({ requests: chunk.map((text) => ({ model: `models/${model}`, content: { parts: [{ text }] } })) }),
+      });
+      if (!res.ok) throw new AppError('ERR_MODEL_CALL_FAILED', { stage: 'embedding-batch', status: res.status, body: (await res.text()).slice(0, 200) });
+      const data = await res.json();
+      for (const e of data.embeddings ?? []) all.push(e.values);
+    }
+  }
+  if (traceStore) {
+    await traceStore.put('ai_traces', `ait_${Date.now()}_batch_${Math.random().toString(36).slice(2, 8)}`, {
+      task_id: taskId, stage: 'embedding', model, adapter: mode(),
+      input_summary: `batch of ${texts.length} factor texts`, output_summary: `${all.length} vectors`,
+      latency_ms: Date.now() - started,
+      usage: { input_tokens: Math.ceil(texts.join(' ').length / 4), output_tokens: 0, est_cost_usd: 0 },
+      ok: true, ts: new Date().toISOString(),
+    });
+  }
+  return all;
+}
+
 /** Embedding call (semantic recall channel, Google official embedding model). */
 export async function embedText({ taskId, text, traceStore }) {
   const cfg = getConfig().values;
@@ -187,7 +221,10 @@ export async function embedText({ taskId, text, traceStore }) {
       headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
       body: JSON.stringify({ model: `models/${model}`, content: { parts: [{ text }] } }),
     });
-    if (!res.ok) throw new AppError('ERR_MODEL_CALL_FAILED', { stage: 'embedding', status: res.status });
+    if (!res.ok) {
+      const body = await res.text();
+      throw new AppError('ERR_MODEL_CALL_FAILED', { stage: 'embedding', status: res.status, body: body.slice(0, 300) });
+    }
     const data = await res.json();
     result = data.embedding?.values;
     if (!Array.isArray(result)) throw new AppError('ERR_MODEL_CALL_FAILED', { stage: 'embedding', detail: 'no vector' });

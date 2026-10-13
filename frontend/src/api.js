@@ -1,8 +1,10 @@
 // Backend API helpers. All calls are same-origin (dev proxy /api -> 8080).
 const base = '';
 const json = async (path, opts = {}) => {
+  const headers = { 'content-type': 'application/json' };
+  if (window.__userUid) headers['x-user-uid'] = window.__userUid;
   const res = await fetch(base + path, {
-    headers: { 'content-type': 'application/json' },
+    headers,
     ...opts,
     body: opts.body ? JSON.stringify(opts.body) : undefined,
   });
@@ -15,7 +17,9 @@ export const api = {
   uploadFiles: async (taskId, files) => {
     const fd = new FormData();
     for (const f of files) fd.append('files', f, f.name);
-    const res = await fetch(`/api/tasks/${taskId}/documents`, { method: 'POST', body: fd });
+    const headers = {};
+    if (window.__userUid) headers['x-user-uid'] = window.__userUid;
+    const res = await fetch(`/api/tasks/${taskId}/documents`, { method: 'POST', body: fd, headers });
     return res.json();
   },
   resolveDuplicate: (taskId, docId, keep) => json(`/api/tasks/${taskId}/documents/${docId}/duplicate`, { method: 'POST', body: { keep } }),

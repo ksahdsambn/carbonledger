@@ -14,7 +14,8 @@ import { createTask, getTask } from './services/taskService.js';
 import { ingestFile, resolveDuplicate, setDocumentStatus, getDocumentFile } from './services/fileService.js';
 import { runPipeline } from './services/pipeline.js';
 import { listReviewQueue, editRecordFields, assignFactorManually, excludeRecord, closeReviewItem, recalculateTask } from './services/reviewQueue.js';
-import { scanReportCitations } from './services/reportService.js';
+import { scanReportCitations, assembleReport } from './services/reportService.js';
+import { computeScenarios } from './services/scenarios.js';
 import { activityDetailCsv, categorySummaryCsv, reportPdf } from './services/exportService.js';
 import { buildMockCatalogFromDataset } from './services/mockCatalog.js';
 import { readFileSync } from 'node:fs';
@@ -23,7 +24,7 @@ import { fileURLToPath } from 'node:url';
 
 const upload = multer({ storage: multer.memoryStorage() });
 
-export function buildApp() {
+export async function buildApp() {
   const app = express();
   app.use(express.json({ limit: '12mb' }));
 
@@ -36,8 +37,10 @@ export function buildApp() {
     app[method] = (path, ...mws) => orig(path, ...mws.map(wrapAsync));
   }
 
-  app.use((req, _res, next) => {
+  app.use((req, res, next) => {
     log.info('http_request', { method: req.method, path: req.path });
+    req.uid = req.headers['x-user-uid'] ?? null; // anonymous-auth identity
+    res.setHeader('Cache-Control', 'no-store'); // dynamic API responses must bypass CDNs
     next();
   });
 
@@ -55,8 +58,40 @@ export function buildApp() {
     });
   });
 
-  const store = createStore();
-  const storage = createStorage();
+  const store = await createStore();
+  const storage = await createStorage();
+
+  // CORS for the Firebase Hosting origin (and local dev).
+  const allowed = (process.env.CORS_ORIGINS || 'http://localhost:5173').split(',');
+  app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    if (origin && (allowed.includes(origin) || /\.web\.app$|\.firebaseapp\.com$/.test(new URL(origin).hostname))) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Vary', 'Origin');
+      res.setHeader('Access-Control-Allow-Headers', 'content-type,x-user-uid');
+      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+      if (req.method === 'OPTIONS') { res.status(204).end(); return; }
+    }
+    next();
+  });
+
+  // Basic per-IP rate limiting for the public deployment (NFR-303).
+  const rateBuckets = new Map();
+  const RATE_LIMIT = Number(process.env.RATE_LIMIT_PER_MIN || 60);
+  app.use((req, res, next) => {
+    if (req.path === '/healthz') { next(); return; }
+    const ip = req.headers['x-forwarded-for']?.split(',')[0] ?? req.socket.remoteAddress ?? 'unknown';
+    const now = Date.now();
+    const b = rateBuckets.get(ip) ?? { tokens: RATE_LIMIT, ts: now };
+    if (now - b.ts > 60000) { b.tokens = RATE_LIMIT; b.ts = now; }
+    if (b.tokens <= 0) {
+      res.status(429).json({ error: { code: 'ERR_RATE_LIMITED', message: 'Too many requests; please slow down.' } });
+      return;
+    }
+    b.tokens -= 1;
+    rateBuckets.set(ip, b);
+    next();
+  });
   loadFactorLibrary(store).catch((err) => log.error('factor_library_load_failed', { error: String(err) }));
 
   app.get('/factors', async (req, res) => {
@@ -78,7 +113,7 @@ export function buildApp() {
   });
 
   app.post('/api/tasks', async (req, res) => {
-    const task = await createTask(store, req.body || {});
+    const task = await createTask(store, { ...req.body, owner_uid: req.uid });
     res.status(201).json(task);
   });
 
@@ -106,7 +141,9 @@ export function buildApp() {
 
   app.get('/api/tasks/:taskId/documents/:docId/file', async (req, res) => {
     const doc = await store.get('documents', req.params.docId);
-    if (!doc || doc.task_id !== req.params.taskId) {
+    const task = await store.get('tasks', req.params.taskId);
+    // NFR-301: uploaded files are only accessible within their owning task.
+    if (!doc || doc.task_id !== req.params.taskId || (task?.owner && task.owner !== req.headers['x-user-uid'])) {
       throw new AppError('ERR_TASK_NOT_FOUND', { document_id: req.params.docId });
     }
     const buf = await getDocumentFile(storage, doc);
@@ -136,8 +173,12 @@ export function buildApp() {
     const catalog = req.body?.useMockCatalog
       ? buildMockCatalogFromDataset(join(repoRoot, 'data/demo'), readFileSync)
       : new Map();
-    const out = await runPipeline({ store, storage, taskId: req.params.taskId, mockCatalog: catalog });
-    res.json(out.summary);
+    // Async job pattern: the pipeline continues on the instance after the
+    // response (CPU allocation is always-on); clients poll task state.
+    runPipeline({ store, storage, taskId: req.params.taskId, mockCatalog: catalog })
+      .then((out) => log.info('pipeline_job_done', { task_id: req.params.taskId, ...out.summary }))
+      .catch((err) => log.error('pipeline_job_failed', { task_id: req.params.taskId, error: String(err.message).slice(0, 200) }));
+    res.status(202).json({ task_id: req.params.taskId, started: true });
   });
 
   app.post('/api/demo/load', async (_req, res) => {
@@ -155,8 +196,10 @@ export function buildApp() {
       const file = d.file.split('/').pop();
       await ingestFile({ store, storage, taskId: task.task_id, filename: file, buffer: readFileSync(join(repoRoot, d.file)) });
     }
-    const out = await runPipeline({ store, storage, taskId: task.task_id, mockCatalog: buildMockCatalogFromDataset(demoDir, readFileSync) });
-    res.json({ task_id: task.task_id, ...out.summary });
+    runPipeline({ store, storage, taskId: task.task_id, mockCatalog: buildMockCatalogFromDataset(demoDir, readFileSync) })
+      .then((out) => log.info('pipeline_job_done', { task_id: task.task_id, ...out.summary }))
+      .catch((err) => log.error('pipeline_job_failed', { task_id: task.task_id, error: String(err.message).slice(0, 200) }));
+    res.status(202).json({ task_id: task.task_id, started: true });
   });
 
   app.get('/api/tasks/:taskId/dashboard', async (req, res) => {
@@ -164,8 +207,31 @@ export function buildApp() {
   });
 
   app.get('/api/tasks/:taskId/report', async (req, res) => {
-    const report = await latestReport(req.params.taskId);
-    if (!report) throw new AppError('ERR_TASK_NOT_FOUND', { hint: 'no report generated yet' });
+    let report = await latestReport(req.params.taskId);
+    if (!report) {
+      // Lazy self-healing generation: if the background job was interrupted
+      // (e.g. instance scaled to zero), assemble the report on demand from
+      // the persisted records and calculations.
+      const task = await getTask(store, req.params.taskId);
+      const records = await store.query('activity_records', 'task_id', req.params.taskId);
+      if (records.length === 0) throw new AppError('ERR_TASK_NOT_FOUND', { hint: 'no report can be generated yet' });
+      const { aggregate, topEmitters } = await import('./services/calculation.js');
+      const calcsWithMeta = [];
+      for (const r of records) {
+        if (r.excluded_from_calc) continue;
+        const calc = await store.get('calculations', `calc_${r.record_id}`);
+        if (calc) calcsWithMeta.push({ calc, meta: r });
+      }
+      const factorsById = Object.fromEntries((await store.list('emission_factors')).map((f) => [f.factor_id, f]));
+      const agg = aggregate(calcsWithMeta);
+      const top = topEmitters(calcsWithMeta);
+      const scenarioOut = await computeScenarios({
+        store, taskId: req.params.taskId, records: records.filter((r) => !r.excluded_from_calc),
+        calcs: calcsWithMeta.map((x) => x.calc), factorsById, taskGwpVersion: task.gwp_version,
+      });
+      report = await assembleReport({ store, taskId: req.params.taskId, task, records, calcs: calcsWithMeta.map((x) => x.calc), calcsWithMeta, agg, top, scenarios: scenarioOut, factorsById });
+      log.info('report_lazy_generated', { task_id: req.params.taskId });
+    }
     const citations = await scanReportCitations(store, report);
     res.json({ report, citations });
   });
@@ -240,8 +306,8 @@ export function buildApp() {
   return app;
 }
 
-export function startServer(port = Number(process.env.PORT || 8080)) {
-  const app = buildApp();
+export async function startServer(port = Number(process.env.PORT || 8080)) {
+  const app = await buildApp();
   return app.listen(port, () => {
     log.info('server_started', { port });
   });
@@ -249,5 +315,5 @@ export function startServer(port = Number(process.env.PORT || 8080)) {
 
 const isMain = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
 if (isMain) {
-  startServer();
+  startServer().catch((err) => { console.error(err); process.exit(1); });
 }

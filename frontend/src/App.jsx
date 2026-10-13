@@ -15,7 +15,7 @@ export default function App() {
   let page = <P1Home onTask={chooseTask} />;
   if (taskId) {
     const map = {
-      upload: <P2Upload taskId={taskId} onProgress={() => {}} />,
+      upload: <P2Upload taskId={taskId} onProgress={() => {}} chooseTaskIfSet={chooseTask} />,
       records: <P3Records taskId={taskId} />,
       match: <P4Matching taskId={taskId} params={params} />,
       dashboard: <P5Dashboard taskId={taskId} />,

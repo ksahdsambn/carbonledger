@@ -4,7 +4,7 @@
 // insufficient-recall flagging. Vectors come from the Google official
 // embedding model via the unified AI wrapper (mock adapter hashes in dev).
 import { log } from '../logging.js';
-import { embedText, mode } from '../ai/client.js';
+import { embedText, embedTexts, mode } from '../ai/client.js';
 
 export function cosine(a, b) {
   let dot = 0;
@@ -51,15 +51,15 @@ function keywordScores(factors, terms, relaxed) {
  */
 export async function buildSemanticIndex({ store, taskId = 'index-build' }) {
   const factors = await store.list('emission_factors');
-  let built = 0;
-  for (const f of factors) {
-    if (Array.isArray(f.embedding) && f.embedding.length > 0) continue;
-    const vec = await embedText({ taskId, text: factorText(f), traceStore: store });
-    await store.put('emission_factors', f.factor_id, { ...f, embedding: vec });
-    built += 1;
+  const pending = factors.filter((f) => !Array.isArray(f.embedding) || f.embedding.length === 0);
+  if (pending.length > 0) {
+    const vectors = await embedTexts({ taskId, texts: pending.map(factorText), traceStore: store });
+    for (let i = 0; i < pending.length; i += 1) {
+      await store.put('emission_factors', pending[i].factor_id, { ...pending[i], embedding: vectors[i] });
+    }
   }
-  log.info('semantic_index_built', { total: factors.length, newly_embedded: built, adapter: mode() });
-  return { total: factors.length, newly_embedded: built };
+  log.info('semantic_index_built', { total: factors.length, newly_embedded: pending.length, adapter: mode() });
+  return { total: factors.length, newly_embedded: pending.length };
 }
 
 /**

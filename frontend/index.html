@@ -7,6 +7,24 @@
   </head>
   <body>
     <div id="root"></div>
+    <script type="module">
+      // Anonymous sign-in on load (PRD 10.3: judges enter without any
+      // registration). Uses the runtime config Firebase Hosting injects.
+      (async () => {
+      try {
+        const cfg = await (await fetch('/__/firebase/init.json')).json();
+        const [{ initializeApp }, { getAuth, signInAnonymously }] = await Promise.all([
+          import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js'),
+          import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js'),
+        ]);
+        const app = initializeApp(cfg);
+        const cred = await signInAnonymously(getAuth(app));
+        window.__userUid = cred.user.uid;
+      } catch (e) {
+        console.info('Anonymous auth unavailable (local dev); continuing without it.');
+      }
+      })();
+    </script>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

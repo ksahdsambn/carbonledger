@@ -29,6 +29,7 @@ export async function buildUnitsForDocument({ store, storage, doc }) {
   const make = async (pageNumber, representationKey) => {
     const id = `unit_${randomUUID().slice(0, 8)}`;
     const unit = {
+      id,
       task_id: doc.task_id,
       document_id: doc.id,
       page_number: pageNumber,
