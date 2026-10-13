@@ -1,16 +1,16 @@
 {
-  "measured": "avg 98.7%, quantity 96.7%, unit 96.7%",
-  "pass": false,
+  "measured": "avg 100.0%, quantity 100.0%, unit 100.0%",
+  "pass": true,
   "detail": {
     "rates": {
-      "quantity": 0.9666666666666667,
-      "unit": 0.9666666666666667,
+      "quantity": 1,
+      "unit": 1,
       "amount": 1,
       "currency": 1,
       "activity_date": 1
     },
-    "mistakes": 2,
+    "mistakes": 0,
     "records": 31,
-    "est_cost_usd": 0.009175
+    "est_cost_usd": 0.009302
   }
 }

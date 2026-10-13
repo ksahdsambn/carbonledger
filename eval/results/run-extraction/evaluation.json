@@ -1,0 +1,24 @@
+{
+  "run_at": "2026-10-13T13:45:00.611Z",
+  "mode": "extraction",
+  "rows": [
+    {
+      "id": "field_extraction_accuracy",
+      "group": "extraction",
+      "name": "Field extraction accuracy (quantity, unit, amount, date, currency)",
+      "target": "average >= 95%; quantity and unit >= 98%",
+      "measured": "avg 100.0%, quantity 100.0%, unit 100.0%",
+      "pass": true,
+      "mandatory": true,
+      "veto": false,
+      "evidence": "eval\\results\\field_extraction_accuracy.json",
+      "result": "PASS"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 0,
+    "overall": "PASS",
+    "vetoed": false
+  }
+}

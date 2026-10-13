@@ -21,15 +21,15 @@ Counts (must match): FR = 57, NFR = 21, AI = 13, EV = 6, M = 5, D = 5, L = 3.
 | FR-201 | Classify each page unit into one of 7 doc types + confidence; ≥93% (28/30) on Golden | T-014 | T-015 | verified |
 | FR-202 | Closed enum of 7 types; 0 out-of-set values over ≥200 calls | T-014 | T-015 | verified |
 | FR-203 | Classification confidence <0.7 routes to manual confirmation | T-014 | T-015 | verified |
-| FR-301 | Extract per field table; missing fields left empty, never fabricated | T-016 | T-017 | in_progress |
-| FR-302 | All units converted to base units (10 conversion pairs correct) | T-018 | T-019 | in_progress |
-| FR-303 | Every extracted field carries 0–1 confidence | T-016 | T-017 | in_progress |
-| FR-304 | One document may yield multiple activity records (3-line invoice → 3) | T-016 | T-017 | in_progress |
-| FR-305 | Extraction traceable to source region with highlight on view | T-020 | T-020 | in_progress |
-| FR-306 | Handwritten/low-quality scans still attempted, ≥2/3 yield valid records | T-016 | T-017 | in_progress |
+| FR-301 | Extract per field table; missing fields left empty, never fabricated | T-016 | T-017 | verified |
+| FR-302 | All units converted to base units (10 conversion pairs correct) | T-018 | T-019 | verified |
+| FR-303 | Every extracted field carries 0–1 confidence | T-016 | T-017 | verified |
+| FR-304 | One document may yield multiple activity records (3-line invoice → 3) | T-016 | T-017 | verified |
+| FR-305 | Extraction traceable to source region with highlight on view | T-020 | T-020 | verified |
+| FR-306 | Handwritten/low-quality scans still attempted, ≥2/3 yield valid records | T-016 | T-017 | verified |
 | FR-401 | All 10 unit conversions implemented, each conversion in audit trail | T-018 | T-019 | verified |
 | FR-402 | Origin/destination normalized to country-region + city structure | T-018 | T-019 | verified |
-| FR-403 | Transport mode closed enum (10 values); 0 out-of-set over ≥100 calls | T-018 | T-019 | in_progress |
+| FR-403 | Transport mode closed enum (10 values); 0 out-of-set over ≥100 calls | T-018 | T-019 | verified |
 | FR-501 | Scope 1/2/3 boundary decision; ≥90% (9/10) on Golden | T-023 | T-024 | in_progress |
 | FR-502 | Scope 3 refined to one of 15 categories (code + name); ≥90% (11/12) | T-023 | T-024 | in_progress |
 | FR-503 | Boundary decision carries non-empty English rationale | T-023 | T-024 | in_progress |

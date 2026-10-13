@@ -136,7 +136,7 @@ async function dispatch({ model, parts, schema, mockFn, mockContext, timeoutMs }
       headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
       body: JSON.stringify({
         contents: [{ role: 'user', parts }],
-        generationConfig: { responseMimeType: 'application/json', responseSchema: schema, temperature: 0.1 },
+        generationConfig: { responseMimeType: 'application/json', responseSchema: schema, temperature: 0 },
       }),
       signal: controller.signal,
     });

@@ -1,15 +1,12 @@
 {
   "rates": {
-    "quantity": 0.9666666666666667,
-    "unit": 0.9666666666666667,
+    "quantity": 1,
+    "unit": 1,
     "amount": 1,
     "currency": 1,
     "activity_date": 1
   },
-  "avg": 0.9866666666666667,
-  "mistakes": [
-    "GR-010.quantity: exp=18000 got=null",
-    "GR-010.unit: exp=\"kg\" got=null"
-  ],
+  "avg": 1,
+  "mistakes": [],
   "normed": 31
 }
