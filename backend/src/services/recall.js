@@ -5,6 +5,7 @@
 // embedding model via the unified AI wrapper (mock adapter hashes in dev).
 import { log } from '../logging.js';
 import { embedText, embedTexts, mode } from '../ai/client.js';
+import { listFactors, saveFactors } from './factorLibrary.js';
 
 export function cosine(a, b) {
   let dot = 0;
@@ -50,13 +51,11 @@ function keywordScores(factors, terms, relaxed) {
  * Builds (or rebuilds) the in-process semantic index over the factor store.
  */
 export async function buildSemanticIndex({ store, taskId = 'index-build' }) {
-  const factors = await store.list('emission_factors');
+  const factors = await listFactors(store);
   const pending = factors.filter((f) => !Array.isArray(f.embedding) || f.embedding.length === 0);
   if (pending.length > 0) {
     const vectors = await embedTexts({ taskId, texts: pending.map(factorText), traceStore: store });
-    for (let i = 0; i < pending.length; i += 1) {
-      await store.put('emission_factors', pending[i].factor_id, { ...pending[i], embedding: vectors[i] });
-    }
+    await saveFactors(store, pending.map((f, i) => ({ ...f, embedding: vectors[i] })));
   }
   log.info('semantic_index_built', { total: factors.length, newly_embedded: pending.length, adapter: mode() });
   return { total: factors.length, newly_embedded: pending.length };
@@ -68,8 +67,10 @@ export async function buildSemanticIndex({ store, taskId = 'index-build' }) {
  * @param {'both'|'keyword'|'semantic'} o.channel
  */
 export async function recallCandidates({ store, record, channel = process.env.RECALL_CHANNEL || 'both', taskId }) {
-  const factors = (await store.list('emission_factors')).map(({ embedding, ...f }) => f);
-  const vectors = new Map((await store.list('emission_factors')).map((f) => [f.factor_id, f.embedding]));
+  // One cached read serves both the metadata view and the vector view.
+  const library = await listFactors(store);
+  const factors = library.map(({ embedding, ...f }) => f);
+  const vectors = new Map(library.map((f) => [f.factor_id, f.embedding]));
   const terms = queryTerms(record);
   log.info('recall_started', { task_id: taskId, channel, terms });
 

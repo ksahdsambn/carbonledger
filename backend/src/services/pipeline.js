@@ -2,7 +2,6 @@
 // extract -> normalize -> boundary -> match -> assess -> calculate -> review
 // -> aggregate -> scenarios -> report). Works in mock mode for offline
 // development; real adapter produces the auditable metrics.
-import { getConfig } from '../config.js';
 import { log } from '../logging.js';
 import { AppError } from '../errors.js';
 import { setDocumentStatus, FILE_STATUSES } from './fileService.js';
@@ -16,14 +15,18 @@ import { computeEmission, aggregate, topEmitters } from './calculation.js';
 import { computeScenarios } from './scenarios.js';
 import { assembleReport } from './reportService.js';
 import { openReviewForTask } from './reviewQueue.js';
+import { listFactors } from './factorLibrary.js';
 
 async function withStatus(store, taskId, docId, status, fn) {
+  if (docId) await setDocumentStatus(store, taskId, docId, status);
   try {
-    if (docId) await setDocumentStatus(store, taskId, docId, status);
     return await fn();
   } catch (err) {
-    if (docId && !(err instanceof AppError && err.code === 'ERR_ENUM_INVALID')) {
-      try { await setDocumentStatus(store, taskId, docId, 'failed'); } catch { /* already failed */ }
+    // Any processing failure marks the document failed so a task never stalls
+    // in a non-terminal state (FR-1201, NFR-202). A rejected transition here
+    // means the document already reached a terminal state, so it is ignored.
+    if (docId) {
+      try { await setDocumentStatus(store, taskId, docId, 'failed'); } catch { /* already terminal */ }
     }
     throw err;
   }
@@ -35,64 +38,71 @@ async function withStatus(store, taskId, docId, status, fn) {
  *        (offline development only; ignored in real adapter mode)
  */
 export async function runPipeline({ store, storage, taskId, mockCatalog = new Map() }) {
+  const startedAt = Date.now();
   const task = await store.get('tasks', taskId);
   if (!task) throw new AppError('ERR_TASK_NOT_FOUND', { task_id: taskId });
-  const cfg = getConfig().values;
+  const indexT0 = Date.now();
   await buildSemanticIndex({ store, taskId });
-  const factorsById = Object.fromEntries((await store.list('emission_factors')).map((f) => [f.factor_id, f]));
+  const factorsById = Object.fromEntries((await listFactors(store)).map((f) => [f.factor_id, f]));
+  const indexMs = Date.now() - indexT0;
 
   const docs = (await store.query('documents', 'task_id', taskId)).filter((d) => d.status !== 'discarded');
-  const allRecords = [];
-  const calcs = [];
-  const matchResults = [];
+  const docMs = [];
 
-  for (const doc of docs) {
-    if (doc.status === 'completed') continue;
-    try {
-      await withStatus(store, taskId, doc.id, 'parsing', async () => {
-        let units = await store.query('document_units', 'document_id', doc.id);
-        if (units.length === 0) {
-          const fresh = await buildUnitsForDocument({ store, storage, doc });
-          units = fresh;
-        }
-        const mockMeta = mockCatalog.get(doc.original_filename) ?? {};
-        const perDocRecords = [];
-        for (const unit of units) {
-          // --- classification ---
-          let current = unit;
-          if (!current.doc_type) {
-            let bytes = await storage.get(unit.representation_path);
-            if (doc.format !== 'pdf') bytes = await storage.get(doc.storage_path);
-            if (mockMeta.classification) current = { ...unit, doc_type_hint: mockMeta.classification };
-            current = await classifyUnit({
-              traceStore: store, taskId, unit: current,
-              representationBytes: bytes, sourceFormat: doc.format, filename: doc.original_filename,
-            });
-          }
-          if (current.needs_manual_confirmation && !mockMeta.records) {
-            log.warn('unit_needs_manual_confirmation', { task_id: taskId, unit: current.id });
-          }
-          // --- extraction ---
-          await setDocumentStatus(store, taskId, doc.id, 'extracting');
-          const refFrag = (r) => (r.source_ref ? r.source_ref.split('#')[1] ?? '' : '');
-          const expected = (mockMeta.records ?? []).filter((r) => {
-            const pageMatch = /^page=(\d+)/.exec(refFrag(r));
-            if (pageMatch) return Number(pageMatch[1]) === unit.page_number;
-            return doc.format !== 'pdf' || unit.page_number === 1; // sheet/row refs live on the single unit
-          });
-          const records = await extractRecords({
+  // Documents are mutually independent, so they are processed by a bounded
+  // worker pool (NFR-101: 20 documents end-to-end inside the 3-minute budget).
+  // Each worker owns its accumulators and results are merged back in document
+  // order, so the assembled report stays reproducible run to run.
+  async function processDocument(doc) {
+    const recordsOut = [];
+    const calcsOut = [];
+    const matchesOut = [];
+    if (doc.status === 'completed') return { records: recordsOut, calcs: calcsOut, matches: matchesOut };
+    await withStatus(store, taskId, doc.id, 'parsing', async () => {
+      let units = await store.query('document_units', 'document_id', doc.id);
+      if (units.length === 0) {
+        const fresh = await buildUnitsForDocument({ store, storage, doc });
+        units = fresh;
+      }
+      const mockMeta = mockCatalog.get(doc.original_filename) ?? {};
+      const perDocRecords = [];
+      for (const unit of units) {
+        // --- classification ---
+        let current = unit;
+        if (!current.doc_type) {
+          let bytes = await storage.get(unit.representation_path);
+          if (doc.format !== 'pdf') bytes = await storage.get(doc.storage_path);
+          if (mockMeta.classification) current = { ...unit, doc_type_hint: mockMeta.classification };
+          current = await classifyUnit({
             traceStore: store, taskId, unit: current,
-            representationBytes: await storage.get(doc.format === 'pdf' ? unit.representation_path : doc.storage_path),
-            sourceFormat: doc.format, filename: doc.original_filename, docType: current.doc_type,
-            expectedRecords: expected.map(({ record_id, source_ref, doc_type, ...rest }) => rest),
+            representationBytes: bytes, sourceFormat: doc.format, filename: doc.original_filename,
           });
-          for (const r of records) { r.doc_type = current.doc_type; perDocRecords.push(r); }
         }
-        markSuspectedDuplicates(perDocRecords);
+        if (current.needs_manual_confirmation && !mockMeta.records) {
+          log.warn('unit_needs_manual_confirmation', { task_id: taskId, unit: current.id });
+        }
+        // --- extraction ---
+        await setDocumentStatus(store, taskId, doc.id, 'extracting');
+        const refFrag = (r) => (r.source_ref ? r.source_ref.split('#')[1] ?? '' : '');
+        const expected = (mockMeta.records ?? []).filter((r) => {
+          const pageMatch = /^page=(\d+)/.exec(refFrag(r));
+          if (pageMatch) return Number(pageMatch[1]) === unit.page_number;
+          return doc.format !== 'pdf' || unit.page_number === 1; // sheet/row refs live on the single unit
+        });
+        const records = await extractRecords({
+          traceStore: store, taskId, unit: current,
+          representationBytes: await storage.get(doc.format === 'pdf' ? unit.representation_path : doc.storage_path),
+          sourceFormat: doc.format, filename: doc.original_filename, docType: current.doc_type,
+          expectedRecords: expected.map(({ record_id, source_ref, doc_type, ...rest }) => rest),
+        });
+        for (const r of records) { r.doc_type = current.doc_type; perDocRecords.push(r); }
+      }
+      markSuspectedDuplicates(perDocRecords);
 
-        // --- normalization + boundary + matching + calculation ---
-        await setDocumentStatus(store, taskId, doc.id, 'matching');
-        for (const raw of perDocRecords) {
+      // --- normalization + boundary + matching + calculation ---
+      await setDocumentStatus(store, taskId, doc.id, 'matching');
+      for (const raw of perDocRecords) {
+        try {
           const { record } = await normalizeRecord(raw, { store });
           const mockBoundaryHint = mockMeta.records?.find((r) => r.item_description === raw.item_description)?.expected_boundary;
           const boundary = await decideBoundary({ traceStore: store, taskId, record, expectedBoundary: mockBoundaryHint });
@@ -101,7 +111,7 @@ export async function runPipeline({ store, storage, taskId, mockCatalog = new Ma
           record.category_name = boundary.category_name;
           record.boundary_rationale = boundary.rationale;
           record.inferred_field_count = Object.values(record.field_confidence ?? {}).filter((c) => c < 0.5).length;
-
+  
           const recall = await recallCandidates({ store, record, taskId });
           record.recall_insufficient = recall.insufficient_recall;
           const selection = await selectFactor({
@@ -140,12 +150,12 @@ export async function runPipeline({ store, storage, taskId, mockCatalog = new Ma
           record.no_high_confidence_factor = assessment.no_high_confidence_factor;
           record.match_id = matchId;
           await store.put('activity_records', record.record_id, record);
-          matchResults.push({ record, selection, factor, assessment });
-
+          matchesOut.push({ record, selection, factor, assessment });
+  
           if (factor && record.quantity != null) {
             try {
               const calc = await computeEmission({ store, record, factor, taskGwpVersion: task.gwp_version });
-              calcs.push(calc);
+              calcsOut.push(calc);
             } catch (calcErr) {
               // Unbridgeable unit pair: the self-check contract routes the
               // record to review instead of failing the document (AI-302).
@@ -157,17 +167,66 @@ export async function runPipeline({ store, storage, taskId, mockCatalog = new Ma
             record.excluded_from_calc = record.excluded_from_calc ?? (record.quantity == null ? 'missing quantity/unit — not included in accounting' : null);
             await store.put('activity_records', record.record_id, record);
           }
-          allRecords.push(record);
+          recordsOut.push(record);
+        } catch (recordErr) {
+          // A record that cannot be resolved after the configured retries is
+          // marked failed and routed to review; the rest of the document still
+          // contributes its records (NFR-202: the failed object is the record).
+          log.error('record_pipeline_failed', {
+            task_id: taskId, doc: doc.id, record: raw.record_id,
+            error: String(recordErr.message).slice(0, 200),
+          });
+          const failed = {
+            ...raw,
+            document_id: doc.id,
+            uncertainty_level: 'high',
+            processing_failed: true,
+            failure_code: recordErr.code ?? 'ERR_INTERNAL',
+            failure_message: String(recordErr.message).slice(0, 200),
+            excluded_from_calc: `processing failed: ${String(recordErr.message).slice(0, 120)}`,
+          };
+          await store.put('activity_records', failed.record_id, failed);
+          recordsOut.push(failed);
         }
-        const needsReview = perDocRecords.some((r) => r.uncertainty_level === 'high');
-        await setDocumentStatus(store, taskId, doc.id, needsReview ? 'needs_review' : 'completed');
-      });
-    } catch (err) {
-      log.error('document_pipeline_failed', { task_id: taskId, doc: doc.id, error: String(err.message).slice(0, 200), stack: String(err.stack).split('\n').slice(0, 6).join(' | ') });
-    }
+      }
+      const needsReview = perDocRecords.some((r) => r.uncertainty_level === 'high');
+      await setDocumentStatus(store, taskId, doc.id, needsReview ? 'needs_review' : 'completed');
+    });
+    return { records: recordsOut, calcs: calcsOut, matches: matchesOut };
   }
 
-  const factorsByIdForCalc = factorsById;
+  const concurrency = Math.max(1, Number(process.env.PIPELINE_CONCURRENCY || 4));
+  const perDoc = new Array(docs.length).fill(null);
+  let cursor = 0;
+  const worker = async () => {
+    for (;;) {
+      const i = cursor;
+      cursor += 1;
+      if (i >= docs.length) return;
+      const doc = docs[i];
+      const docT0 = Date.now();
+      try {
+        perDoc[i] = await processDocument(doc);
+      } catch (err) {
+        log.error('document_pipeline_failed', { task_id: taskId, doc: doc.id, error: String(err.message).slice(0, 200), stack: String(err.stack).split('\n').slice(0, 6).join(' | ') });
+        perDoc[i] = { records: [], calcs: [], matches: [] };
+      }
+      docMs.push(Date.now() - docT0);
+    }
+  };
+  await Promise.all(Array.from({ length: Math.min(concurrency, docs.length) }, worker));
+
+  const allRecords = [];
+  const calcs = [];
+  const matchResults = [];
+  for (const part of perDoc) {
+    if (!part) continue;
+    allRecords.push(...part.records);
+    calcs.push(...part.calcs);
+    matchResults.push(...part.matches);
+  }
+  const docsMs = Date.now() - startedAt;
+
   const calcsWithMeta = calcs.map((c) => ({
     calc: c,
     meta: allRecords.find((r) => r.record_id === c.activity_record_id) ?? {},
@@ -187,6 +246,16 @@ export async function runPipeline({ store, storage, taskId, mockCatalog = new Ma
     total_kgco2e: calcs.reduce((a, c) => a + c.emission_kgco2e, 0),
     scopes: agg.scope,
   };
-  log.info('pipeline_completed', { task_id: taskId, ...summary });
+  // Stage timing is the NFR-101 evidence trail: index build, per-document
+  // processing, and the aggregate/scenario/report tail.
+  log.info('pipeline_completed', {
+    task_id: taskId,
+    ...summary,
+    index_ms: indexMs,
+    documents_ms: docsMs,
+    tail_ms: Date.now() - startedAt - docsMs,
+    total_ms: Date.now() - startedAt,
+    per_document_ms: docMs,
+  });
   return { summary, report, scenarios: scenarioOut };
 }

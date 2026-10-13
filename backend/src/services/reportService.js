@@ -4,8 +4,10 @@
 // list, factor-year distribution. Narratives use the Pro model in real mode
 // and structured deterministic templates otherwise (adapter recorded).
 import { mode } from '../ai/client.js';
+import { log } from '../logging.js';
 import { toDisplayTons, displayConsistent } from './calculation.js';
 import { SCOPE3_CATEGORIES } from './pipelineModelCalls.js';
+import { listFactors } from './factorLibrary.js';
 
 const TRACK = 'Sustainability & Social Impact';
 
@@ -16,7 +18,8 @@ async function buildNarratives(ctx) {
   if (mode() === 'real') {
     const { callModel } = await import('../ai/client.js');
     const { getConfig } = await import('../config.js');
-    const { result } = await callModel({
+    try {
+      const { result } = await callModel({
       taskId: ctx.taskId, stage: 'report_narrative', model: getConfig().values.REASONING_MODEL,
       parts: [{ text: `Write report narrative sections as JSON per the schema, professional English. HARD REQUIREMENTS: exactly 3 items in "recommendations", each at least 40 words; at least 3 items in "improvement_recommendations"; "data_quality" at least 30 words. Reference the concrete numbers in the context.\nContext: ${JSON.stringify(ctx.summaries)}` }],
       schema: {
@@ -37,6 +40,13 @@ async function buildNarratives(ctx) {
       mockFn: () => templateNarratives(ctx),
     });
     return { ...result, adapter: 'real' };
+    } catch (err) {
+      // The report must never be lost to one flaky narrative call: the
+      // deterministic templates carry the same required content and the
+      // fallback is recorded in the report's adapter field for audit.
+      log.warn('report_narrative_fallback', { task_id: ctx.taskId, error: String(err.message).slice(0, 200) });
+      return { ...templateNarratives(ctx), adapter: 'template_fallback' };
+    }
   }
   return { ...templateNarratives(ctx), adapter: mode() };
 }
@@ -206,7 +216,7 @@ export async function assembleReport({ store, taskId, task, records, calcs, calc
 /** AI-201/AI-202 checks: coverage and validity of numeric-conclusion anchors. */
 export async function scanReportCitations(store, report) {
   const records = new Set((await store.list('activity_records')).map((r) => r.record_id));
-  const factors = new Set((await store.list('emission_factors')).map((f) => f.factor_id));
+  const factors = new Set((await listFactors(store)).map((f) => f.factor_id));
   const scenarios = new Set((await store.list('scenarios')).map((s) => s.id));
   let covered = 0;
   const invalid = [];

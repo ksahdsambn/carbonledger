@@ -9,7 +9,7 @@ import { errorResponse, AppError } from './errors.js';
 import { getConfig } from './config.js';
 import { createStore } from './store/index.js';
 import { createStorage } from './storage/index.js';
-import { loadFactorLibrary, getFactorById, searchFactorsByKeyword } from './services/factorLibrary.js';
+import { loadFactorLibrary, getFactorById, searchFactorsByKeyword, listFactors } from './services/factorLibrary.js';
 import { createTask, getTask } from './services/taskService.js';
 import { ingestFile, resolveDuplicate, setDocumentStatus, getDocumentFile } from './services/fileService.js';
 import { runPipeline } from './services/pipeline.js';
@@ -222,7 +222,7 @@ export async function buildApp() {
         const calc = await store.get('calculations', `calc_${r.record_id}`);
         if (calc) calcsWithMeta.push({ calc, meta: r });
       }
-      const factorsById = Object.fromEntries((await store.list('emission_factors')).map((f) => [f.factor_id, f]));
+      const factorsById = Object.fromEntries((await listFactors(store)).map((f) => [f.factor_id, f]));
       const agg = aggregate(calcsWithMeta);
       const top = topEmitters(calcsWithMeta);
       const scenarioOut = await computeScenarios({
