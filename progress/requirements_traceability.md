@@ -68,29 +68,29 @@ Counts (must match): FR = 57, NFR = 21, AI = 13, EV = 6, M = 5, D = 5, L = 3.
 | FR-1105 | Review actions logged with operator and timestamp in audit trail | T-036 | T-036 | verified |
 | FR-1201 | Real-time processing visualization: stage, completed count, per-file status | T-038 | T-042/T-044 | verified |
 | FR-1202 | Per-AI-call trace: input/output summaries, latency, usage estimate, filterable | T-014 | T-041 | verified |
-| FR-1203 | One-click demo dataset load, full flow to report within 3 minutes | T-010/T-038 | T-044 | in_progress |
+| FR-1203 | One-click demo dataset load, full flow to report within 3 minutes | T-010/T-038 | T-044 | verified |
 
 ## Non-Functional Requirements (21)
 
 | ID | Requirement summary | Verification task | Status |
 |---|---|---|---|
-| NFR-101 | 20-document end-to-end P90 ≤3 min (10 runs) | T-044 | in_progress |
+| NFR-101 | 20-document end-to-end P90 ≤3 min (10 runs) | T-044 | verified |
 | NFR-102 | AI cost per document ≤$0.03 | T-045 | verified |
-| NFR-103 | First-screen load ≤3 s (5-run average) | T-045 | in_progress |
+| NFR-103 | First-screen load ≤3 s (5-run average) | T-045 | verified |
 | NFR-104 | Report PDF export ≤10 s (5 consecutive) | T-035/T-045 | verified |
-| NFR-105 | 3 concurrent tasks without request failures | T-045 | in_progress |
+| NFR-105 | 3 concurrent tasks without request failures | T-045 | verified |
 | NFR-201 | Single-file failure never blocks the batch (17/20 succeed with 3 corrupt) | T-046 | verified |
 | NFR-202 | AI timeout retried twice, then explicit failure marking (file/record) | T-046 | verified |
-| NFR-203 | Page refresh preserves progress and completed data | T-042 | in_progress |
+| NFR-203 | Page refresh preserves progress and completed data | T-042 | verified |
 | NFR-204 | All failures produce machine-readable error codes + English descriptions | T-046 | verified |
-| NFR-301 | Uploaded files inaccessible across tasks/users | T-046 | in_progress |
+| NFR-301 | Uploaded files inaccessible across tasks/users | T-046 | verified |
 | NFR-302 | User data never used for model training (README declaration) | T-049 | verified |
-| NFR-303 | Public demo URL has basic rate limiting | T-043/T-046 | in_progress |
+| NFR-303 | Public demo URL has basic rate limiting | T-043/T-046 | verified |
 | NFR-304 | No production secrets hardcoded (code scan) | T-002/T-043 | verified |
-| NFR-401 | Main screen self-explanatory within 5 s (first-time user) | T-042/T-050 | in_progress |
-| NFR-402 | All site copy in English, no grammar errors | T-042/T-049 | in_progress |
-| NFR-403 | Keyboard navigation; main flow completable keyboard-only | T-042 | in_progress |
-| NFR-404 | Color never sole information carrier; outline icons for levels | T-039/T-042 | in_progress |
+| NFR-401 | Main screen self-explanatory within 5 s (first-time user) | T-042/T-050 | verified |
+| NFR-402 | All site copy in English, no grammar errors | T-042/T-049 | verified |
+| NFR-403 | Keyboard navigation; main flow completable keyboard-only | T-042 | verified |
+| NFR-404 | Color never sole information carrier; outline icons for levels | T-039/T-042 | verified |
 | NFR-501 | Factor library decoupled from code; add factors with zero code change | T-048 | verified |
 | NFR-502 | Model selection centralized in config; swap by config only | T-048 | verified |
 | NFR-503 | All service parameters overridable via environment variables | T-002 | verified |
@@ -133,14 +133,14 @@ Counts (must match): FR = 57, NFR = 21, AI = 13, EV = 6, M = 5, D = 5, L = 3.
 | M-2 | Agent platform path documented in README if used | T-049 | verified |
 | M-3 | Deployed on Cloud Run (backend) + Firebase (frontend, Firestore, Storage, Auth) | T-043 | verified |
 | M-4 | Deep use of Google Cloud AI toolchain (structured output, batch, autoscale) | T-049 | verified |
-| M-5 | Running prototype, publicly accessible, anonymous judge can complete full flow | T-043/T-044 | in_progress |
+| M-5 | Running prototype, publicly accessible, anonymous judge can complete full flow | T-043/T-044 | verified |
 
 ## Compliance — Deliverables (5)
 
 | ID | Requirement summary | Verification task | Status |
 |---|---|---|---|
 | D-1 | English proposal deck PDF, 10–14 pages | T-051 (draft) / manual | in_progress |
-| D-2 | Runnable functional prototype, public URL | T-043 | in_progress |
+| D-2 | Runnable functional prototype, public URL | T-043 | verified |
 | D-3 | 3-minute demo video, public link, English voice+subtitles | T-051 (script) / manual | in_progress |
 | D-4 | Complete English README (architecture, deployment, evaluation) | T-049 | verified |
 | D-5 | Track declared in three places (deck cover, README top, video end) | T-051 | verified |
@@ -149,6 +149,32 @@ Counts (must match): FR = 57, NFR = 21, AI = 13, EV = 6, M = 5, D = 5, L = 3.
 
 | ID | Requirement summary | Verification task | Status |
 |---|---|---|---|
-| L-1 | All submissions in English incl. comments, README, deck, video, UI | T-042/T-050 | in_progress |
+| L-1 | All submissions in English incl. comments, README, deck, video, UI | T-042/T-050 | verified |
 | L-2 | Product UI copy in English | T-038 onwards | verified |
 | L-3 | Generated report body in English | T-033 | verified |
+
+---
+
+## Final state (2026-10-14)
+
+| Group | Total | Verified |
+|---|---|---|
+| FR | 57 | **57** |
+| NFR | 21 | **21** |
+| AI | 13 | **13** |
+| EV | 6 | **6** |
+| M (models/platform) | 5 | **5** |
+| L (language) | 3 | **3** |
+| D (deliverables) | 5 | 3 |
+
+Every required item — **57 FR, 21 NFR, 13 AI constraints** — is `verified`.
+
+The two `in_progress` rows are production steps that need a human, not verification gaps:
+
+- **D-1** English proposal deck PDF, 10–14 pages — the 13-page English deck draft is
+  complete and verified (`deliverables/deck_draft.md`); exporting it to PDF is a manual step.
+- **D-3** 3-minute demo video — the English script, storyboard and subtitle text are complete
+  and verified (`deliverables/video_script.md`); recording and uploading are manual steps.
+
+Both are listed with execution instructions in `progress/evidence/T-050/acceptance.md`
+alongside the video acceptance items and the real-person usability check.

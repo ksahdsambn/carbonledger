@@ -10,6 +10,7 @@ import { readFileSync, writeFileSync, mkdirSync, existsSync, readdirSync } from 
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { execFileSync } from 'node:child_process';
+import { CONFIG_DEFINITIONS } from '../backend/src/config.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const BASE = process.env.PUBLIC_BASE || 'https://myproject-dc19d.web.app';
@@ -92,17 +93,25 @@ check('A2', 'functional', 'One-click load of 20 documents produces a full report
 // A3 citation anchors resolve to existing source files, coverage 100%
 const recordAnchors = report.numeric_conclusions.filter((n) => n.ref_type === 'record');
 const docs = (await api(`/api/tasks/${taskId}/documents`)).body.documents;
+const ledgerRecords = (await api(`/api/tasks/${taskId}/dashboard`)).body.records;
+const docIds = new Set(docs.map((d) => d.id));
 let resolved = 0;
 let firstAnchor = null;
 for (const n of recordAnchors.slice(0, 12)) {
-  const rec = (await api(`/api/tasks/${taskId}/dashboard`)).body.records.find((r) => r.record_id === n.ref_id);
-  const doc = rec ? docs.find((d) => d.id === rec.document_id) : null;
-  if (!doc) continue;
-  const res = await fetch(`${BASE}/api/tasks/${taskId}/documents/${doc.id}/file`);
-  if (res.status === 200) { resolved += 1; firstAnchor = firstAnchor ?? { ref: n.ref_id, document: doc.original_filename, locator: n.locator }; }
+  const rec = ledgerRecords.find((r) => r.record_id === n.ref_id);
+  // The record's source_ref encodes the source document, worksheet or row
+  // (PRD 4.3): "<document_id>#page=<n>".
+  const docId = rec?.source_ref ? String(rec.source_ref).split('#')[0] : null;
+  if (!docId || !docIds.has(docId)) continue;
+  const res = await fetch(`${BASE}/api/tasks/${taskId}/documents/${docId}/file`);
+  if (res.status === 200) {
+    resolved += 1;
+    firstAnchor = firstAnchor ?? { anchor: n.ref_id, locator: rec.source_ref, document: docs.find((d) => d.id === docId)?.original_filename };
+  }
 }
-check('A3', 'functional', 'Every citation anchor resolves to its original file (coverage 100%, 0 invalid)', citations.coverage_pct === 100 && citations.invalid_count === 0 && resolved === Math.min(12, recordAnchors.length),
-  `coverage ${citations.coverage_pct}%, invalid ${citations.invalid_count}; sampled ${Math.min(12, recordAnchors.length)} record anchors, ${resolved} downloaded their source file (e.g. ${JSON.stringify(firstAnchor)})`);
+check('A3', 'functional', 'Every citation anchor resolves to its original file (coverage 100%, 0 invalid)',
+  citations.coverage_pct === 100 && citations.invalid_count === 0 && resolved === Math.min(12, recordAnchors.length),
+  `coverage ${citations.coverage_pct}%, invalid ${citations.invalid_count}; sampled ${Math.min(12, recordAnchors.length)} record anchors and opened each source document (${resolved} downloads, e.g. ${JSON.stringify(firstAnchor)})`);
 
 // A4 high-uncertainty records enter the review queue
 const queue = (await api(`/api/tasks/${taskId}/review`)).body.items;
@@ -147,9 +156,10 @@ check('A7', 'functional', 'PDF and CSV exports succeed with no encoding problems
 const reloaded = await api(`/api/tasks/${taskId}`);
 const reloadedDocs = reloaded.body.documents.length;
 const reloadedRecords = (await api(`/api/tasks/${taskId}/dashboard`)).body.records.length;
-const frontendPersists = readFileSync(join(ROOT, 'frontend/src/api.js'), 'utf8').includes('localStorage');
+const appSource = readFileSync(join(ROOT, 'frontend/src/App.jsx'), 'utf8');
+const frontendPersists = /localStorage\.setItem\('cl_task'/.test(appSource) && /localStorage\.getItem\('cl_task'/.test(appSource);
 check('A8', 'functional', 'Task state survives a page refresh', reloaded.status === 200 && reloadedDocs === 20 && reloadedRecords > 0 && frontendPersists,
-  `a fresh client (no cookies) re-read the task: ${reloadedDocs} documents and ${reloadedRecords} records persisted server-side; the SPA keeps the active task id in localStorage`);
+  `a fresh client (no cookies) re-read the task: ${reloadedDocs} documents and ${reloadedRecords} records persisted server-side; the SPA restores the active task from localStorage on load and keeps the anonymous session across reloads`);
 
 // ========================================================== B. COMPLIANCE
 // B1 deployed on Cloud Run + Firebase, public URL reachable
@@ -210,12 +220,19 @@ check('B4', 'compliance', 'All UI copy, report body, README and video subtitles 
   `checked ${visible.length} user-visible artifacts plus the generated report: no CJK characters; the model-output validator rejects non-English rationales. (Chinese strings in the normalization tables are input aliases for parsing Chinese-language source documents, not output copy.)`);
 
 // B5 track label identical in three places
-const readmeTrack = /Track: \*\*(.+?)\*\*/.exec(readFileSync(join(ROOT, 'README.md'), 'utf8'))?.[1];
-const deckTrack = /Track: \*\*(.+?)\*\*/.exec(readFileSync(join(ROOT, 'deliverables/deck_draft.md'), 'utf8'))?.[1];
-const videoTrack = /Sustainability & Social Impact/.test(readFileSync(join(ROOT, 'deliverables/video_script.md'), 'utf8'));
-const trackOk = readmeTrack === 'Sustainability & Social Impact' && deckTrack === readmeTrack && videoTrack;
-check('B5', 'compliance', 'The track label matches in all three places (deck cover, README top, video end)', trackOk,
-  `README top: "${readmeTrack}"; deck cover: "${deckTrack}"; video script closing credit present: ${videoTrack}`);
+const TRACK_LABEL = 'Sustainability & Social Impact';
+const trackLabel = (text) => {
+  // Collapse whitespace so a label wrapped across two lines still reads as one.
+  const flat = text.replace(/\s+/g, ' ');
+  const m = new RegExp(`Track[^.]{0,40}?(${TRACK_LABEL.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`).exec(flat);
+  return m ? m[1] : null;
+};
+const readmeTrack = trackLabel(readFileSync(join(ROOT, 'README.md'), 'utf8'));
+const deckTrack = trackLabel(readFileSync(join(ROOT, 'deliverables/deck_draft.md'), 'utf8'));
+const videoTrack = trackLabel(readFileSync(join(ROOT, 'deliverables/video_script.md'), 'utf8'));
+check('B5', 'compliance', 'The track label matches in all three places (deck cover, README top, video end)',
+  readmeTrack === TRACK_LABEL && deckTrack === TRACK_LABEL && videoTrack === TRACK_LABEL,
+  `README top: "${readmeTrack}"; deck cover: "${deckTrack}"; video script credit: "${videoTrack}"`);
 
 // ========================================================== C. ENGINEERING
 // C1 evaluation tool runs from the command line and prints a complete report
@@ -260,10 +277,11 @@ check('C4', 'engineering', 'Self-developed code is within the 7,000-line target 
 const readme = readFileSync(join(ROOT, 'README.md'), 'utf8');
 const readmeSections = ['## Architecture', '## Deployment (Cloud Run + Firebase)', '## Environment variables', '## Evaluation', '## Data sources', '## Error codes', '## Privacy'];
 const missingSections = readmeSections.filter((s) => !readme.includes(s));
-const envRows = (readme.match(/^\| [A-Z_]+ \|/gm) ?? []).length;
+const envRows = (readme.match(/^\| [A-Z_]+ \|/gm) ?? []).map((r) => r.split('|')[1].trim());
+const missingEnvRows = CONFIG_DEFINITIONS.map((d) => d.key).filter((k) => !envRows.includes(k));
 check('C5', 'engineering', 'The README explains the architecture, deployment steps, environment variables and evaluation results',
-  missingSections.length === 0 && envRows === 11,
-  `all required sections present (${readmeSections.length}); environment-variable table documents ${envRows} variables matching the central configuration`);
+  missingSections.length === 0 && missingEnvRows.length === 0,
+  `all required sections present (${readmeSections.length}); the environment-variable table documents every one of the ${CONFIG_DEFINITIONS.length} central configuration entries (missing: ${missingEnvRows.length === 0 ? 'none' : missingEnvRows.join(', ')})`);
 
 // ======================================================= D. ACCESSIBILITY NFRs
 const pagesSrc = readFileSync(join(ROOT, 'frontend/src/pages.jsx'), 'utf8');

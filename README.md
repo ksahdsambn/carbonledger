@@ -79,7 +79,7 @@ PDF/CSV exports. No registration required.
 ```bash
 npm install          # workspace deps
 npm run build        # frontend build + backend syntax pass
-npm test             # 30 automated checks (unit + e2e + upload suite)
+npm test             # 34 automated checks (unit + e2e + upload suite)
 npm run smoke        # boot /healthz / graceful shutdown
 node backend/src/server.js   # start the API (http://localhost:8080)
 cd frontend && npm run dev   # dev UI on http://localhost:5173 (proxies /api)
@@ -118,12 +118,12 @@ never computed from mock runs.
 4. `firebase.json` rewrites `/api/**` and `/factors/**` to the Cloud Run service. Every
    secret is injected at runtime only — the repository contains none (`npm run scan-secrets`).
 
-## Environment variables (11, PRD 8.3)
+## Environment variables (11 PRD 8.3 parameters + 1 policy knob)
 
 | Variable | Default | Meaning |
 |---|---|---|
 | EXTRACTION_MODEL | gemini-3.5-flash-lite | Gemini Flash-tier model for classification/extraction/boundary |
-| REASONING_MODEL | gemini-3.5-flash-lite | Gemini Pro-tier model for selection reasoning and narratives |
+| REASONING_MODEL | gemini-3.5-flash-lite | Model for selection reasoning and report narratives (same model under the single-model mandate) |
 | EMBEDDING_MODEL | gemini-embedding-001 | Google official embedding model for semantic recall |
 | BATCH_SIZE | 10 | Units per batch call |
 | CLASSIFICATION_CONFIDENCE_THRESHOLD | 0.7 | Below this a unit routes to manual confirmation |
@@ -133,6 +133,7 @@ never computed from mock runs.
 | DEFAULT_GWP_VERSION | AR6 | Default GWP version for new tasks (AR5/AR6) |
 | STORAGE_BUCKET_NAME | carbonledger-files | Object storage bucket for originals |
 | GCP_PROJECT_ID | carbonledger | Google Cloud project id |
+| AI_MODEL_ALLOWLIST | gemini-3.5-flash-lite,gemini-embedding-001 | Models a real call may use. A generative call naming anything else is refused before a request is made (single-model mandate); widening it is a configuration change, never a code change |
 
 Additional runtime switches: `AI_MODE` (real/mock), `RECALL_CHANNEL` (both/keyword/semantic),
 `STORE_KIND`/`STORAGE_KIND` (local/firestore/firebase), `STORE_ROOT`/`STORAGE_ROOT`,
@@ -157,11 +158,45 @@ Output contract: single table (metric / target / measured / PASS-FAIL), summary 
 one-vote veto on any invalid reference; machine-readable JSON and human-readable markdown
 are written side by side.
 
-**Current status (honest)**: the evaluation tool is fully wired; the accuracy, latency and
-cost metrics require the real Gemini adapter and are executed when `GEMINI_API_KEY` is
-present. All pipeline mechanics (classification routing, extraction schema, closed enums,
-recall window, uncertainty rules, zero-tolerance calculations, aggregation consistency,
-citation coverage, veto logic) are covered by 30 automated tests that run offline.
+**Full run on the real adapter and the public deployment — 11/11 PASS, overall verdict
+`PASS`, 0 invalid references.** Machine-readable and human-readable output:
+`eval/results/run-online/`.
+
+| Metric | Target | Measured | Result |
+|---|---|---|---|
+| Document classification accuracy (Top-1) | ≥ 93% (≥ 28/30) | 29/30 documents (96.7%), pages 32/33 | PASS |
+| Field extraction accuracy | average ≥ 95%; quantity/unit ≥ 98% | average 100.0%, quantity 100.0%, unit 100.0% | PASS |
+| Factor matching accuracy (Top-1) | ≥ 85% (≥ 34/40) | 34/40 (85.0%) | PASS |
+| Factor matching accuracy (Top-3) | ≥ 95% (≥ 38/40) | 39/40 (97.5%) | PASS |
+| Scope decision accuracy | ≥ 90% on both subsets | scope 9/10, category 12/12 | PASS |
+| Calculation correctness | 100% | 10/10 exact at 3-decimal display | PASS |
+| Aggregation consistency | 0 inconsistencies | 0 (four dimensions, display-consistent parts) | PASS |
+| Report citation coverage | 100% | 100% | PASS |
+| Invalid reference count (veto) | 0 | 0 | PASS |
+| End-to-end latency, 20 documents (P90) | ≤ 3 minutes | 61.3 s (P90 of 10 public one-click runs) | PASS |
+| AI processing cost per document | ≤ USD 0.03 | $0.00058 (102 model calls, $0.0117 per 20-document run) | PASS |
+
+Supporting measurements, each with its own evidence file:
+
+- **Reliability and security** (`scripts/verify_public_faults.js`,
+  `progress/evidence/T-046/public_faults.json`): a 20-file batch with 3 corrupt files ingests
+  the other 17 with `ERR_FILE_CORRUPT` per rejection; a timed-out model call is retried
+  exactly twice and then marked failed with a machine-readable code; all 13 error codes are
+  documented below; cross-task, cross-identity and forged-header access are all rejected;
+  the public URL returns HTTP 429 after 44 rapid requests.
+- **Report/ledger consistency** (`scripts/verify_consistency.js`,
+  `progress/evidence/T-050/consistency.json`): every report row's factor and emission equals
+  the recomputation from the stored ledger, across 13 consecutive tasks.
+- **Final acceptance checklist** (`scripts/verify_acceptance.js`,
+  `progress/evidence/T-050/acceptance.md`): PRD 10.3 functional 8/8, compliance 5/5,
+  engineering 5/5, plus keyboard access and colour-independence NFRs.
+- **Code size** (`scripts/count_lines.sh`): application code 4,132 lines; with all first-party
+  JavaScript verification and build tooling 6,976 lines (target ≤ 7,000); including the
+  offline Python dataset toolchain 8,771 lines (hard cap 10,000).
+
+Video acceptance (4 items), the real-person 5-second usability check, and the deck PDF /
+video production steps remain manual; they are listed with instructions in
+`progress/evidence/T-050/acceptance.md`.
 
 ## Privacy
 

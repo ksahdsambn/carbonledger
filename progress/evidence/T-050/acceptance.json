@@ -1,13 +1,13 @@
 {
   "base_url": "https://myproject-dc19d.web.app",
-  "generated_at": "2026-10-13T18:32:23.812Z",
-  "demo_task": "task_43236118",
+  "generated_at": "2026-10-13T19:36:03.287Z",
+  "demo_task": "task_4d4a28a0",
   "functional": {
-    "passed": 5,
+    "passed": 8,
     "total": 8
   },
   "compliance": {
-    "passed": 4,
+    "passed": 5,
     "total": 5
   },
   "engineering": {
@@ -31,49 +31,49 @@
       "area": "functional",
       "item": "One-click load of 20 documents produces a full report within 3 minutes",
       "pass": true,
-      "evidence": "T-044 evidence: 10/10 timed runs passed, P90 = 66.8s (target <= 180s)"
+      "evidence": "T-044 evidence: 10/10 timed runs passed, P90 = 61.3s (target <= 180s)"
     },
     {
       "id": "A3",
       "area": "functional",
       "item": "Every citation anchor resolves to its original file (coverage 100%, 0 invalid)",
-      "pass": false,
-      "evidence": "coverage 100%, invalid 0; sampled 12 record anchors, 0 downloaded their source file (e.g. null)"
+      "pass": true,
+      "evidence": "coverage 100%, invalid 0; sampled 12 record anchors and opened each source document (12 downloads, e.g. {\"anchor\":\"rec_1531c2dc\",\"locator\":\"doc_0f1bb61d#page=1\",\"document\":\"D-12_waste_invoice.pdf\"})"
     },
     {
       "id": "A4",
       "area": "functional",
       "item": "High-uncertainty records are queued for review automatically",
       "pass": true,
-      "evidence": "review queue has 20 open item(s); high-uncertainty records in ledger: 20, all present in queue: true"
+      "evidence": "review queue has 20 open item(s); high-uncertainty records in ledger: 19, all present in queue: true"
     },
     {
       "id": "A5",
       "area": "functional",
       "item": "A review edit recalculates and refreshes the report",
-      "pass": false,
-      "evidence": "record rec_0a9ef6b2: quantity 85 -> 170; total 602577.554 -> 602577.554 kgCO2e; stored report total refreshed 457252.168 -> 602577.554 t"
+      "pass": true,
+      "evidence": "record rec_1531c2dc: quantity 4200 -> 8400; total 636063.420 -> 638249.857 kgCO2e; stored report total refreshed 636063.420 -> 638249.857 t"
     },
     {
       "id": "A6",
       "area": "functional",
       "item": "All three scenarios are computed with absolute and percentage reductions",
       "pass": true,
-      "evidence": "chapter 7 rows: Transport mode shift = 0 t (0.00%) | Supplier swap = 56.478 t (12.35%) | Material substitution = 0 t (0.00%)"
+      "evidence": "chapter 7 rows: Transport mode shift = 45.825 t (7.20%) | Supplier swap = 97.692 t (15.36%) | Material substitution = 91.232 t (14.34%)"
     },
     {
       "id": "A7",
       "area": "functional",
       "item": "PDF and CSV exports succeed with no encoding problems",
       "pass": true,
-      "evidence": "PDF 38108 bytes, 38 pages (>= 6); CSV detail 20 rows, category 15 rows, both decode as UTF-8 with no replacement characters"
+      "evidence": "PDF 38274 bytes, 38 pages (>= 6); CSV detail 20 rows, category 15 rows, both decode as UTF-8 with no replacement characters"
     },
     {
       "id": "A8",
       "area": "functional",
       "item": "Task state survives a page refresh",
-      "pass": false,
-      "evidence": "a fresh client (no cookies) re-read the task: 20 documents and 20 records persisted server-side; the SPA keeps the active task id in localStorage"
+      "pass": true,
+      "evidence": "a fresh client (no cookies) re-read the task: 20 documents and 19 records persisted server-side; the SPA restores the active task from localStorage on load and keeps the anonymous session across reloads"
     },
     {
       "id": "B1",
@@ -94,7 +94,7 @@
       "area": "compliance",
       "item": "The public URL has no login barrier: anonymous sign-in completes automatically with no credentials",
       "pass": true,
-      "evidence": "anonymous sign-in without any credential returned uid Q3FJxQwH…; a task created with that ID token is owned by the same uid (true); the SPA calls ensureAnonymousSession() on load and renders no credential form"
+      "evidence": "anonymous sign-in without any credential returned uid 841V5aDH…; a task created with that ID token is owned by the same uid (true); the SPA calls ensureAnonymousSession() on load and renders no credential form"
     },
     {
       "id": "B4",
@@ -107,8 +107,8 @@
       "id": "B5",
       "area": "compliance",
       "item": "The track label matches in all three places (deck cover, README top, video end)",
-      "pass": false,
-      "evidence": "README top: \"undefined\"; deck cover: \"Sustainability & Social Impact\"; video script closing credit present: true"
+      "pass": true,
+      "evidence": "README top: \"Sustainability & Social Impact\"; deck cover: \"Sustainability & Social Impact\"; video script credit: \"Sustainability & Social Impact\""
     },
     {
       "id": "C1",
@@ -136,14 +136,14 @@
       "area": "engineering",
       "item": "Self-developed code is within the 7,000-line target and never touches the 10,000-line hard cap",
       "pass": true,
-      "evidence": "application + JS tooling: 6939 lines (<= 7,000); including the offline Python dataset toolchain: 8734 lines (< 10,000). Method and full breakdown in scripts/count_lines.sh"
+      "evidence": "application + JS tooling: 6978 lines (<= 7,000); including the offline Python dataset toolchain: 8773 lines (< 10,000). Method and full breakdown in scripts/count_lines.sh"
     },
     {
       "id": "C5",
       "area": "engineering",
       "item": "The README explains the architecture, deployment steps, environment variables and evaluation results",
       "pass": true,
-      "evidence": "all required sections present (7); environment-variable table documents 11 variables matching the central configuration"
+      "evidence": "all required sections present (7); the environment-variable table documents every one of the 12 central configuration entries (missing: none)"
     },
     {
       "id": "N1",
@@ -204,5 +204,5 @@
       "how": "render deliverables/deck_draft.md to PDF and publish the recording"
     }
   ],
-  "overall": "FAIL"
+  "overall": "PASS"
 }

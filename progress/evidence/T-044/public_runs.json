@@ -1,12 +1,12 @@
 {
   "base_url": "https://myproject-dc19d.web.app",
-  "generated_at": "2026-10-13T18:27:06.458Z",
+  "generated_at": "2026-10-13T19:20:07.797Z",
   "runs": [
     {
       "label": "run1",
       "ok": true,
-      "task_id": "task_17c4b39b",
-      "seconds": 72.9,
+      "task_id": "task_5aca58fd",
+      "seconds": 62.1,
       "documents_terminal": "20/20",
       "stuck": null,
       "chapters": "1,2,3,4,5,6,7,8,9,10",
@@ -15,8 +15,8 @@
     {
       "label": "run2",
       "ok": true,
-      "task_id": "task_e5ffb6b8",
-      "seconds": 66.8,
+      "task_id": "task_ba01625c",
+      "seconds": 54,
       "documents_terminal": "20/20",
       "stuck": null,
       "chapters": "1,2,3,4,5,6,7,8,9,10",
@@ -25,8 +25,8 @@
     {
       "label": "run3",
       "ok": true,
-      "task_id": "task_3740ac21",
-      "seconds": 61.3,
+      "task_id": "task_67f21a1b",
+      "seconds": 55.7,
       "documents_terminal": "20/20",
       "stuck": null,
       "chapters": "1,2,3,4,5,6,7,8,9,10",
@@ -35,8 +35,8 @@
     {
       "label": "run4",
       "ok": true,
-      "task_id": "task_b6bb0f65",
-      "seconds": 65.8,
+      "task_id": "task_816b4324",
+      "seconds": 51.4,
       "documents_terminal": "20/20",
       "stuck": null,
       "chapters": "1,2,3,4,5,6,7,8,9,10",
@@ -45,8 +45,8 @@
     {
       "label": "run5",
       "ok": true,
-      "task_id": "task_715b7096",
-      "seconds": 66.7,
+      "task_id": "task_4aa5b2e7",
+      "seconds": 61,
       "documents_terminal": "20/20",
       "stuck": null,
       "chapters": "1,2,3,4,5,6,7,8,9,10",
@@ -55,8 +55,8 @@
     {
       "label": "run6",
       "ok": true,
-      "task_id": "task_27095e37",
-      "seconds": 65.8,
+      "task_id": "task_bb00610f",
+      "seconds": 60.2,
       "documents_terminal": "20/20",
       "stuck": null,
       "chapters": "1,2,3,4,5,6,7,8,9,10",
@@ -65,8 +65,8 @@
     {
       "label": "run7",
       "ok": true,
-      "task_id": "task_1ecb4698",
-      "seconds": 65.9,
+      "task_id": "task_0d0ed65e",
+      "seconds": 51.5,
       "documents_terminal": "20/20",
       "stuck": null,
       "chapters": "1,2,3,4,5,6,7,8,9,10",
@@ -75,8 +75,8 @@
     {
       "label": "run8",
       "ok": true,
-      "task_id": "task_44b33b44",
-      "seconds": 64.5,
+      "task_id": "task_099cac88",
+      "seconds": 51.3,
       "documents_terminal": "20/20",
       "stuck": null,
       "chapters": "1,2,3,4,5,6,7,8,9,10",
@@ -85,8 +85,8 @@
     {
       "label": "run9",
       "ok": true,
-      "task_id": "task_48b44e6e",
-      "seconds": 65.5,
+      "task_id": "task_5df2925a",
+      "seconds": 51.1,
       "documents_terminal": "20/20",
       "stuck": null,
       "chapters": "1,2,3,4,5,6,7,8,9,10",
@@ -95,8 +95,8 @@
     {
       "label": "run10",
       "ok": true,
-      "task_id": "task_34795cc2",
-      "seconds": 66.4,
+      "task_id": "task_566ea3c9",
+      "seconds": 61.3,
       "documents_terminal": "20/20",
       "stuck": null,
       "chapters": "1,2,3,4,5,6,7,8,9,10",
@@ -104,59 +104,59 @@
     }
   ],
   "runs_passed": 10,
-  "p90_seconds": 66.8,
+  "p90_seconds": 61.3,
   "runs_pass": true,
   "first_screen_ms": [
-    509,
-    79,
     78,
-    77,
+    76,
+    76,
+    76,
     76
   ],
-  "first_screen_avg_ms": 164,
+  "first_screen_avg_ms": 76,
   "first_screen_pass": true,
   "concurrent": [
     {
       "i": 1,
       "kickoff": 202,
-      "taskId": "task_1c236791",
+      "taskId": "task_1957f718",
       "ok": true,
-      "seconds": 65.5,
+      "seconds": 61.6,
       "documents_terminal": "20/20",
       "chapters": "1,2,3,4,5,6,7,8,9,10"
     },
     {
       "i": 2,
       "kickoff": 202,
-      "taskId": "task_b25c20e2",
+      "taskId": "task_20ebfd9b",
       "ok": true,
-      "seconds": 65.9,
+      "seconds": 52.5,
       "documents_terminal": "20/20",
       "chapters": "1,2,3,4,5,6,7,8,9,10"
     },
     {
       "i": 3,
       "kickoff": 202,
-      "taskId": "task_64eaf844",
+      "taskId": "task_c5e0f6dc",
       "ok": true,
-      "seconds": 65.7,
+      "seconds": 50.9,
       "documents_terminal": "20/20",
       "chapters": "1,2,3,4,5,6,7,8,9,10"
     }
   ],
   "concurrent_pass": true,
   "cost": {
-    "task_id": "task_34795cc2",
+    "task_id": "task_566ea3c9",
     "calls": 102,
-    "total_usd": 0.011823,
-    "per_document_usd": 0.000591,
+    "total_usd": 0.011698,
+    "per_document_usd": 0.000585,
     "by_stage": {
-      "classification": 0.001568,
-      "extraction": 0.004067,
-      "boundary": 0.000999,
+      "classification": 0.001572,
+      "extraction": 0.004115,
+      "boundary": 0.00097,
       "embedding": 0,
-      "factor_selection": 0.004778,
-      "report_narrative": 0.000411
+      "factor_selection": 0.004774,
+      "report_narrative": 0.000267
     }
   },
   "cost_pass": true

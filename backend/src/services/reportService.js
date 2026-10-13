@@ -193,7 +193,10 @@ export async function assembleReport({ store, taskId, task, records, calcs, calc
   ];
 
   const report = {
-    report_id: `rep_${taskId}_${Date.now()}`,
+    // One deterministic report document per task: a second assembly replaces the
+    // previous report instead of leaving two of them for latestReport() to pick
+    // between (T-050 defect report).
+    report_id: `rep_${taskId}`,
     task_id: taskId,
     generated_at: new Date().toISOString(),
     narrative_adapter: narratives.adapter,

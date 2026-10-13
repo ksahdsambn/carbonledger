@@ -15,6 +15,7 @@ import { ingestFile, resolveDuplicate, setDocumentStatus, getDocumentFile } from
 import { runPipeline } from './services/pipeline.js';
 import { listReviewQueue, editRecordFields, assignFactorManually, excludeRecord, closeReviewItem, recalculateTask } from './services/reviewQueue.js';
 import { scanReportCitations, generateReportForTask } from './services/reportService.js';
+import { trackRun, waitForRun } from './services/taskRuns.js';
 import { activityDetailCsv, categorySummaryCsv, reportPdf } from './services/exportService.js';
 import { buildMockCatalogFromDataset } from './services/mockCatalog.js';
 import { readFileSync } from 'node:fs';
@@ -192,8 +193,10 @@ export async function buildApp() {
       ? buildMockCatalogFromDataset(join(repoRoot, 'data/demo'), readFileSync)
       : new Map();
     // Async job pattern: the pipeline continues on the instance after the
-    // response (CPU allocation is always-on); clients poll task state.
-    runPipeline({ store, storage, taskId: req.params.taskId, mockCatalog: catalog })
+    // response (CPU allocation is always-on); clients poll task state. The run
+    // is tracked so a report request waits for it rather than assembling a
+    // report of its own from a half-written ledger.
+    trackRun(req.params.taskId, runPipeline({ store, storage, taskId: req.params.taskId, mockCatalog: catalog }))
       .then((out) => log.info('pipeline_job_done', { task_id: req.params.taskId, ...out.summary }))
       .catch((err) => log.error('pipeline_job_failed', { task_id: req.params.taskId, error: String(err.message).slice(0, 200) }));
     res.status(202).json({ task_id: req.params.taskId, started: true });
@@ -214,7 +217,7 @@ export async function buildApp() {
       const file = d.file.split('/').pop();
       await ingestFile({ store, storage, taskId: task.task_id, filename: file, buffer: readFileSync(join(repoRoot, d.file)) });
     }
-    runPipeline({ store, storage, taskId: task.task_id, mockCatalog: buildMockCatalogFromDataset(demoDir, readFileSync) })
+    trackRun(task.task_id, runPipeline({ store, storage, taskId: task.task_id, mockCatalog: buildMockCatalogFromDataset(demoDir, readFileSync) }))
       .then((out) => log.info('pipeline_job_done', { task_id: task.task_id, ...out.summary }))
       .catch((err) => log.error('pipeline_job_failed', { task_id: task.task_id, error: String(err.message).slice(0, 200) }));
     res.status(202).json({ task_id: task.task_id, started: true });
@@ -225,6 +228,10 @@ export async function buildApp() {
   });
 
   app.get('/api/tasks/:taskId/report', async (req, res) => {
+    // Wait for a pipeline run that is about to write this task's report, so a
+    // poll can never assemble a second report from a partially written ledger.
+    const running = waitForRun(req.params.taskId);
+    if (running) await running.catch(() => {});
     let report = await latestReport(req.params.taskId);
     if (!report) {
       // Lazy self-healing generation: if the background job was interrupted

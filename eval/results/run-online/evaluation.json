@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-10-13T18:32:22.219Z",
+  "run_at": "2026-10-13T19:37:14.705Z",
   "mode": "all",
   "rows": [
     {
@@ -115,7 +115,7 @@
       "group": "performance",
       "name": "End-to-end latency for 20 documents (P90)",
       "target": "<= 3 minutes",
-      "measured": "66.8s (P90 of 10 public one-click runs)",
+      "measured": "61.3s (P90 of 10 public one-click runs)",
       "pass": true,
       "mandatory": true,
       "veto": false,
@@ -127,7 +127,7 @@
       "group": "performance",
       "name": "AI processing cost per document",
       "target": "<= USD 0.03",
-      "measured": "$0.00059/document (102 model calls, $0.0118 total over 20 documents)",
+      "measured": "$0.00058/document (102 model calls, $0.0117 total over 20 documents)",
       "pass": true,
       "mandatory": true,
       "veto": false,

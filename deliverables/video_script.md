@@ -1,7 +1,8 @@
 # Demo Video Script (3 minutes, English voice-over + subtitles)
 
-Timing budget: 180 seconds total. Track credit at the end: "Sustainability & Social
-Impact" (identical wording as deck cover and README first screen).
+Timing budget: 180 seconds total.
+Track credit at the end: "Sustainability & Social Impact" (identical wording to the deck
+cover and the README first screen).
 
 | # | Time | Visual (storyboard) | Voice-over (subtitles identical) |
 |---|---|---|---|

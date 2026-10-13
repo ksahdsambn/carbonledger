@@ -1,18 +1,18 @@
 {
-  "measured": "$0.00059/document (102 model calls, $0.0118 total over 20 documents)",
+  "measured": "$0.00058/document (102 model calls, $0.0117 total over 20 documents)",
   "pass": true,
   "detail": {
-    "task_id": "task_34795cc2",
+    "task_id": "task_566ea3c9",
     "calls": 102,
-    "total_usd": 0.011823,
-    "per_document_usd": 0.000591,
+    "total_usd": 0.011698,
+    "per_document_usd": 0.000585,
     "by_stage": {
-      "classification": 0.001568,
-      "extraction": 0.004067,
-      "boundary": 0.000999,
+      "classification": 0.001572,
+      "extraction": 0.004115,
+      "boundary": 0.00097,
       "embedding": 0,
-      "factor_selection": 0.004778,
-      "report_narrative": 0.000411
+      "factor_selection": 0.004774,
+      "report_narrative": 0.000267
     }
   }
 }

@@ -9,6 +9,6 @@
 | Aggregation consistency (sum of parts equals total at 3-decimal display precision) | 0 inconsistencies | 0 inconsistencies (4 dimensions, display-consistent parts) | PASS |
 | Report citation coverage | 100% | 100% | PASS |
 | Invalid reference count (hallucination veto) | 0 (non-zero vetoes the overall verdict) | 0 | PASS |
-| End-to-end latency for 20 documents (P90) | <= 3 minutes | 66.8s (P90 of 10 public one-click runs) | PASS |
-| AI processing cost per document | <= USD 0.03 | $0.00059/document (102 model calls, $0.0118 total over 20 documents) | PASS |
+| End-to-end latency for 20 documents (P90) | <= 3 minutes | 61.3s (P90 of 10 public one-click runs) | PASS |
+| AI processing cost per document | <= USD 0.03 | $0.00058/document (102 model calls, $0.0117 total over 20 documents) | PASS |
 | **Summary** | rows=11 | passed=11 failed=0 | **PASS** |
