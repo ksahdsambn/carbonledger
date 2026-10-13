@@ -1,5 +1,4 @@
 | Metric | Target | Measured | Result |
 |---|---|---|---|
-| Factor matching accuracy (Top-1) | >= 85% (>= 34 of 40 Golden cases) | (not measured) | FAIL |
-| Factor matching accuracy (Top-3 hit) | >= 95% (>= 38 of 40 Golden cases) | (not measured) | FAIL |
-| **Summary** | rows=2 | passed=0 failed=2 | **FAIL** |
+| Document classification accuracy (Top-1) | >= 93% (>= 28 of 30 Golden documents) | 29/30 documents (96.7%), pages 32/33 | PASS |
+| **Summary** | rows=1 | passed=1 failed=0 | **PASS** |

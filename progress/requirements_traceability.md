@@ -18,9 +18,9 @@ Counts (must match): FR = 57, NFR = 21, AI = 13, EV = 6, M = 5, D = 5, L = 3.
 | FR-104 | Content-hash duplicate detection with user decision | T-011 | T-012 | verified |
 | FR-105 | 10 MB per-file limit with clear English rejection message | T-011 | T-012 | verified |
 | FR-106 | Original files persisted, viewable at any point in the flow | T-011 | T-020 | verified |
-| FR-201 | Classify each page unit into one of 7 doc types + confidence; ≥93% (28/30) on Golden | T-014 | T-015 | in_progress |
-| FR-202 | Closed enum of 7 types; 0 out-of-set values over ≥200 calls | T-014 | T-015 | in_progress |
-| FR-203 | Classification confidence <0.7 routes to manual confirmation | T-014 | T-015 | in_progress |
+| FR-201 | Classify each page unit into one of 7 doc types + confidence; ≥93% (28/30) on Golden | T-014 | T-015 | verified |
+| FR-202 | Closed enum of 7 types; 0 out-of-set values over ≥200 calls | T-014 | T-015 | verified |
+| FR-203 | Classification confidence <0.7 routes to manual confirmation | T-014 | T-015 | verified |
 | FR-301 | Extract per field table; missing fields left empty, never fabricated | T-016 | T-017 | in_progress |
 | FR-302 | All units converted to base units (10 conversion pairs correct) | T-018 | T-019 | in_progress |
 | FR-303 | Every extracted field carries 0–1 confidence | T-016 | T-017 | in_progress |

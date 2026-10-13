@@ -1,0 +1,5 @@
+| Metric | Target | Measured | Result |
+|---|---|---|---|
+| Document classification accuracy (Top-1) | >= 93% (>= 28 of 30 Golden documents) | 29/30 documents (96.7%), pages 32/33 | PASS |
+| **Summary** | rows=1 | passed=1 failed=0 | **PASS** |
+

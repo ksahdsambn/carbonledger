@@ -1,0 +1,395 @@
+{
+  "pageResults": [
+    {
+      "doc": "GD-01",
+      "page": 1,
+      "expected": "supplier_invoice",
+      "got": "supplier_invoice",
+      "confidence": 0.99,
+      "correct": true
+    },
+    {
+      "doc": "GD-02",
+      "page": 1,
+      "expected": "purchase_order",
+      "got": "purchase_order",
+      "confidence": 1,
+      "correct": true
+    },
+    {
+      "doc": "GD-03",
+      "page": 1,
+      "expected": "logistics_waybill",
+      "got": "logistics_waybill",
+      "confidence": 1,
+      "correct": true
+    },
+    {
+      "doc": "GD-04",
+      "page": 1,
+      "expected": "utility_bill",
+      "got": "utility_bill",
+      "confidence": 1,
+      "correct": true
+    },
+    {
+      "doc": "GD-05",
+      "page": 1,
+      "expected": "utility_bill",
+      "got": "utility_bill",
+      "confidence": 0.99,
+      "correct": true
+    },
+    {
+      "doc": "GD-06",
+      "page": 1,
+      "expected": "travel_expense",
+      "got": "travel_expense",
+      "confidence": 1,
+      "correct": true
+    },
+    {
+      "doc": "GD-07",
+      "page": 1,
+      "expected": "packing_list",
+      "got": "packing_list",
+      "confidence": 0.99,
+      "correct": true
+    },
+    {
+      "doc": "GD-08",
+      "page": 1,
+      "expected": "supplier_invoice",
+      "got": "supplier_invoice",
+      "confidence": 0.99,
+      "correct": true
+    },
+    {
+      "doc": "GD-09",
+      "page": 1,
+      "expected": "supplier_invoice",
+      "got": "supplier_invoice",
+      "confidence": 0.99,
+      "correct": true
+    },
+    {
+      "doc": "GD-09",
+      "page": 2,
+      "expected": "logistics_waybill",
+      "got": "logistics_waybill",
+      "confidence": 1,
+      "correct": true
+    },
+    {
+      "doc": "GD-09",
+      "page": 3,
+      "expected": "utility_bill",
+      "got": "utility_bill",
+      "confidence": 0.99,
+      "correct": true
+    },
+    {
+      "doc": "GD-09",
+      "page": 4,
+      "expected": "supplier_invoice",
+      "got": "supplier_invoice",
+      "confidence": 0.99,
+      "correct": true
+    },
+    {
+      "doc": "GD-10",
+      "page": 1,
+      "expected": "supplier_invoice",
+      "got": "supplier_invoice",
+      "confidence": 0.99,
+      "correct": true
+    },
+    {
+      "doc": "GD-11",
+      "page": 1,
+      "expected": "other",
+      "got": "other",
+      "confidence": 0.95,
+      "correct": true
+    },
+    {
+      "doc": "GD-12",
+      "page": 1,
+      "expected": "other",
+      "got": "other",
+      "confidence": 0.95,
+      "correct": true
+    },
+    {
+      "doc": "GD-13",
+      "page": 1,
+      "expected": "other",
+      "got": "other",
+      "confidence": 0.1,
+      "correct": true
+    },
+    {
+      "doc": "GD-14",
+      "page": 1,
+      "expected": "other",
+      "got": "other",
+      "confidence": 0.95,
+      "correct": true
+    },
+    {
+      "doc": "GD-15",
+      "page": 1,
+      "expected": "other",
+      "got": "other",
+      "confidence": 0.95,
+      "correct": true
+    },
+    {
+      "doc": "GD-16",
+      "page": 1,
+      "expected": "logistics_waybill",
+      "got": "logistics_waybill",
+      "confidence": 0.98,
+      "correct": true
+    },
+    {
+      "doc": "GD-17",
+      "page": 1,
+      "expected": "travel_expense",
+      "got": "travel_expense",
+      "confidence": 0.99,
+      "correct": true
+    },
+    {
+      "doc": "GD-18",
+      "page": 1,
+      "expected": "supplier_invoice",
+      "got": "other",
+      "confidence": 0.95,
+      "correct": false
+    },
+    {
+      "doc": "GD-19",
+      "page": 1,
+      "expected": "supplier_invoice",
+      "got": "supplier_invoice",
+      "confidence": 0.65,
+      "correct": true
+    },
+    {
+      "doc": "GD-20",
+      "page": 1,
+      "expected": "utility_bill",
+      "got": "utility_bill",
+      "confidence": 0.65,
+      "correct": true
+    },
+    {
+      "doc": "GD-21",
+      "page": 1,
+      "expected": "logistics_waybill",
+      "got": "logistics_waybill",
+      "confidence": 0.5,
+      "correct": true
+    },
+    {
+      "doc": "GD-22",
+      "page": 1,
+      "expected": "purchase_order",
+      "got": "purchase_order",
+      "confidence": 0.99,
+      "correct": true
+    },
+    {
+      "doc": "GD-23",
+      "page": 1,
+      "expected": "supplier_invoice",
+      "got": "supplier_invoice",
+      "confidence": 0.99,
+      "correct": true
+    },
+    {
+      "doc": "GD-24",
+      "page": 1,
+      "expected": "utility_bill",
+      "got": "utility_bill",
+      "confidence": 0.99,
+      "correct": true
+    },
+    {
+      "doc": "GD-25",
+      "page": 1,
+      "expected": "travel_expense",
+      "got": "travel_expense",
+      "confidence": 0.99,
+      "correct": true
+    },
+    {
+      "doc": "GD-26",
+      "page": 1,
+      "expected": "packing_list",
+      "got": "packing_list",
+      "confidence": 1,
+      "correct": true
+    },
+    {
+      "doc": "GD-27",
+      "page": 1,
+      "expected": "purchase_order",
+      "got": "purchase_order",
+      "confidence": 1,
+      "correct": true
+    },
+    {
+      "doc": "GD-28",
+      "page": 1,
+      "expected": "supplier_invoice",
+      "got": "supplier_invoice",
+      "confidence": 0.99,
+      "correct": true
+    },
+    {
+      "doc": "GD-29",
+      "page": 1,
+      "expected": "supplier_invoice",
+      "got": "supplier_invoice",
+      "confidence": 0.99,
+      "correct": true
+    },
+    {
+      "doc": "GD-30",
+      "page": 1,
+      "expected": "logistics_waybill",
+      "got": "logistics_waybill",
+      "confidence": 1,
+      "correct": true
+    }
+  ],
+  "perDoc": {
+    "GD-01": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-02": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-03": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-04": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-05": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-06": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-07": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-08": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-09": {
+      "total": 4,
+      "correct": 4
+    },
+    "GD-10": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-11": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-12": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-13": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-14": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-15": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-16": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-17": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-18": {
+      "total": 1,
+      "correct": 0
+    },
+    "GD-19": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-20": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-21": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-22": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-23": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-24": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-25": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-26": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-27": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-28": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-29": {
+      "total": 1,
+      "correct": 1
+    },
+    "GD-30": {
+      "total": 1,
+      "correct": 1
+    }
+  },
+  "totalCalls": 200,
+  "outOfEnum": 0,
+  "blurryFlagged": 3,
+  "cost": 0.015658000000000026,
+  "pass": true
+}

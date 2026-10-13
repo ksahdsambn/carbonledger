@@ -51,7 +51,16 @@ def _page_image(lines, style="clean", seed=0, size=(1240, 1754)):
         img = img.rotate(rng.uniform(-3, 3), expand=False, fillcolor=(238, 238, 238))
         img = Image.eval(img, lambda v: min(255, int(v * rng.uniform(0.94, 1.04))))
     if style == "blurry":
-        img = img.filter(ImageFilter.GaussianBlur(radius=3.4))
+        # Degraded scan simulation: heavy blur + pixelation + jpeg-ish noise so
+        # both OCR and multimodal readers genuinely lose confidence.
+        img = img.filter(ImageFilter.GaussianBlur(radius=7.5))
+        small = img.resize((img.width // 4, img.height // 4))
+        img = small.resize(img.size)
+        img = img.filter(ImageFilter.GaussianBlur(radius=1.5))
+        px = img.load()
+        for _ in range(6000):
+            x, y = rng.randrange(img.width), rng.randrange(img.height)
+            px[x, y] = (rng.randrange(120, 220),) * 3
     return img
 
 def save_pdf(pages, path):

@@ -1,0 +1,24 @@
+{
+  "run_at": "2026-10-13T13:13:44.320Z",
+  "mode": "classification",
+  "rows": [
+    {
+      "id": "classification_top1",
+      "group": "classification",
+      "name": "Document classification accuracy (Top-1)",
+      "target": ">= 93% (>= 28 of 30 Golden documents)",
+      "measured": "29/30 documents (96.7%), pages 32/33",
+      "pass": true,
+      "mandatory": true,
+      "veto": false,
+      "evidence": "progress/evidence/T-014/",
+      "result": "PASS"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 0,
+    "overall": "PASS",
+    "vetoed": false
+  }
+}
