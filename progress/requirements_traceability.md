@@ -30,10 +30,10 @@ Counts (must match): FR = 57, NFR = 21, AI = 13, EV = 6, M = 5, D = 5, L = 3.
 | FR-401 | All 10 unit conversions implemented, each conversion in audit trail | T-018 | T-019 | verified |
 | FR-402 | Origin/destination normalized to country-region + city structure | T-018 | T-019 | verified |
 | FR-403 | Transport mode closed enum (10 values); 0 out-of-set over ≥100 calls | T-018 | T-019 | verified |
-| FR-501 | Scope 1/2/3 boundary decision; ≥90% (9/10) on Golden | T-023 | T-024 | in_progress |
-| FR-502 | Scope 3 refined to one of 15 categories (code + name); ≥90% (11/12) | T-023 | T-024 | in_progress |
-| FR-503 | Boundary decision carries non-empty English rationale | T-023 | T-024 | in_progress |
-| FR-504 | Highly duplicated records flagged as suspected duplicates | T-023 | T-024 | in_progress |
+| FR-501 | Scope 1/2/3 boundary decision; ≥90% (9/10) on Golden | T-023 | T-024 | verified |
+| FR-502 | Scope 3 refined to one of 15 categories (code + name); ≥90% (11/12) | T-023 | T-024 | verified |
+| FR-503 | Boundary decision carries non-empty English rationale | T-023 | T-024 | verified |
+| FR-504 | Highly duplicated records flagged as suspected duplicates | T-023 | T-024 | verified |
 | FR-601 | Factor library from public sources, documented (name, year, link) | T-005 | T-049 | verified |
 | FR-602 | 5 industries × ≥40 factors each, total ≤1,200 | T-006 | T-006 | verified |
 | FR-603 | Each factor has all 13 attributes; 100% completeness on 50-sample check | T-006 | T-006 | verified |

@@ -1,0 +1,184 @@
+{
+  "allResults": [
+    {
+      "rid": "DR-01",
+      "exp": "Scope 1",
+      "got": "Scope 1",
+      "cat": null,
+      "rationale": "Emissions from diesel fuel combusted in the reporting company's own fleet are direct greenhouse gas emissions.",
+      "ok": true
+    },
+    {
+      "rid": "DR-02",
+      "exp": "Scope 1",
+      "got": "Scope 1",
+      "cat": null,
+      "rationale": "Refrigerant HFC-32 top-up for plant HVAC represents fugitive emissions, which are direct emissions from equipment owned or controlled by the reporting company.",
+      "ok": true
+    },
+    {
+      "rid": "DR-03",
+      "exp": "Scope 2",
+      "got": "Scope 2",
+      "cat": null,
+      "rationale": "Purchased electricity from the grid for factory operations falls under Scope 2 indirect emissions.",
+      "ok": true
+    },
+    {
+      "rid": "DR-04",
+      "exp": "Scope 2",
+      "got": "Scope 2",
+      "cat": null,
+      "rationale": "District heat purchased and consumed for office campus operations falls under Scope 2 indirect emissions from acquired energy.",
+      "ok": true
+    },
+    {
+      "rid": "GR-001",
+      "exp": "Scope 3",
+      "got": "Scope 3",
+      "cat": "Cat-1",
+      "rationale": "Purchased raw materials such as aluminium sheets are upstream emissions associated with the production of goods bought by the reporting company.",
+      "ok": true
+    },
+    {
+      "rid": "GR-003",
+      "exp": "Scope 3",
+      "got": "Scope 3",
+      "cat": "Cat-4",
+      "rationale": "Emissions from upstream air freight of electronic components operated by a third-party logistics provider fall under Scope 3, Category 4 (Upstream Transportation and Distribution).",
+      "ok": true
+    },
+    {
+      "rid": "GR-004",
+      "exp": "Scope 3",
+      "got": "Scope 2",
+      "cat": null,
+      "rationale": "Purchased grid electricity consumption falls under Scope 2 emissions.",
+      "ok": false
+    },
+    {
+      "rid": "GR-010",
+      "exp": "Scope 3",
+      "got": "Scope 3",
+      "cat": "Cat-4",
+      "rationale": "Ocean freight provided by a third-party logistics supplier falls under Scope 3, specifically upstream transportation and distribution.",
+      "ok": true
+    },
+    {
+      "rid": "GR-016",
+      "exp": "Scope 3",
+      "got": "Scope 3",
+      "cat": "Cat-4",
+      "rationale": "Road freight of machine parts provided by a third-party logistics service falls under upstream transportation and distribution.",
+      "ok": true
+    },
+    {
+      "rid": "GR-029",
+      "exp": "Scope 3",
+      "got": "Scope 3",
+      "cat": "Cat-5",
+      "rationale": "Landfill disposal of waste generated in operations is an indirect greenhouse gas emission that falls under Scope 3, specifically under Category 5 (Waste generated in operations).",
+      "ok": true
+    },
+    {
+      "rid": "GR-001",
+      "exp": "Cat-1",
+      "got": "Cat-1",
+      "scope": "Scope 3",
+      "rationale": "Purchased raw materials such as aluminium sheets are upstream value chain activities and fall under Scope 3.",
+      "ok": true
+    },
+    {
+      "rid": "GR-003",
+      "exp": "Cat-4",
+      "got": "Cat-4",
+      "scope": "Scope 3",
+      "rationale": "Emissions from upstream or downstream transportation and distribution of goods in vehicles not owned or controlled by the reporting company fall under Scope 3.",
+      "ok": true
+    },
+    {
+      "rid": "GR-010",
+      "exp": "Cat-4",
+      "got": "Cat-4",
+      "scope": "Scope 3",
+      "rationale": "Upstream transportation and distribution of goods purchased by the reporting company, operated by a third-party logistics provider (MSC Line).",
+      "ok": true
+    },
+    {
+      "rid": "GR-016",
+      "exp": "Cat-4",
+      "got": "Cat-4",
+      "scope": "Scope 3",
+      "rationale": "Road freight of machine parts provided by a third-party logistics supplier falls under upstream transportation and distribution in Scope 3.",
+      "ok": true
+    },
+    {
+      "rid": "GR-027",
+      "exp": "Cat-1",
+      "got": "Cat-1",
+      "scope": "Scope 3",
+      "rationale": "Purchased finished goods (cotton t-shirts) from a supplier fall under Scope 3, specifically Category 1 (Purchased Goods and Services).",
+      "ok": true
+    },
+    {
+      "rid": "GR-029",
+      "exp": "Cat-5",
+      "got": "Cat-5",
+      "scope": "Scope 3",
+      "rationale": "Disposal of waste generated in operations is classified as a Scope 3 indirect emission source.",
+      "ok": true
+    },
+    {
+      "rid": "DR-10",
+      "exp": "Cat-2",
+      "got": "Cat-2",
+      "scope": "Scope 3",
+      "rationale": "The procurement of a CNC machining centre classified as capital equipment falls under Scope 3, Category 2 (Capital Goods) of the GHG Protocol.",
+      "ok": true
+    },
+    {
+      "rid": "DR-11",
+      "exp": "Cat-3",
+      "got": "Cat-3",
+      "scope": "Scope 3",
+      "rationale": "Well-to-tank upstream emissions associated with the extraction, production, and transportation of diesel fuel purchased for the fleet fall under Scope 3, Category 3 (Fuel- and Energy-Related Activities Not Included in Scope 1 or Scope 2).",
+      "ok": true
+    },
+    {
+      "rid": "DR-12",
+      "exp": "Cat-4",
+      "got": "Cat-4",
+      "scope": "Scope 3",
+      "rationale": "Ocean freight of goods operated by a third-party logistics provider (COSCO) falls under Scope 3, specifically upstream or downstream transportation and distribution.",
+      "ok": true
+    },
+    {
+      "rid": "DR-14",
+      "exp": "Cat-5",
+      "got": "Cat-5",
+      "scope": "Scope 3",
+      "rationale": "Landfill disposal of waste generated in operations falls under Scope 3, specifically under Category 5 (Waste generated in operations).",
+      "ok": true
+    },
+    {
+      "rid": "DR-15",
+      "exp": "Cat-6",
+      "got": "Cat-6",
+      "scope": "Scope 3",
+      "rationale": "Business travel by employees on commercial flights falls under Scope 3, Category 6 (Business Travel).",
+      "ok": true
+    },
+    {
+      "rid": "DR-17",
+      "exp": "Cat-7",
+      "got": "Cat-7",
+      "scope": "Scope 3",
+      "rationale": "Employee commuting falls under Scope 3, specifically Category 7 (Employee Commuting), as it involves transportation of employees for commuting between their homes and their worksites in vehicles not owned or operated by the reporting company.",
+      "ok": true
+    }
+  ],
+  "scopeCorrect": 9,
+  "catCorrect": 12,
+  "cost": 0.0008699999999999999,
+  "pass": true
+}

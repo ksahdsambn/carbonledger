@@ -1,0 +1,24 @@
+{
+  "run_at": "2026-10-13T13:50:42.862Z",
+  "mode": "boundary",
+  "rows": [
+    {
+      "id": "scope_decision_accuracy",
+      "group": "boundary",
+      "name": "Scope decision accuracy (scope level 10 cases and Scope 3 category 12 cases, each >= 90%)",
+      "target": ">= 90% on both subsets",
+      "measured": "scope 9/10, category 12/12",
+      "pass": true,
+      "mandatory": true,
+      "veto": false,
+      "evidence": "eval\\results\\scope_decision_accuracy.json",
+      "result": "PASS"
+    }
+  ],
+  "summary": {
+    "passed": 1,
+    "failed": 0,
+    "overall": "PASS",
+    "vetoed": false
+  }
+}

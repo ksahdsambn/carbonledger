@@ -1,0 +1,10 @@
+{
+  "measured": "scope 9/10, category 12/12",
+  "pass": true,
+  "detail": {
+    "scopeCorrect": 9,
+    "catCorrect": 12,
+    "badRationale": 0,
+    "est_cost_usd": 0.00087
+  }
+}
