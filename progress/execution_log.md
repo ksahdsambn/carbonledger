@@ -543,3 +543,13 @@ deck 文稿 13 页（10-14 区间）、视频脚本 180 秒 9 镜头且 PRD 四�
 **阻塞根因（唯一）**：Gemini API Key 与 GCP 项目凭据未提供（T-001 阻塞报告记录于本日志开头；后续多次复查均为 0 个相关环境变量）。凭据注入后的补跑顺序：T-001 验证项 2/3 重跑 → T-014..T-026 串行真实验证 → T-044/T-045/T-047 评测全量 → T-043 部署 → G2/G3/G4/G5 逐关判定 → T-050 最终验收 → 记录「G6 工程部分通过」。
 
 **G6 未达成**——按铁律如实记录，不虚假标注。
+
+## 用户新增约束记录（2026-10-13，凭据到位）
+
+1. **GEMINI_API_KEY 已提供**（存于 gitignored `.env`，仓库零泄漏，密钥扫描通过）。
+2. **模型白名单（用户强制）**：生成式任务仅允许 `gemini-3.5-flash-lite`，严禁 Pro/Flash。与 PRD 6.1（Flash 档+Pro 档各至少一个）及实施计划规则 9 冲突——按用户指令执行，集中配置默认值已改为单一 `gemini-3.5-flash-lite`（EXTRACTION_MODEL 与 REASONING_MODEL 同值）。此为用户授权的偏离，记录在案。嵌入模型 `gemini-embedding-001`（非生成式、非 Pro/Flash 档）继续用于向量召回。
+3. **成本上限：开发期间 Gemini API + Google Cloud 总费用 ≤ $3**。已建立成本台账（ai_traces.est_cost_usd 累计），每次真实验证后核对。
+4. **GCP 凭据：方案 A**——用户自行安装 gcloud CLI 后通知本方交互执行 `gcloud auth login` 与 `gcloud auth application-default login`。T-001 验证项 2 与 T-043 部署链在此之前保持阻塞。
+5. T-001 验证项 3（适配后）**通过**：flash-lite 结构化输出最小调用 200 OK（6 in/11 out tokens）、embedding 3072 维 200 OK，单次成本 $0.000005。证据：`progress/evidence/T-001/model_calls.txt`。
+
+---

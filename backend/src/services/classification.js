@@ -60,7 +60,7 @@ export async function classifyUnit({ traceStore, taskId, unit, representationByt
   const cfg = getConfig().values;
   const fmt = sourceFormat === 'pdf' ? 'pdf' : sourceFormat;
   const parts = [
-    { text: 'Classify this document page into exactly one of the seven types. Respond with the type and your confidence between 0 and 1.' },
+    { text: 'Classify this document page into exactly one of the seven types. Confidence must be an honest self-assessment between 0 and 1: if the page is blurry, degraded, handwritten, or hard to read, report confidence below 0.7.' },
     { inline_data: { mime_type: MIME[fmt] || 'application/octet-stream', data: representationBytes.toString('base64') } },
   ];
   const { result } = await callModel({

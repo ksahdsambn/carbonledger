@@ -7,14 +7,14 @@ const DEFINITIONS = [
   {
     key: 'EXTRACTION_MODEL',
     type: 'string',
-    default: 'gemini-2.5-flash',
-    description: 'Gemini Flash-tier model used for document classification and field extraction',
+    default: 'gemini-3.5-flash-lite',
+    description: 'Gemini Flash-Lite model used for document classification and field extraction (user-mandated single-model policy)',
   },
   {
     key: 'REASONING_MODEL',
     type: 'string',
-    default: 'gemini-2.5-pro',
-    description: 'Gemini Pro-tier model used for factor selection and report generation',
+    default: 'gemini-3.5-flash-lite',
+    description: 'Factor selection and report generation model (user mandate: only gemini-3.5-flash-lite may be called)',
   },
   {
     key: 'EMBEDDING_MODEL',

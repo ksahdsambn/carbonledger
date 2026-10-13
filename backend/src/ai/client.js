@@ -16,6 +16,9 @@ import { log } from '../logging.js';
 // Public list prices (USD per 1M tokens) used for cost estimation (NFR-102).
 // Source: Google AI / Gemini API pricing page; overridable via env JSON.
 export const DEFAULT_PRICES = {
+  // Public list prices, USD per 1M tokens (ai.google.dev/gemini-api/docs/pricing).
+  'gemini-3.5-flash-lite': { input: 0.10, output: 0.40 },
+  'gemini-2.5-flash-lite': { input: 0.10, output: 0.40 },
   'gemini-2.5-flash': { input: 0.30, output: 2.50 },
   'gemini-2.5-pro': { input: 1.25, output: 10.00 },
   'gemini-embedding-001': { input: 0.15, output: 0 },

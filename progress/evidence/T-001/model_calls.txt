@@ -1,0 +1,3 @@
+flash-lite: 200 "{\n  \"reply\": \"OK\"\n}" usage: {"promptTokenCount":6,"candidatesTokenCount":11,"totalTokenCount":17,"promptTokensDetails":[{"modality":"TEXT","tokenCount":6}],"serviceTier":"standard"}
+embedding: 200 dims: 3072
+minimal-call est cost USD: 0.00000500
