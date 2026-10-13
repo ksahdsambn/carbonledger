@@ -21,8 +21,8 @@ test('config exposes exactly the 11 PRD 8.3 parameters with defaults', () => {
     'GCP_PROJECT_ID',
   ];
   assert.deepEqual(Object.keys(values).sort(), expectedKeys.sort());
-  assert.equal(values.EXTRACTION_MODEL, 'gemini-2.5-flash');
-  assert.equal(values.REASONING_MODEL, 'gemini-2.5-pro');
+  assert.equal(values.EXTRACTION_MODEL, 'gemini-3.5-flash-lite');
+  assert.equal(values.REASONING_MODEL, 'gemini-3.5-flash-lite'); // user-mandated single-model policy
   assert.equal(values.EMBEDDING_MODEL, 'gemini-embedding-001');
   assert.equal(values.BATCH_SIZE, 10);
   assert.equal(values.CLASSIFICATION_CONFIDENCE_THRESHOLD, 0.7);

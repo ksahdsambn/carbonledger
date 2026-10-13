@@ -14,8 +14,9 @@ export const CLASSIFICATION_SCHEMA = {
   properties: {
     doc_type: { type: 'string', enum: DOC_TYPE_ENUM },
     confidence: { type: 'number' },
+    quality: { type: 'string', enum: ['clear', 'slightly_degraded', 'degraded'] },
   },
-  required: ['doc_type', 'confidence'],
+  required: ['doc_type', 'confidence', 'quality'],
 };
 
 const MIME = {
@@ -29,6 +30,9 @@ function validateClassification(result) {
   }
   const c = Number(result.confidence);
   if (!Number.isFinite(c) || c < 0 || c > 1) throw new Error('confidence outside [0,1]');
+  if (!['clear', 'slightly_degraded', 'degraded'].includes(result.quality)) {
+    throw new Error(`quality '${result.quality}' outside enum`);
+  }
 }
 
 /**
@@ -36,7 +40,7 @@ function validateClassification(result) {
  * filename. Never used for accuracy metrics (adapter:'mock' in traces).
  */
 export function mockClassification({ filename, docHint }) {
-  if (docHint) return { doc_type: docHint, confidence: 0.98 };
+  if (docHint) return { doc_type: docHint, confidence: 0.98, quality: 'clear' };
   const n = (filename || '').toLowerCase();
   const rule = [
     [/blurry|blank/, null], // blurry docs: ambiguous, exercised below
@@ -47,9 +51,9 @@ export function mockClassification({ filename, docHint }) {
     [/travel|flight|train|taxi|commuting/, 'travel_expense'],
     [/packing|pallet/, 'packing_list'],
   ];
-  if (/blurry/.test(n)) return { doc_type: 'other', confidence: 0.5 }; // routes to manual confirmation
-  for (const [re, type] of rule) if (re.test(n) && type) return { doc_type: type, confidence: 0.95 };
-  return { doc_type: 'other', confidence: 0.55 };
+  if (/blurry/.test(n)) return { doc_type: 'other', confidence: 0.5, quality: 'degraded' }; // routes to manual confirmation
+  for (const [re, type] of rule) if (re.test(n) && type) return { doc_type: type, confidence: 0.95, quality: 'clear' };
+  return { doc_type: 'other', confidence: 0.55, quality: 'clear' };
 }
 
 /**
@@ -60,7 +64,7 @@ export async function classifyUnit({ traceStore, taskId, unit, representationByt
   const cfg = getConfig().values;
   const fmt = sourceFormat === 'pdf' ? 'pdf' : sourceFormat;
   const parts = [
-    { text: 'Classify this document page into exactly one of the seven types. Confidence must be an honest self-assessment between 0 and 1: if the page is blurry, degraded, handwritten, or hard to read, report confidence below 0.7.' },
+    { text: 'Classify this document page into exactly one of the seven types. Also judge the image quality strictly and objectively: any visible blur, pixelation, speckle noise or smudging means quality is "degraded" or "slightly_degraded"; only a crisp render is "clear". Confidence must be an honest self-assessment between 0 and 1: if the page is degraded or hard to read, report confidence below 0.7.' },
     { inline_data: { mime_type: MIME[fmt] || 'application/octet-stream', data: representationBytes.toString('base64') } },
   ];
   const { result } = await callModel({
@@ -75,11 +79,14 @@ export async function classifyUnit({ traceStore, taskId, unit, representationByt
     mockContext: { filename, docHint: unit.doc_type_hint },
   });
   const threshold = cfg.CLASSIFICATION_CONFIDENCE_THRESHOLD;
-  const needsManual = result.confidence < threshold;
+  // FR-203 / PRD 3.2: degraded scans route to manual confirmation even when
+  // the type itself is recognisable — quality is an explicit fused signal.
+  const needsManual = result.confidence < threshold || result.quality === 'degraded';
   const updated = {
     ...unit,
     doc_type: result.doc_type,
     type_confidence: result.confidence,
+    image_quality: result.quality,
     needs_manual_confirmation: needsManual,
   };
   if (traceStore) await traceStore.put('document_units', unit.id, updated);

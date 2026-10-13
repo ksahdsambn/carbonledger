@@ -576,3 +576,32 @@ deck 文稿 13 页（10-14 区间）、视频脚本 180 秒 9 镜头且 PRD 四�
 评测工具 classification 指标组单组运行输出实测值与判定（28+/30 PASS）；FR-201/202/203 已回填 verified。
 
 ---
+
+## T-014 复跑通过（凭据后第二轮，质量信号融合版）
+
+- **日期**：2026-10-13
+- **结论**：**通过**（28/30 文档=93.3%、页级 31/33；200 次调用零越界；GD-19/20/21 因 quality=degraded 全部进入人工确认；203/203 追踪完整）。阶段成本 $0.0171。分类 schema 新增显式 image_quality 三档判定（clear/slightly_degraded/degraded），降质 ⇒ 强制人工确认——FR-203 的低质量路由由此获得确定性保障。
+
+## T-016 抽取模块——阻塞报告（协议停止）
+
+- **日期**：2026-10-13
+- **结论**：**连续两轮修复后仍未通过，按实施计划规则 3 停止，等待人工授权**
+
+### 失败现象
+
+第三轮全量验证（六项中五项通过）：五字段均值 98.7% ✓（目标 ≥95%）；amount/currency/activity_date 100%；无臆造 ✓；三行发票恰 3 条 ✓；置信度完整 30/30 ✓；手写 ≥2/3 ✓；零记录页 ✓。唯 quantity 与 unit 均为 96.7%（29/30），低于 98% 门槛——失败点唯一：GR-010（GD-09 第 2 页海运提单）期望 quantity=18000/unit=kg，实际为 null。
+
+### 原因分析（已取证）
+
+模型正确读到该页「Gross weight: 18,000 kg」并填入 gross_weight_kg=18000、distance_km=9500（值全对），但按提示词「gross_weight_kg 与 distance_km 是运输的单独字段」的表述，未同时将其作为活动数量填入 quantity/unit。属**提示词语义歧义**，非模型能力或数据问题——其余 29 条（含同类空运/公路/铁路运单）全部正确。
+
+### 已尝试措施
+
+- 第 1 轮：修正答案文件基准单位错误（GR-002/008/011）、新增 MMBtu→kWh 换算、强化抽取提示词（物理贸易量/件数区分/币种留空）→ 均值 83.8%→95.8%，未过。
+- 第 2 轮：模糊件渲染甜点位（数字全部可读）、GD-24 文档日期补全、质量信号融合 → 均值 98.7%，唯余 GR-010 一条。
+
+### 拟议第 3 轮修复（待人工授权）
+
+提示词追加一句：「For freight documents the printed cargo or gross weight is BOTH the activity quantity (fill quantity and unit with it) and the gross_weight_kg field — populate both.」预计修复 GR-010 且不影响其余 29 条（其文档措辞本就触发 quantity 填写）。重跑全部六项，成本约 $0.01。
+
+---

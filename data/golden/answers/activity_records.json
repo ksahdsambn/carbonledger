@@ -24,7 +24,7 @@
   "doc_type": "purchase_order",
   "supplier_name": "Dongguan Polymer Works",
   "item_description": "PET resin pellets, bottle grade",
-  "quantity": 8,
+  "quantity": 8000,
   "unit": "kg",
   "amount": 96000.0,
   "currency": "CNY",
@@ -35,7 +35,7 @@
   "gross_weight_kg": null,
   "distance_km": null,
   "field_confidence": {},
-  "extraction_notes": null
+  "extraction_notes": "document states 8 t"
  },
  {
   "record_id": "GR-003",
@@ -138,7 +138,7 @@
   "doc_type": "supplier_invoice",
   "supplier_name": "Anshan Steel Trading",
   "item_description": "Steel coils, cold rolled",
-  "quantity": 12,
+  "quantity": 12000,
   "unit": "kg",
   "amount": 9600.0,
   "currency": "USD",
@@ -149,7 +149,7 @@
   "gross_weight_kg": null,
   "distance_km": null,
   "field_confidence": {},
-  "extraction_notes": null
+  "extraction_notes": "document states 12,000 kg"
  },
  {
   "record_id": "GR-009",
@@ -195,7 +195,7 @@
   "doc_type": "utility_bill",
   "supplier_name": "City Water Works",
   "item_description": "Municipal water consumption, April 2026",
-  "quantity": 850,
+  "quantity": 850000,
   "unit": "L",
   "amount": 1900.0,
   "currency": "EUR",
@@ -206,7 +206,7 @@
   "gross_weight_kg": null,
   "distance_km": null,
   "field_confidence": {},
-  "extraction_notes": null
+  "extraction_notes": "document states 850 m3"
  },
  {
   "record_id": "GR-012",

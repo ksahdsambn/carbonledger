@@ -13,6 +13,7 @@ export const CONVERSIONS = {
   // energy -> kWh
   MWh: { to: 'kWh', factor: 1000 },
   GJ: { to: 'kWh', factor: 277.78 },
+  MMBtu: { to: 'kWh', factor: 293 }, // 1 MMBtu = 1e6 BTU x 0.000293 kWh/BTU (table constant)
   BTU: { to: 'kWh', factor: 0.000293 },
   kWh: { to: 'kWh', factor: 1 },
   // volume -> L
