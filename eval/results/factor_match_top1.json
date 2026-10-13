@@ -1,0 +1,11 @@
+{
+  "measured": "27/40 (67.5%)",
+  "pass": false,
+  "detail": {
+    "top1": 27,
+    "top3": 38,
+    "invalidRef": 0,
+    "maxLatency": 2549,
+    "est_cost_usd": 0.007944
+  }
+}
