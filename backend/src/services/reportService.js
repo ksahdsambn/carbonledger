@@ -18,7 +18,7 @@ async function buildNarratives(ctx) {
     const { getConfig } = await import('../config.js');
     const { result } = await callModel({
       taskId: ctx.taskId, stage: 'report_narrative', model: getConfig().values.REASONING_MODEL,
-      parts: [{ text: `Write report narrative sections as JSON per the schema, professional English.\nContext: ${JSON.stringify(ctx.summaries)}` }],
+      parts: [{ text: `Write report narrative sections as JSON per the schema, professional English. HARD REQUIREMENTS: exactly 3 items in "recommendations", each at least 40 words; at least 3 items in "improvement_recommendations"; "data_quality" at least 30 words. Reference the concrete numbers in the context.\nContext: ${JSON.stringify(ctx.summaries)}` }],
       schema: {
         type: 'object',
         properties: {

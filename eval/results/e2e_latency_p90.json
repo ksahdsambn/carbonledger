@@ -1,0 +1,9 @@
+{
+ "measured": "147.4s (single real-adapter run, local; P90 on public site re-measured at T-044)",
+ "pass": true,
+ "detail": {
+  "runs": 1,
+  "seconds": 147.4,
+  "note": "within 180s target"
+ }
+}

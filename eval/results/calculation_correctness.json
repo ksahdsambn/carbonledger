@@ -1,0 +1,8 @@
+{
+ "measured": "10/10 exact at 3-decimal display",
+ "pass": true,
+ "detail": {
+  "problems": 10,
+  "tolerance": "zero at display precision"
+ }
+}

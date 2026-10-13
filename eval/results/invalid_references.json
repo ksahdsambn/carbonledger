@@ -1,0 +1,11 @@
+{
+  "measured": "0",
+  "pass": true,
+  "detail": {
+    "total": 27,
+    "covered": 27,
+    "coverage_pct": 100,
+    "invalid_count": 0,
+    "invalid": []
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "summary": {
+    "documents": 20,
+    "records": 20,
+    "calculated": 20,
+    "total_kgco2e": 550574.1481705998,
+    "scopes": [
+      {
+        "key": "Scope 1",
+        "value": 51582.30468
+      },
+      {
+        "key": "Scope 2",
+        "value": 359345.621856
+      },
+      {
+        "key": "Scope 3",
+        "value": 139646.2216346
+      }
+    ]
+  },
+  "citations": {
+    "total": 27,
+    "covered": 27,
+    "coverage_pct": 100,
+    "invalid_count": 0,
+    "invalid": []
+  },
+  "elapsedS": 147.372,
+  "cost": 0.011664999999999998,
+  "fails": []
+}

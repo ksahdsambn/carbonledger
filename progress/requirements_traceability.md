@@ -55,8 +55,8 @@ Counts (must match): FR = 57, NFR = 21, AI = 13, EV = 6, M = 5, D = 5, L = 3.
 | FR-902 | Absolute and percentage reductions vs baseline on same screen | T-031 | T-032 | verified |
 | FR-903 | Feasibility analysis ≥80 English words per scenario with assumptions | T-031 | T-032 | verified |
 | FR-904 | Adjustable replacement-ratio parameter with live refresh | T-031 | T-032 | verified |
-| FR-1001 | Report follows the 10-chapter structure in order | T-033 | T-033 | in_progress |
-| FR-1002 | Every numeric conclusion has a citation anchor; 100% coverage, 0 invalid | T-033 | T-034 | in_progress |
+| FR-1001 | Report follows the 10-chapter structure in order | T-033 | T-033 | verified |
+| FR-1002 | Every numeric conclusion has a citation anchor; 100% coverage, 0 invalid | T-033 | T-034 | verified |
 | FR-1003 | PDF export with header, page numbers, TOC; ≥6 pages | T-035 | T-035 | verified |
 | FR-1004 | CSV export: activity detail + category summary files, no encoding issues | T-035 | T-035 | verified |
 | FR-1005 | Cover carries GWP version statement and factor year distribution | T-033 | T-033 | verified |
@@ -75,9 +75,9 @@ Counts (must match): FR = 57, NFR = 21, AI = 13, EV = 6, M = 5, D = 5, L = 3.
 | ID | Requirement summary | Verification task | Status |
 |---|---|---|---|
 | NFR-101 | 20-document end-to-end P90 ≤3 min (10 runs) | T-044 | in_progress |
-| NFR-102 | AI cost per document ≤$0.03 | T-045 | in_progress |
+| NFR-102 | AI cost per document ≤$0.03 | T-045 | verified |
 | NFR-103 | First-screen load ≤3 s (5-run average) | T-045 | in_progress |
-| NFR-104 | Report PDF export ≤10 s (5 consecutive) | T-035/T-045 | in_progress |
+| NFR-104 | Report PDF export ≤10 s (5 consecutive) | T-035/T-045 | verified |
 | NFR-105 | 3 concurrent tasks without request failures | T-045 | in_progress |
 | NFR-201 | Single-file failure never blocks the batch (17/20 succeed with 3 corrupt) | T-046 | verified |
 | NFR-202 | AI timeout retried twice, then explicit failure marking (file/record) | T-046 | verified |

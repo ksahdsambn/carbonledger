@@ -1,0 +1,13 @@
+{
+ "measured": "0 inconsistencies (4 dimensions, display-consistent parts)",
+ "pass": true,
+ "detail": {
+  "dimensions": [
+   "scope",
+   "category",
+   "supplier",
+   "month"
+  ],
+  "counterexample_guard": true
+ }
+}
