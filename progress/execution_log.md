@@ -605,3 +605,18 @@ deck 文稿 13 页（10-14 区间）、视频脚本 180 秒 9 镜头且 PRD 四�
 提示词追加一句：「For freight documents the printed cargo or gross weight is BOTH the activity quantity (fill quantity and unit with it) and the gross_weight_kg field — populate both.」预计修复 GR-010 且不影响其余 29 条（其文档措辞本就触发 quantity 填写）。重跑全部六项，成本约 $0.01。
 
 ---
+
+## T-001 收口（凭据到位后全部三项验证通过）
+
+- **日期**：2026-10-13
+- **结论**：**通过**
+
+| # | 验证项 | 结果 |
+|---|---|---|
+| 1 | 需求跟踪清单计数一致 | **通过**（首轮即过） |
+| 2 | 每项云服务查询到已启用状态 | **通过**——gcloud CLI 589.0.0 安装（C:\gcloud-sdk）、用户完成 auth login + application-default login；选定部署项目 myproject-dc19d：关联结算账号 01C363（用户 $3 上限前提）、启用缺失 API 后 8/8 服务齐备（run/firestore/firebasehosting/firebasestorage/identitytoolkit/cloudtasks/logging/cloudtrace），证据 progress/evidence/T-001/enabled_services.txt |
+| 3 | 最小模型调用成功 | **通过**——gemini-3.5-flash-lite 结构化输出 + gemini-embedding-001（用户白名单适配口径，证据 model_calls.txt） |
+
+成本台账（迄今）：Gemini API ≈ $0.08；Google Cloud $0（仅免费 API 启用；Cloud Run 将以缩容到零部署）。
+
+---

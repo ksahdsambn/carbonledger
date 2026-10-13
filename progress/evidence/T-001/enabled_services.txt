@@ -1,0 +1,8 @@
+cloudtasks.googleapis.com
+cloudtrace.googleapis.com
+firebasehosting.googleapis.com
+firebasestorage.googleapis.com
+firestore.googleapis.com
+identitytoolkit.googleapis.com
+logging.googleapis.com
+run.googleapis.com

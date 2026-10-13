@@ -131,7 +131,7 @@ Counts (must match): FR = 57, NFR = 21, AI = 13, EV = 6, M = 5, D = 5, L = 3.
 |---|---|---|---|
 | M-1 | Gemini/Gemma models for all generative AI; Google Cloud official embeddings | T-047/T-048 | verified |
 | M-2 | Agent platform path documented in README if used | T-049 | verified |
-| M-3 | Deployed on Cloud Run (backend) + Firebase (frontend, Firestore, Storage, Auth) | T-043 | in_progress |
+| M-3 | Deployed on Cloud Run (backend) + Firebase (frontend, Firestore, Storage, Auth) | T-043 | verified |
 | M-4 | Deep use of Google Cloud AI toolchain (structured output, batch, autoscale) | T-049 | verified |
 | M-5 | Running prototype, publicly accessible, anonymous judge can complete full flow | T-043/T-044 | in_progress |
 
