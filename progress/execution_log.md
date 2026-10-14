@@ -871,3 +871,118 @@ deck 文稿 13 页（10-14 区间）、视频脚本 180 秒 9 镜头且 PRD 四�
 - **待人工项（7 项，已列清单并附执行说明）**：视频验收 4 项、NFR-401 真人 5 秒易用性测试、视频字幕英文终验、deck PDF 导出与视频上传。
 - **需求跟踪清单终扫**：**FR 57/57、NFR 21/21、AI 13/13 全部「已验证」**（EV 6/6、M 5/5、L 3/3；D 3/5，余 2 项为上述人工制作步骤）。
 - **记录：G6 工程部分通过。** PRD G6 的最终达成另需人工完成视频录制与 deck PDF 导出。
+
+---
+
+## T-052 前端丰富化（收口后增量，用户指令：解除 NFR-504 行数约束）
+
+- **日期**：2026-10-14
+- **背景**：用户检视前端后判定其过于单薄（`frontend/src` 全部 665 行），要求按复核建议全部增强，并明确本次**不遵守 NFR-504 行数约束**。属收口验收（T-050）之后的增量改动。
+
+### 变更内容
+
+**后端（`backend/src/server.js`，纯增量、不改动既有响应字段）**
+
+1. `GET /api/tasks`：任务历史列表（仅本人任务 + 无主任务，按 created_at 倒序，≤50 条，附 document_count）。
+2. `GET /api/tasks/:taskId/documents/:docId/units`：单文档的逐页分类单元（page/doc_type/type_confidence/needs_manual_confirmation）。
+3. `GET .../candidates` 扩展：携带已存 match（selected/runner-up 因子名与数值、confidence、40+ 词对比理由）。
+4. `GET /factors` 扩展：q 可选（无任何条件时按 factor_id 序返回全库 743 条）、type/gwp/year 筛选、limit/offset 分页（count 恒为总匹配数）、facets 聚合。原 400-on-missing-q 行为移除（无任何脚本依赖，已核实）。
+
+**前端（`frontend/src` 665 → 1,807 行，pages.jsx 拆分为 pages/ 模块 + charts.jsx）**
+
+1. P4 补齐 PRD 9.1「最优与次优对比」：双栏对比卡（Best/Runner-up 徽标、因子名/数值、置信度、理由引述块）+ 候选表标记 selected/runner-up + 记录下拉选择器（不再依赖 P3 跳入）。
+2. P7 补齐「引用锚点跳转」：执行摘要总数与三 Scope 行带 ⧉ 引用角标，点击平滑滚动至第 9 章对应行；第 9 章每行按 ref_type 渲染出站链接（record→P3 展开、factor→因子库详情、scenario→P6、aggregation→P5）；新增十章 sticky 目录。
+3. P5 真图表：手写 SVG 零依赖 —— Scope 环图（中心总量+图例+百分比）、类别/供应商横向条形图、月度趋势折线图（网格线/悬停提示）、KPI 卡四张；不确定性分布按级别键着色（NFR-404：图标+颜色双编码保留）。
+4. 新增 `#/library` 因子库浏览页：关键词（AND）+ 类型/GWP/年份筛选 + 25 条/页分页 + 行展开详情 + `?factor=` 深链（供引用锚点跳入）。
+5. 新增任务历史：P1「Recent tasks」表、导航栏任务切换下拉、`#/tasks` 页（Open/Report 直达、当前任务高亮）。
+6. P2 增强：处理进度条卡（完成数/进行中/待复核/失败 + progressbar），文档行展开显示逐页分类（document_units）。
+7. P3 增强：`?record=` URL 参数自动展开（锚点跳转落地页）；展开行内新增「因子选择」最优/次优对比块。
+8. P6 情景卡片化：三情景卡（减排量/百分比/基准对比条/可行性折叠区），保留比例滑杆。
+9. P9 trace 行展开详情 + 汇总（总成本/平均时延/失败数）；P8 复核卡栅格化布局。
+10. `styles.css` 83 → 400 行全面重写：设计变量、sticky 导航、KPI/图表/对比卡/徽标/空态/进度条、键盘焦点可见、响应式与 prefers-reduced-motion。
+
+### 验证
+
+| 项 | 结果 |
+|---|---|
+| `npm run build`（前端构建+后端语法） | **通过**（修复 1 处字节级损坏 `disabled={busy">}` 与 1 处 JSX 未闭合标签） |
+| `npm test`（47 单元/E2E + 1 上传套件） | **48/48 通过** |
+| API 冒烟（本地 local store + mock 适配器，演示数据 20 文档） | `GET /api/tasks` 7 条含 document_count；units 逐页分类（supplier_invoice 98%）；candidates 携带 match（confidence 0.72 + 理由）；`/factors` 全库 743 + 筛选（freight+air+type→8 条）+ facets；report 27 个 numeric_conclusions、覆盖率 100%、失效 0 |
+| 浏览器实测（vite dev + IAB） | 首页最近任务/导航（P2–P9+Library+Tasks）/仪表盘环图/报告 TOC 10 章+27 可点击引用+4 角标/P4 对比卡+15 候选/P3 参数展开+选择块/P2 进度条+分类展开/情景 3 卡 全部渲染正常 |
+| 视觉验收（vision 复核 6 页截图） | 平均 8.2/10；发现环图单位标注错误（kg 值标 t）、不确定性颜色映射反序 —— **均已修复并复测通过**（环图 463.047 t 与 KPI 一致、颜色按级别键映射） |
+
+### 规模影响（用户明示解除约束）
+
+应用代码 4,544 → **5,765** 行；含 JS 工具链 7,708 → **8,944** 行；含 Python 工具链 9,503 → **10,739** 行（超原 10,000 硬上限，属用户授权的偏离）。`frontend/src` 665 → 1,755 行。
+
+- **结论**：前端丰富化完成，全部验证通过；部署侧无强制动作（Cloud Run 镜像含新后端路由，需在下次 `gcloud run deploy` 时生效；Firebase Hosting 需 `npm run build --workspace carbonledger-frontend && firebase deploy --only hosting` 重新发布）。
+
+
+---
+
+## T-052-S1 前端丰富化逐项复查（用户指令：逐项审查确认，遗漏即补）
+
+- **日期**：2026-10-14
+- **背景**：用户要求对 T-052 全部交付项逐一审查确认。复查发现首轮验证存在浏览器盲区（P5 折线图、因子库交互、任务切换器、P8/P9、P7 锚点点击链路未实测），本轮全部补测，并修复补测暴露的缺陷。
+
+### 复查方法
+
+1. 代码级核对：9 项功能（P4 对比、P7 锚点、P5 图表、因子库、任务历史/切换、units、P6 情景卡、P9 展开、视觉重构）逐一 grep 确认实现存在；确认 `assignFactorManually` 会重写 matches 记录（P4 对比卡在手动改选后正确刷新）。
+2. 浏览器盲区补测（vite dev + IAB，演示任务 task_b7c8f614）。
+
+### 补测发现并修复的缺陷
+
+| # | 缺陷 | 现象 | 修复 |
+|---|---|---|---|
+| 1 | App 仅以路由路径为状态，同页面仅查询参数变化的 hash 跳转不触发重渲染 | `#/library → #/library?factor=X` 深链失效（focus 卡不出现）；同页面 record 参数变化同理 | `App.jsx` 改为持有完整 hash 状态，route 与 params 均由其派生 |
+| 2 | 因子库 Reset 只清输入不重发查询（load effect 不依赖 q） | 搜索后点 Reset 仍显示旧结果 | `library.jsx` 引入 applied 查询快照：提交/筛选/重置都经 setApplied 驱动同一 effect |
+| 3 | 导航任务切换器选项仅有主体名+期间 | 同名任务无法区分 | 选项标签追加创建时间（MM-DD HH:MM） |
+
+### 补测结果（全部通过）
+
+| 界面 | 结果 |
+|---|---|
+| P5 维度切换 | category=11 条形图（Scope1/2+Cat-x）、supplier=13 条（真实供应商名）、month=折线图（polyline+5 数据点+3 网格线） |
+| 因子库交互 | 搜索 "air freight"→8 条、"refrigerant"→98 条/4 页；Reset→743 条/30 页回到首页；深链 `?factor=EF-D26-AIRFREIGHT-001` focus 卡正常；行展开详情正常；单页结果 Next 正确禁用 |
+| 任务历史 | `#/tasks` 7 行、当前任务 ● 标记、6 个 Switch to；切换后 localStorage/导航/仪表盘全部指向新任务；导航下拉切换器按 value 切换生效 |
+| P8 复核队列 | 18 张卡（高不确定性优先）、每卡 8 字段输入 + 三操作按钮 |
+| P9 traces | 104 条、汇总（$0.00288/4ms/0 失败）、extraction 过滤→20 条全匹配、行展开 7 行详情 |
+| P7 锚点链路 | ⧉ 点击页滚至 cite-0 且行进入视口；record 引用点击 → `#/records?record=rec_16c69f76` → P3 精确展开该记录 + 因子选择块 |
+| P1 回归 | 建任务（Audit Recheck Co）→ 自动跳转 #/upload，拖拽区正常 |
+
+### 最终验证与规模
+
+- `npm run build` 通过；`npm test` **48/48 通过**。
+- 最终行数（scripts/count_lines.sh 于暂存后实测）：应用代码 **5,765**；含 JS 工具链 **8,944**；含 Python **10,739**；`frontend/src` **1,807** 行。
+- **结论**：T-052 交付项经逐项复查全部完成，无遗留；本轮另修复 3 处复查暴露的缺陷。
+
+
+---
+
+## T-052-S2 提交前独立审查与修复（code-reviewer 复审闭环）
+
+- **日期**：2026-10-14
+- **方法**：code-reviewer 独立代理全量审查未提交变更（含实测启动后端验证鉴权矩阵、分页边界、注入面），随后逐项修复并本地复验。
+
+### 审查发现并修复
+
+| 级别 | 问题 | 修复 |
+|---|---|---|
+| 高 | `scripts/verify_acceptance.js` B4/N1/N2 读取已删除的 `frontend/src/pages.jsx`（ENOENT 必崩），N2 正则与新版组件化徽标不匹配 | B4 可见文件清单与 N1/N2 源集合改为 App.jsx + charts.jsx + pages/*.jsx；N2 正则改为匹配共享 Status/Level 组件的 `STATUS_ICON[status]/LEVEL_ICON[l]` 与对应 LABEL；C4 增加豁免识别（读取本日志"解除 NFR-504 行数约束"标记）。修补后语法与各检查逻辑经独立片段实测通过（N1 五标记齐、N2 icons=2/labels=2/aria-hidden=8、B4 CJK=0、C4 waiver=true） |
+| 中 | `useData` 依赖变化时保留旧 data：P4 切换记录瞬间仍渲染上一条的候选与 Assign 按钮，慢网下可把旧记录的因子错配落库 | `useData` 在依赖变化时清空 data 并暴露 loading；P4 实测切换记录后对比卡立即跟随新记录（REFRIGERANTOTHER → BUSINESSTRAVELAIR）；P7 空态区分"Loading…"与"尚未生成报告" |
+| 低 | 环图弧色与图例色在存在零值分组时错位 | Donut 预计算 key→color 映射，弧与图例共用 |
+| 低 | candidates 路由硬编码 `match_${recordId}`，与其他读写点的 `match_id ??` 回退约定不一致 | 改为 `record.match_id ?? match_${recordId}` |
+| 低 | 三处下载调用无失败反馈（违反 PRD 9.2 恢复路径）；`source_ref` 缺失时生成 `/documents//file`；AuditView 加载失败未捕获；P6 吞报告错误误显"先跑流水线" | 新增 `downloadFile` 带告警恢复路径并替换全部调用点；源文档按钮仅在 doc id 非空时渲染；AuditView 捕获并显示错误；P6 增加 Err + 重试 |
+| 低 | report.jsx 文件头注释含中文（违反全英文输出约束，B4 检出） | 改为英文表述 |
+
+### 审查确认无问题（要点）
+
+- 新接口越权矩阵实测：`/api/tasks` 各身份只见本人+无主任务；`/units` 本人 200/他人 403/跨任务 404；`/factors` 分页边界（limit 夹取、offset 溢出、畸形参数）安全降级，旧 400 行为无消费者。
+- 前端无 dangerouslySetInnerHTML，全部数据经 React 文本渲染；引用链接 encodeURIComponent。
+- L1（GET /api/tasks 的 N+1 读取消耗）与 L3（tab 角色的完整键盘模式）作为已知低危留档，不影响正确性与主流程键盘可达性。
+
+### 最终验证
+
+- `npm run build` 通过；`npm test` 连续多轮 **48/48**（其中一次单例失败经复跑确认为杀进程后端口未释放的环境瞬时问题）。
+- 行数以 `scripts/count_lines.sh` 暂存后实测为准并已同步 README：A **5,765** / B **8,944** / C **10,739**（NFR-504 豁免，C4 检查带豁免标记）。
+- **结论：审查闭环，可安全提交。**

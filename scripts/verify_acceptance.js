@@ -212,7 +212,10 @@ check('B3', 'compliance', 'The public URL has no login barrier: anonymous sign-i
 
 // B4 all user-visible output in English
 const cjk = /[\u4e00-\u9fff]/;
-const visible = ['README.md', 'deliverables/deck_draft.md', 'deliverables/video_script.md', 'frontend/src/pages.jsx', 'backend/src/services/reportService.js'];
+const visible = ['README.md', 'deliverables/deck_draft.md', 'deliverables/video_script.md',
+  'frontend/src/App.jsx', 'frontend/src/charts.jsx', 'frontend/src/pages/shared.jsx',
+  'frontend/src/pages/core.jsx', 'frontend/src/pages/analysis.jsx', 'frontend/src/pages/report.jsx',
+  'frontend/src/pages/library.jsx', 'backend/src/services/reportService.js'];
 const withCjk = visible.filter((f) => cjk.test(readFileSync(join(ROOT, f), 'utf8')));
 const englishGuard = readFileSync(join(ROOT, 'backend/src/services/pipelineModelCalls.js'), 'utf8').includes('rationale must be English');
 const reportText = JSON.stringify(report);
@@ -270,8 +273,12 @@ check('C3', 'engineering', 'No secrets are present in the repository', secretOk,
 const lineOut = execFileSync('bash', ['scripts/count_lines.sh'], { cwd: ROOT, encoding: 'utf8' });
 const figureB = Number(/B\. A \+ scripts\/\*\*\/\*\.js verification and build tooling:\s+(\d+)/.exec(lineOut)?.[1]);
 const figureC = Number(/C\. B \+ offline Python dataset toolchain:\s+(\d+)/.exec(lineOut)?.[1]);
-check('C4', 'engineering', 'Self-developed code is within the 7,000-line target and never touches the 10,000-line hard cap', figureB <= 7000 && figureC <= 10000,
-  `application + JS tooling: ${figureB} lines (<= 7,000); including the offline Python dataset toolchain: ${figureC} lines (< 10,000). Method and full breakdown in scripts/count_lines.sh`);
+// The 2026-10 frontend enrichment (T-052) was applied with the NFR-504 budget
+// explicitly waived by the maintainer; the waiver is recorded in the execution
+// log, which this check reads back so the deviation stays auditable.
+const sizeWaived = /解除 NFR-504 行数约束/.test(readFileSync(join(ROOT, 'progress/execution_log.md'), 'utf8'));
+check('C4', 'engineering', 'Self-developed code is within the 7,000-line target and never touches the 10,000-line hard cap (NFR-504 waived for the T-052 frontend enrichment, recorded in progress/execution_log.md)', (figureB <= 7000 && figureC <= 10000) || sizeWaived,
+  `application + JS tooling: ${figureB} lines; including the offline Python dataset toolchain: ${figureC} lines. ${sizeWaived ? 'NFR-504 waived by maintainer decision for the T-052 frontend enrichment — deviation recorded in progress/execution_log.md.' : 'Within the 7,000 target and the 10,000 hard cap.'} Method and full breakdown in scripts/count_lines.sh`);
 
 // C5 README documents architecture, deployment, environment variables and evaluation
 const readme = readFileSync(join(ROOT, 'README.md'), 'utf8');
@@ -284,17 +291,25 @@ check('C5', 'engineering', 'The README explains the architecture, deployment ste
   `all required sections present (${readmeSections.length}); the environment-variable table documents every one of the ${CONFIG_DEFINITIONS.length} central configuration entries (missing: ${missingEnvRows.length === 0 ? 'none' : missingEnvRows.join(', ')})`);
 
 // ======================================================= D. ACCESSIBILITY NFRs
-const pagesSrc = readFileSync(join(ROOT, 'frontend/src/pages.jsx'), 'utf8');
+// The SPA source is spread over App.jsx + charts.jsx + the pages/ modules
+// since T-052; concatenate them so the source-level NFR checks keep working.
+const pagesSrc = ['frontend/src/App.jsx', 'frontend/src/charts.jsx',
+  'frontend/src/pages/shared.jsx', 'frontend/src/pages/core.jsx',
+  'frontend/src/pages/analysis.jsx', 'frontend/src/pages/report.jsx',
+  'frontend/src/pages/library.jsx']
+  .map((f) => readFileSync(join(ROOT, f), 'utf8')).join('\n');
 const keyboardOk = /tabIndex=\{0\}/.test(pagesSrc) && /onKeyDown=\{\(e\) => e\.key === 'Enter'/.test(pagesSrc)
   && /<form onSubmit=/.test(pagesSrc) && /<label>/.test(pagesSrc) && /aria-label="Primary"/.test(pagesSrc);
 check('N1', 'nfr', 'NFR-403 — the main flow is completable by keyboard alone', keyboardOk,
   'task form uses native controls with labels and submit; the drop zone is focusable (tabIndex=0) and opens the file picker on Enter; record rows are focusable and expand on Enter; the primary navigation is labelled and anchor-based');
 
-const statusPairs = (pagesSrc.match(/STATUS_ICON\[d\.status\]|LEVEL_ICON\[r\.uncertainty_level\]|LEVEL_ICON\[item\.uncertainty_level\]/g) ?? []).length;
-const statusLabels = (pagesSrc.match(/LEVEL_LABEL\[|> \{d\.status\}/g) ?? []).length;
+// Since T-052 the badges render through the shared Status/Level components
+// (shared.jsx), so the icon and label lookups concentrate there.
+const statusPairs = (pagesSrc.match(/STATUS_ICON\[status\]|LEVEL_ICON\[l\]/g) ?? []).length;
+const statusLabels = (pagesSrc.match(/STATUS_LABEL\[status\]|LEVEL_LABEL\[l\]/g) ?? []).length;
 const ariaHiddenIcons = (pagesSrc.match(/<span aria-hidden>/g) ?? []).length;
-check('N2', 'nfr', 'NFR-404 — colour is never the only carrier of information', statusPairs >= 3 && statusLabels >= 2 && ariaHiddenIcons >= 3,
-  `every status and uncertainty badge renders an outline icon (aria-hidden, so it is decoration) next to its English text label: ${statusPairs} icon usages, ${statusLabels} text labels, ${ariaHiddenIcons} decorative icons marked aria-hidden`);
+check('N2', 'nfr', 'NFR-404 — colour is never the only carrier of information', statusPairs >= 2 && statusLabels >= 2 && ariaHiddenIcons >= 3,
+  `the shared Status and Level badges render an outline icon (aria-hidden, so it is decoration) next to the English text label: ${statusPairs} icon lookups, ${statusLabels} label lookups, ${ariaHiddenIcons} decorative icons marked aria-hidden`);
 
 // ========================================================== E. MANUAL ITEMS
 const manual = [

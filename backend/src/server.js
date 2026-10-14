@@ -9,7 +9,7 @@ import { errorResponse, AppError } from './errors.js';
 import { getConfig } from './config.js';
 import { createStore } from './store/index.js';
 import { createStorage } from './storage/index.js';
-import { loadFactorLibrary, getFactorById, searchFactorsByKeyword } from './services/factorLibrary.js';
+import { loadFactorLibrary, getFactorById, searchFactorsByKeyword, listFactors } from './services/factorLibrary.js';
 import { createTask, getTask } from './services/taskService.js';
 import { ingestFile, resolveDuplicate, setDocumentStatus, getDocumentFile } from './services/fileService.js';
 import { runPipeline } from './services/pipeline.js';
@@ -142,14 +142,37 @@ export async function buildApp(options = {}) {
   loadFactorLibrary(store).catch((err) => log.error('factor_library_load_failed', { error: String(err) }));
 
   app.get('/factors', async (req, res) => {
+    // Factor library browser (FR-605 public data): keyword terms are ANDed
+    // (comma separated, same contract as before); with no criteria at all the
+    // whole library is returned in id order so the UI can browse all 743
+    // factors. Optional type/gwp/year filters and offset/limit pagination
+    // keep the payload bounded; `count` stays the TOTAL number of matches.
     const q = String(req.query.q || '').trim();
-    if (!q) {
-      res.status(400).json({ error: { code: 'ERR_INTERNAL', message: 'Provide ?q=<keywords> (comma separated).' } });
-      return;
-    }
+    const type = String(req.query.type || '').trim();
+    const gwp = String(req.query.gwp || '').trim();
+    const year = String(req.query.year || '').trim();
+    const hasCriteria = Boolean(q || type || gwp || year);
     const terms = q.split(',').map((s) => s.trim()).filter(Boolean);
-    const hits = await searchFactorsByKeyword(store, terms);
-    res.json({ count: hits.length, factors: hits.map(({ embedding, ...f }) => f) });
+    const limitNum = Number(req.query.limit);
+    const offsetNum = Number(req.query.offset);
+    const limit = Number.isFinite(limitNum) ? Math.min(Math.max(Math.trunc(limitNum), 1), 200) : 50;
+    const offset = Number.isFinite(offsetNum) ? Math.max(Math.trunc(offsetNum), 0) : 0;
+    let hits = hasCriteria ? await searchFactorsByKeyword(store, terms) : [...await listFactors(store)];
+    if (!hasCriteria) hits.sort((a, b) => String(a.factor_id).localeCompare(String(b.factor_id)));
+    if (type) hits = hits.filter((f) => f.activity_type === type);
+    if (gwp) hits = hits.filter((f) => f.gwp_version === gwp);
+    if (year) hits = hits.filter((f) => String(f.data_year) === year);
+    // Facets are computed over the whole library so filter dropdowns always
+    // show every option, not only the survivors of the current query.
+    const all = await listFactors(store);
+    const facet = (fn) => [...new Set(all.map(fn).filter(Boolean))].sort();
+    res.json({
+      count: hits.length,
+      offset,
+      limit,
+      facets: { activity_types: facet((f) => f.activity_type), gwp_versions: facet((f) => f.gwp_version), data_years: facet((f) => String(f.data_year)) },
+      factors: hits.slice(offset, offset + limit).map(({ embedding, ...f }) => f),
+    });
   });
 
   app.get('/factors/:id', async (req, res) => {
@@ -162,6 +185,22 @@ export async function buildApp(options = {}) {
   app.post('/api/tasks', async (req, res) => {
     const task = await createTask(store, { ...req.body, owner_uid: req.uid });
     res.status(201).json(task);
+  });
+
+  // Task history for the identity switcher / "recent tasks" view: the caller
+  // sees its own tasks plus ownerless ones (public demo, scripts). Tasks owned
+  // by another identity are never listed — the same NFR-301 boundary the
+  // task-scoped routes enforce, applied to the listing itself.
+  app.get('/api/tasks', async (req, res) => {
+    const visible = (await store.list('tasks'))
+      .filter((t) => !t.owner || t.owner === req.uid)
+      .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+      .slice(0, 50);
+    const withCounts = await Promise.all(visible.map(async (t) => ({
+      ...t,
+      document_count: (await store.query('documents', 'task_id', t.task_id)).length,
+    })));
+    res.json({ count: withCounts.length, tasks: withCounts });
   });
 
   app.get('/api/tasks/:taskId', requireTaskOwner, async (req, res) => {
@@ -196,6 +235,20 @@ export async function buildApp(options = {}) {
     const buf = await getDocumentFile(storage, doc);
     res.setHeader('Content-Type', 'application/octet-stream');
     res.send(buf);
+  });
+
+  // Per-page classification units of one document (PRD 8.4 document_units):
+  // page number, assigned doc_type, type_confidence and the
+  // needs_manual_confirmation flag, so the UI can show how each page was
+  // classified before any record was extracted from it.
+  app.get('/api/tasks/:taskId/documents/:docId/units', requireTaskOwner, async (req, res) => {
+    const doc = await store.get('documents', req.params.docId);
+    if (!doc || doc.task_id !== req.params.taskId) {
+      throw new AppError('ERR_TASK_NOT_FOUND', { document_id: req.params.docId });
+    }
+    const units = (await store.query('document_units', 'document_id', req.params.docId))
+      .sort((a, b) => (a.page_number ?? 0) - (b.page_number ?? 0));
+    res.json({ count: units.length, units });
   });
 
   app.post('/api/tasks/:taskId/documents/:docId/duplicate', requireTaskOwner, async (req, res) => {
@@ -330,7 +383,33 @@ export async function buildApp(options = {}) {
     if (!record) throw new AppError('ERR_TASK_NOT_FOUND', { record_id: req.params.recordId });
     const { recallCandidates } = await import('./services/recall.js');
     const recall = await recallCandidates({ store, record, taskId: req.params.taskId });
-    res.json({ count: recall.candidate_count, candidates: recall.candidates.filter((c) => c.factor).map((c) => ({ factor_id: c.factor_id, name: c.factor.name, activity_unit: c.factor.activity_unit, value: c.factor.value, score: c.score })) });
+    const candidates = recall.candidates.filter((c) => c.factor).map((c) => ({ factor_id: c.factor_id, name: c.factor.name, activity_unit: c.factor.activity_unit, value: c.factor.value, score: c.score }));
+    // The stored match carries the selection the pipeline actually made —
+    // selected vs runner-up factor, confidence and the comparative rationale
+    // (PRD 9.1 P4 "best vs runner-up comparison") — so the viewer can present
+    // the decision, not only the candidate window.
+    const byId = new Map(candidates.map((c) => [c.factor_id, c]));
+    // Same id fallback every other match read/write uses (pipeline, review).
+    const stored = await store.get('matches', record.match_id ?? `match_${req.params.recordId}`);
+    let match = null;
+    if (stored) {
+      const describe = async (id) => {
+        if (!id) return null;
+        const inWindow = byId.get(id);
+        if (inWindow) return { factor_id: id, name: inWindow.name, activity_unit: inWindow.activity_unit, value: inWindow.value };
+        const f = await getFactorById(store, id);
+        return f ? { factor_id: id, name: f.name, activity_unit: f.activity_unit, value: f.value } : { factor_id: id, name: '(factor unavailable)', activity_unit: null, value: null };
+      };
+      match = {
+        selected_factor_id: stored.selected_factor_id,
+        runner_up_factor_id: stored.runner_up_factor_id ?? null,
+        confidence: stored.confidence,
+        rationale: stored.rationale,
+        selected: await describe(stored.selected_factor_id),
+        runner_up: await describe(stored.runner_up_factor_id),
+      };
+    }
+    res.json({ count: recall.candidate_count, candidates, match });
   });
 
   app.get('/api/tasks/:taskId/records/:recordId/audit', requireTaskOwner, async (req, res) => {

@@ -15,6 +15,9 @@ const json = async (path, opts = {}) => {
 };
 export const api = {
   createTask: (body) => json('/api/tasks', { method: 'POST', body }),
+  // Task history for the switcher and the "recent tasks" list: only tasks the
+  // current identity owns (plus ownerless public ones) come back.
+  listTasks: () => json('/api/tasks'),
   getTask: (id) => json(`/api/tasks/${id}`),
   uploadFiles: async (taskId, files) => {
     const fd = new FormData();
@@ -24,6 +27,8 @@ export const api = {
     return res.json();
   },
   resolveDuplicate: (taskId, docId, keep) => json(`/api/tasks/${taskId}/documents/${docId}/duplicate`, { method: 'POST', body: { keep } }),
+  // Per-page classification of one document (document_units).
+  docUnits: (taskId, docId) => json(`/api/tasks/${taskId}/documents/${docId}/units`),
   runPipeline: (taskId, ratio) => json(`/api/tasks/${taskId}/run`, { method: 'POST', body: { useMockCatalog: !window.__REAL_AI__, ratio } }),
   loadDemo: () => json('/api/demo/load', { method: 'POST' }),
   dashboard: (taskId) => json(`/api/tasks/${taskId}/dashboard`),
@@ -33,7 +38,14 @@ export const api = {
   traces: (taskId, stage) => json(`/api/tasks/${taskId}/traces${stage ? `?stage=${encodeURIComponent(stage)}` : ''}`),
   audit: (taskId, recordId) => json(`/api/tasks/${taskId}/records/${recordId}/audit`),
   candidates: (taskId, recordId) => json(`/api/tasks/${taskId}/records/${recordId}/candidates`),
-  factorSearch: (q) => json(`/factors?q=${encodeURIComponent(q.split(/\s+/).slice(0, 6).join(','))}`),
+  factorDetail: (id) => json(`/factors/${encodeURIComponent(id)}`),
+  // Factor library browser: keywords are ANDed server-side; type/gwp/year are
+  // optional facets; limit/offset paginate (`count` is the total match count).
+  factorBrowse: (params = {}) => {
+    const qs = new URLSearchParams();
+    for (const [k, v] of Object.entries(params)) if (v !== '' && v != null) qs.set(k, v);
+    return json(`/factors?${qs.toString()}`);
+  },
   // Authenticated blob download (file & export links carry no header on
   // plain <a> navigation, which owner-checked endpoints require).
   download: async (path, filename) => {

@@ -14,9 +14,14 @@ ten-chapter English report with PDF/CSV exports and a full audit trail.
 
 ## Architecture
 
-- **Frontend**: React (Vite) single-page app — nine pages (task creation, upload,
-  records, matching viewer, dashboard, scenarios, report reader, review queue, AI traces).
-  Deployed to Firebase Hosting.
+- **Frontend**: React (Vite) single-page app — the nine PRD pages (task creation, upload,
+  records, matching viewer, dashboard, scenarios, report reader, review queue, AI traces)
+  plus two global views (factor library browser over all 743 factors, task history with a
+  nav-bar task switcher). The dashboard renders hand-rolled SVG charts (scope donut,
+  category/supplier bars, monthly trend line, KPI cards); the matching viewer shows the
+  best-vs-runner-up comparison with the stored rationale; the report reader has a chapter
+  TOC and clickable citation anchors (numeric conclusion → citation index → source object);
+  document rows expand to per-page classification units. Deployed to Firebase Hosting.
 - **Backend**: Node.js (Express) on **Cloud Run** (autoscaling, scale-to-zero). A storage
   abstraction selects Firebase Storage + Firestore in production and local adapters for
   development, tests and the offline evaluation tool. Pipeline runs execute inline on the
@@ -205,13 +210,14 @@ Supporting measurements, each with its own evidence file:
 - **Final acceptance checklist** (`scripts/verify_acceptance.js`,
   `progress/evidence/T-050/acceptance.md`): PRD 10.3 functional 8/8, compliance 5/5,
   engineering 5/5, plus keyboard access and colour-independence NFRs.
-- **Code size** (`scripts/count_lines.sh`): application code 4,544 lines; with all first-party
-  JavaScript verification and build tooling 7,708 lines; including the offline Python dataset
-  toolchain 9,503 lines (hard cap 10,000). Figure B currently **exceeds** the 7,000-line
-  NFR-504 target: the 2026-10 audit added a mandatory regression battery and security
-  middleware faster than dead code could be recovered; the overage is recorded in the defect
-  register (`progress/DEFECT_REGISTER_2026-10-14.md`, D-02) and figure C remains within the
-  hard cap.
+- **Code size** (`scripts/count_lines.sh`): application code 5,765 lines; with all
+  first-party JavaScript verification and build tooling 8,944 lines; including the offline
+  Python dataset toolchain 10,739 lines. The 2026-10 frontend enrichment (factor library
+  browser, task history, SVG charts, citation anchors, comparison views; `frontend/src`
+  665 → 1,807 lines) was applied after final acceptance with the NFR-504 budget explicitly
+  waived by the maintainer, so figures B and C now exceed the 7,000 target and figure C
+  exceeds the former 10,000 hard cap; the historical overage and its origin remain recorded
+  in the defect register (`progress/DEFECT_REGISTER_2026-10-14.md`, D-02).
 
 Video acceptance (4 items), the real-person 5-second usability check, and the deck PDF /
 video production steps remain manual; they are listed with instructions in
