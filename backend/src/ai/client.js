@@ -67,6 +67,15 @@ function summarize(obj, limit = 300) {
   }
 }
 
+// Trace minimization (D-05-related, R-05): uploaded document bytes must never
+// appear in ai_traces, so inline_data parts are summarized as omitted.
+function redactParts(parts) {
+  if (!Array.isArray(parts)) return parts;
+  return parts.map((p) => (p && p.inline_data
+    ? { text: p.text, inline_data: `[${p.inline_data.mime_type ?? 'binary'} omitted]` }
+    : p));
+}
+
 /**
  * Calls the configured Gemini model with structured output.
  * @param {object} opts
@@ -107,7 +116,7 @@ export async function callModel({ taskId, stage, model, parts, schema, validator
         stage,
         model,
         adapter,
-        input_summary: summarize(parts),
+        input_summary: summarize(redactParts(parts)),
         output_summary: summarize(result),
         latency_ms: latency,
         usage: { ...usage, est_cost_usd: Number(costUsd.toFixed(6)) },
@@ -124,7 +133,7 @@ export async function callModel({ taskId, stage, model, parts, schema, validator
       if (traceStore) {
         await traceStore.put('ai_traces', `ait_${Date.now()}_err_${Math.random().toString(36).slice(2, 8)}`, {
           task_id: taskId, stage, model, adapter: mode(),
-          input_summary: summarize(parts), output_summary: summarize(err.message),
+          input_summary: summarize(redactParts(parts)), output_summary: summarize(err.message),
           latency_ms: Date.now() - started, usage: { input_tokens: 0, output_tokens: 0, est_cost_usd: 0 },
           ok: false, attempt, error: String(err.message).slice(0, 200), ts: new Date().toISOString(),
         });
@@ -137,6 +146,14 @@ export async function callModel({ taskId, stage, model, parts, schema, validator
         if (lastErr instanceof AppError) throw lastErr;
         throw new AppError('ERR_MODEL_CALL_FAILED', { stage, model, attempts, detail: String(err.message).slice(0, 200) });
       }
+      // Fatal upstream answers (bad request, bad key) never become transient by
+      // retrying: stop immediately instead of burning latency and quota (D-17).
+      if (err.kind === 'fatal') {
+        if (lastErr instanceof AppError) throw lastErr;
+        throw new AppError('ERR_MODEL_CALL_FAILED', { stage, model, attempts: attempt, detail: String(err.message).slice(0, 200) });
+      }
+      // Exponential backoff with jitter between retryable attempts (D-17).
+      if (mode() !== 'mock') await new Promise((r) => setTimeout(r, Math.min(1000, 150 * 2 ** (attempt - 1)) * (0.5 + Math.random())));
     }
   }
   throw lastErr;
@@ -163,8 +180,9 @@ async function dispatch({ model, parts, schema, mockFn, mockContext, timeoutMs }
       signal: controller.signal,
     });
     if (!res.ok) {
-      const body = await res.text();
-      throw Object.assign(new Error(`HTTP ${res.status}: ${body.slice(0, 160)}`), { kind: res.status >= 500 || res.status === 429 ? 'transient' : 'fatal' });
+      // The upstream body is deliberately NOT embedded: error text can carry
+      // echoes of request payloads and must not reach traces or clients (D-08).
+      throw Object.assign(new Error(`HTTP ${res.status} from model endpoint`), { kind: res.status >= 500 || res.status === 429 ? 'transient' : 'fatal' });
     }
     const data = await res.json();
     const text = data.candidates?.[0]?.content?.parts?.map((p) => p.text || '').join('') ?? '';
@@ -202,14 +220,35 @@ export async function embedTexts({ taskId, texts, traceStore }) {
     assertModelAllowed(model); // single-model policy, checked before any request
     for (let i = 0; i < texts.length; i += 50) {
       const chunk = texts.slice(i, i + 50);
-      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:batchEmbedContents`, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
-        body: JSON.stringify({ requests: chunk.map((text) => ({ model: `models/${model}`, content: { parts: [{ text }] } })) }),
-      });
-      if (!res.ok) throw new AppError('ERR_MODEL_CALL_FAILED', { stage: 'embedding-batch', status: res.status, body: (await res.text()).slice(0, 200) });
-      const data = await res.json();
-      for (const e of data.embeddings ?? []) all.push(e.values);
+      // A short vector response must never be accepted: the index is written
+      // positionally, so missing vectors would silently corrupt it (D-18).
+      let data = null;
+      for (let attempt = 0; attempt < 2 && !data; attempt += 1) {
+        const controller = new AbortController();
+        const timer = setTimeout(() => controller.abort(new Error('timeout')), cfg.AI_TIMEOUT_SECONDS * 1000);
+        try {
+          const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:batchEmbedContents`, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
+            body: JSON.stringify({ requests: chunk.map((text) => ({ model: `models/${model}`, content: { parts: [{ text }] } })) }),
+            signal: controller.signal,
+          });
+          if (!res.ok) throw new AppError('ERR_MODEL_CALL_FAILED', { stage: 'embedding-batch', status: res.status });
+          const parsed = await res.json();
+          if (!Array.isArray(parsed.embeddings) || parsed.embeddings.length !== chunk.length) {
+            throw new AppError('ERR_MODEL_CALL_FAILED', { stage: 'embedding-batch', detail: `expected ${chunk.length} vectors, got ${parsed.embeddings?.length ?? 0}` });
+          }
+          data = parsed;
+        } catch (err) {
+          if (err.name === 'AbortError' || String(err.message) === 'timeout') {
+            throw new AppError('ERR_MODEL_TIMEOUT', { stage: 'embedding-batch', model });
+          }
+          if (attempt === 1) throw err;
+        } finally {
+          clearTimeout(timer);
+        }
+      }
+      for (const e of data.embeddings) all.push(e.values);
     }
   }
   if (traceStore) {
@@ -240,14 +279,27 @@ export async function embedText({ taskId, text, traceStore }) {
   } else {
     const key = getSecret('GEMINI_API_KEY');
     assertModelAllowed(model); // single-model policy, checked before any request
-    const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:embedContent`, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
-      body: JSON.stringify({ model: `models/${model}`, content: { parts: [{ text }] } }),
-    });
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(new Error('timeout')), cfg.AI_TIMEOUT_SECONDS * 1000);
+    let res;
+    try {
+      res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:embedContent`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', 'x-goog-api-key': key },
+        body: JSON.stringify({ model: `models/${model}`, content: { parts: [{ text }] } }),
+        signal: controller.signal,
+      });
+    } catch (err) {
+      if (err.name === 'AbortError' || String(err.message) === 'timeout') {
+        throw new AppError('ERR_MODEL_TIMEOUT', { stage: 'embedding', model });
+      }
+      throw err;
+    } finally {
+      clearTimeout(timer);
+    }
     if (!res.ok) {
-      const body = await res.text();
-      throw new AppError('ERR_MODEL_CALL_FAILED', { stage: 'embedding', status: res.status, body: body.slice(0, 300) });
+      // Upstream body omitted from the error on purpose (D-08).
+      throw new AppError('ERR_MODEL_CALL_FAILED', { stage: 'embedding', status: res.status });
     }
     const data = await res.json();
     result = data.embedding?.values;

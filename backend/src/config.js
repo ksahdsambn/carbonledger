@@ -82,6 +82,18 @@ const DEFINITIONS = [
 // never included in any printed configuration output.
 const SECRET_ENV_VARS = ['GEMINI_API_KEY', 'GOOGLE_APPLICATION_CREDENTIALS'];
 
+// Numeric sanity ranges (D-16): an env value that parses to NaN, Infinity or
+// an out-of-range number would otherwise silently disable retries, starve the
+// pipeline worker pool or break threshold logic. Invalid values fall back to
+// the documented default with a warning instead of taking effect.
+const RANGES = {
+  BATCH_SIZE: [1, 1000],
+  CLASSIFICATION_CONFIDENCE_THRESHOLD: [0, 1],
+  FACTOR_MATCH_CONFIDENCE_THRESHOLD: [0, 1],
+  AI_RETRY_COUNT: [0, 10],
+  AI_TIMEOUT_SECONDS: [1, 600],
+};
+
 function coerce(value, type) {
   if (type === 'int') return Number.parseInt(value, 10);
   if (type === 'float') return Number.parseFloat(value);
@@ -99,7 +111,12 @@ export function loadConfig(env = process.env) {
   for (const def of DEFINITIONS) {
     const fromEnv = env[def.key] !== undefined && env[def.key] !== '';
     const raw = fromEnv ? env[def.key] : def.default;
-    const value = coerce(raw, def.type);
+    let value = coerce(raw, def.type);
+    const range = RANGES[def.key];
+    if (range && (!Number.isFinite(value) || value < range[0] || value > range[1])) {
+      console.error(JSON.stringify({ ts: new Date().toISOString(), level: 'warn', event: 'config_value_invalid', key: def.key, raw: String(raw), fallback: def.default }));
+      value = def.default;
+    }
     entries[def.key] = {
       ...def,
       value,

@@ -121,6 +121,7 @@ console.log(`COST LEDGER (classification stage): $${cost.toFixed(4)}`);
 const pass = docsCorrect >= 28 && outOfEnum === 0 && blurryFlagged === 3 && withFields.length === traces.length;
 mkdirSync(join(ROOT, 'eval/results'), { recursive: true });
 writeFileSync(join(ROOT, 'eval/results/classification_top1.json'), JSON.stringify({
+  adapter: 'real',
   measured: `${docsCorrect}/30 documents (${(docsCorrect / 30 * 100).toFixed(1)}%), pages ${pageCorrect}/${jobs.length}`,
   pass: docsCorrect >= 28,
   detail: { docsCorrect, pageCorrect, pages: jobs.length, out_of_enum: outOfEnum, blurry_flagged: blurryFlagged, calls: totalCalls, est_cost_usd: Number(cost.toFixed(6)) },

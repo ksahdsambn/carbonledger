@@ -91,10 +91,8 @@ export async function assembleReport({ store, taskId, task, records, calcs, calc
     value_t: t3(valueKg), ref_type: refType, ref_id: refId, locator: locator ?? null, context,
   });
   anchor(totalKg, 'calculation-set', taskId, null, 'Total emissions');
-  for (const s of scopeDisplay.parts) anchor(s.value * 1000, 'aggregation', taskId, s.key, `Scope breakdown: ${s.key}`);
-  for (const s of agg.scope) {
-    for (const c of calcsWithMeta.filter((m) => m.meta.scope === s.key).slice(0, 0)) { /* per-record anchors below */ }
-  }
+  // s.value is already kg; anchor() converts kg -> t exactly once (D-10).
+  for (const s of scopeDisplay.parts) anchor(s.value, 'aggregation', taskId, s.key, `Scope breakdown: ${s.key}`);
   for (const m of calcsWithMeta) anchor(m.calc.emission_kgco2e, 'record', m.meta.record_id, m.meta.source_ref, `Record ${m.meta.record_id}: ${m.meta.item_description}`);
   for (const s of scenarios.scenarios) anchor(s.reduction_kgco2e, 'scenario', `${taskId}_${s.scenario_id}`, null, `${s.scenario_id} reduction`);
 
@@ -267,7 +265,7 @@ export async function scanReportCitations(store, report) {
     let ok = false;
     if (n.ref_type === 'record') ok = records.has(n.ref_id);
     else if (n.ref_type === 'factor') ok = factors.has(n.ref_id);
-    else if (n.ref_type === 'scenario') ok = scenarios.has(n.ref_id) || String(n.ref_id).includes('_S-');
+    else if (n.ref_type === 'scenario') ok = scenarios.has(n.ref_id); // existence-checked only (D-19)
     else if (n.ref_type === 'calculation-set' || n.ref_type === 'aggregation') ok = Boolean(n.ref_id);
     if (!ok) { invalid.push({ context: n.context, ref: `${n.ref_type}:${n.ref_id}`, reason: 'dangling reference' }); continue; }
     covered += 1;

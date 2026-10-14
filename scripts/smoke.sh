@@ -34,13 +34,15 @@ BODY=$(curl -sf "http://127.0.0.1:$PORT/healthz")
 echo "health response: $BODY"
 
 # Structured log lines must be valid JSON with event fields; server_started present.
-if ! python -c "
+# The log content is piped over stdin: mktemp returns an MSYS path on Windows
+# Git Bash that native Python cannot open (D-01), but cat resolves it fine.
+if ! cat "$LOG_FILE" | python -c "
 import json,sys
-lines = open(r'$LOG_FILE', encoding='utf-8', errors='replace').read().splitlines()
+lines = sys.stdin.read().splitlines()
 events = [json.loads(l)['event'] for l in lines if l.strip()]
 assert events and 'server_started' in events
 " 2>/dev/null; then
-  echo "SMOKE FAIL: first log line is not a structured server_started event"
+  echo "SMOKE FAIL: structured log check failed (no server_started event)"
   cat "$LOG_FILE"
   exit 1
 fi

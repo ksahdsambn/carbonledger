@@ -16,4 +16,7 @@ COPY data/demo data/demo
 
 # Run as the non-root user provided by the base image.
 USER node
+# Health signal for the platform's restart policy (D-29); slim has no curl.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||8080)+'/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
 CMD ["node", "backend/src/server.js"]

@@ -82,16 +82,18 @@ test('a transient failure is retried and the third attempt succeeds', async () =
 
 test('a non-retryable transport failure still surfaces a machine-readable code', async () => {
   const store = new LocalFileStore(mkdtempSync(join(tmpdir(), 'retry-fatal-')));
-  const restore = useRealTransportWith(async () => ({
-    ok: false,
-    status: 400,
-    text: async () => 'invalid request payload',
-  }));
+  let attempts = 0;
+  const restore = useRealTransportWith(async () => {
+    attempts += 1;
+    return { ok: false, status: 400, text: async () => 'invalid request payload' };
+  });
   try {
     await assert.rejects(
       callModel({ ...RETRYABLE_CALL, traceStore: store }),
-      (err) => err.code === 'ERR_MODEL_CALL_FAILED' && err.details.attempts === 3,
+      (err) => err.code === 'ERR_MODEL_CALL_FAILED' && err.details.attempts === 1,
     );
+    // A fatal answer (4xx) must not be retried (D-17): one attempt only.
+    assert.equal(attempts, 1, 'fatal upstream errors are not retried');
   } finally {
     restore();
     rmSync(store.rootDir, { recursive: true, force: true });

@@ -17,6 +17,12 @@ import { runPipeline } from '../backend/src/services/pipeline.js';
 import { scanReportCitations } from '../backend/src/services/reportService.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+if (!process.env.GEMINI_API_KEY) {
+  console.error('GEMINI_API_KEY not set — real adapter required for this verification');
+  process.exit(2);
+}
+
 const store = new LocalFileStore(mkdtempSync(join(tmpdir(), 't033-')));
 const storage = new LocalFileStorage(mkdtempSync(join(tmpdir(), 't033u-')));
 await loadFactorLibrary(store);
@@ -76,12 +82,15 @@ const perDoc = cost / 20;
 console.log(`COST LEDGER (demo run incl. one-off index): $${cost.toFixed(4)} -> $${perDoc.toFixed(5)}/doc (target <= 0.03)`);
 
 writeFileSync(join(ROOT, 'eval/results/report_citation_coverage.json'), JSON.stringify({
+  adapter: 'real',
   measured: `${cit.coverage_pct.toFixed(0)}%`, pass: cit.coverage_pct === 100, detail: cit,
 }, null, 2));
 writeFileSync(join(ROOT, 'eval/results/invalid_references.json'), JSON.stringify({
+  adapter: 'real',
   measured: String(cit.invalid_count), pass: cit.invalid_count === 0, detail: cit,
 }, null, 2));
 writeFileSync(join(ROOT, 'eval/results/ai_cost_per_document.json'), JSON.stringify({
+  adapter: 'real',
   measured: `$${perDoc.toFixed(5)}`, pass: perDoc <= 0.03, detail: { total: Number(cost.toFixed(6)), docs: 20 },
 }, null, 2));
 mkdirSync(join(ROOT, 'progress/evidence/T-033'), { recursive: true });

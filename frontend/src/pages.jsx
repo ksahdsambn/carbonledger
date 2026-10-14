@@ -74,7 +74,7 @@ export function P2Upload({ taskId, onProgress, chooseTaskIfSet }) {
   const [docs, setDocs] = useState([]);
   const [busy, setBusy] = useState(false);
   const [note, setNote] = useState(null);
-  const refresh = async () => setDocs((await api.getTask(taskId)).documents);
+  const refresh = async () => setDocs((await api.getTask(taskId).catch(() => ({ documents: [] }))).documents ?? []);
   useEffect(() => { refresh(); const t = setInterval(refresh, 2500); return () => clearInterval(t); }, [taskId]);
   const upload = async (files) => {
     setBusy(true); setNote(null);
@@ -134,7 +134,7 @@ export function P2Upload({ taskId, onProgress, chooseTaskIfSet }) {
 function AuditView({ taskId, recordId }) {
   const [audit, setAudit] = useState(null);
   const [open, setOpen] = useState(false);
-  const load = async () => { setOpen(!open); if (!audit) setAudit(await (await fetch(`/api/tasks/${taskId}/records/${recordId}/audit`)).json()); };
+  const load = async () => { setOpen(!open); if (!audit) setAudit(await api.audit(taskId, recordId)); };
   return (
     <div>
       <button className="linklike" onClick={load} aria-expanded={open}>{open ? 'Hide' : 'Show'} full audit calculation steps</button>
@@ -153,19 +153,11 @@ function AuditView({ taskId, recordId }) {
 }
 
 // ---------------------------------------------------------------- P3 + P4
-async function loadRecords(taskId) {
-  const [taskRes, dash] = await Promise.all([api.getTask(taskId), api.dashboard(taskId)]);
-  return { records: dash.records ?? [], raw: taskRes, dash };
-}
-
 export function P3Records({ taskId }) {
   const [data, setData] = useState(null);
   const [expanded, setExpanded] = useState(null);
   useEffect(() => { api.dashboard(taskId).then((d) => setData(d)).catch(() => setData(null)); }, [taskId]);
-  const records = data?.records ?? [];
-  // dashboard returns aggregates; records themselves come from the task view
-  const [recs, setRecs] = useState([]);
-  useEffect(() => { api.getTask(taskId).then((t) => setRecs(t.records ?? [])).catch(() => {}); }, [taskId, data]);
+  const recs = data?.records ?? [];
   return (
     <main className="page">
       <h2>Activity records</h2>
@@ -194,7 +186,7 @@ export function P3Records({ taskId }) {
                 <p><b>Boundary rationale:</b> {r.boundary_rationale ?? '—'}</p>
                 <AuditView taskId={taskId} recordId={r.record_id} />
                 <a className="button" href={`#/match?record=${r.record_id}`}>Open matching viewer</a>{' '}
-                <a className="button" href={`/api/tasks/${taskId}/documents/${(r.source_ref ?? '').split('#')[0]}/file`} target="_blank" rel="noreferrer">View source document</a>
+                <button className="linklike" onClick={() => api.download(`/api/tasks/${taskId}/documents/${(r.source_ref ?? '').split('#')[0]}/file`, 'source_document')}>View source document</button>
               </td></tr>
             )}
           </React.Fragment>
@@ -215,17 +207,16 @@ export function P3Records({ taskId }) {
 export function P4Matching({ taskId, params }) {
   const recordId = params.get('record');
   const [dash, setDash] = useState(null);
-  const [task, setTask] = useState(null);
   const [msg, setMsg] = useState(null);
   const [factors, setFactors] = useState([]);
-  useEffect(() => { api.dashboard(taskId).then(setDash); api.getTask(taskId).then(setTask); api.factors('').catch(() => {}); }, [taskId]);
-  const rec = task?.records?.find((r) => r.record_id === recordId);
-  useEffect(() => { if (rec) api.factorSearch(rec.item_description).then((r) => setFactors(r.factors.slice(0, 15))); }, [rec?.record_id]);
+  useEffect(() => { api.dashboard(taskId).then(setDash).catch(() => {}); }, [taskId]);
+  const rec = dash?.records?.find((r) => r.record_id === recordId);
+  useEffect(() => { if (rec) api.factorSearch(rec.item_description).then((r) => setFactors(r.factors.slice(0, 15))).catch(() => {}); }, [rec?.record_id]);
   if (!rec) return <main className="page"><h2>Factor matching viewer</h2><p>Select a record on P3.</p></main>;
   const assign = async (fid) => {
     await api.reviewAction(taskId, recordId, { action: 'assign', factor_id: fid });
     setMsg('Factor manually assigned; results recalculated.');
-    api.getTask(taskId).then(setTask);
+    api.dashboard(taskId).then(setDash);
   };
   return (
     <main className="page">
@@ -290,7 +281,7 @@ export function P6Scenarios({ taskId }) {
       <label>Replacement ratio: <output>{Math.round(ratio * 100)}%</output>
         <input type="range" min="0" max="100" value={ratio * 100}
           onChange={(e) => setRatio(Number(e.target.value) / 100)}
-          onBlur={async () => { await api.runPipeline(taskId); api.report(taskId).then((r) => setRep(r.report)); }}
+          onBlur={async () => { await api.runPipeline(taskId, ratio); api.report(taskId).then((r) => setRep(r.report)); }}
           aria-label="Replacement ratio percent" /></label>
       <p className="hint">Adjust the slider and release to recompute at the selected ratio.</p>
       {chapter.blocks.map((b, i) => b.type === 'table'
@@ -312,9 +303,9 @@ export function P7Report({ taskId }) {
       <h2>Emissions report — {rep.meta.entity}</h2>
       <p className="hint">Citation coverage {citations.coverage_pct.toFixed(0)}% · invalid anchors {citations.invalid_count} · narrative adapter: {rep.narrative_adapter}</p>
       <div className="row actions">
-        <a className="button" href={`/api/tasks/${taskId}/report/export?fmt=pdf`}>Export PDF</a>
-        <a className="button" href={`/api/tasks/${taskId}/report/export?fmt=csv-detail`}>Export activity CSV</a>
-        <a className="button" href={`/api/tasks/${taskId}/report/export?fmt=csv-category`}>Export category CSV</a>
+        <button className="button" onClick={() => api.download(`/api/tasks/${taskId}/report/export?fmt=pdf`, 'carbonledger_report.pdf')}>Export PDF</button>
+        <button className="button" onClick={() => api.download(`/api/tasks/${taskId}/report/export?fmt=csv-detail`, 'activity_detail.csv')}>Export activity CSV</button>
+        <button className="button" onClick={() => api.download(`/api/tasks/${taskId}/report/export?fmt=csv-category`, 'category_summary.csv')}>Export category CSV</button>
       </div>
       {rep.chapters.map((c) => (
         <section key={c.no} className="card chapter">

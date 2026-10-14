@@ -1,5 +1,5 @@
 {
-  "run_at": "2026-10-12T15:52:34.497Z",
+  "run_at": "2026-10-14T02:17:50.685Z",
   "mode": "all",
   "rows": [
     {
@@ -7,138 +7,138 @@
       "group": "classification",
       "name": "Document classification accuracy (Top-1)",
       "target": ">= 93% (>= 28 of 30 Golden documents)",
-      "measured": "",
-      "pass": false,
+      "measured": "29/30 documents (96.7%), pages 32/33",
+      "pass": true,
       "mandatory": true,
       "veto": false,
-      "evidence": "not yet produced",
-      "result": "FAIL"
+      "evidence": "progress/evidence/T-014/",
+      "result": "PASS"
     },
     {
       "id": "field_extraction_accuracy",
       "group": "extraction",
       "name": "Field extraction accuracy (quantity, unit, amount, date, currency)",
       "target": "average >= 95%; quantity and unit >= 98%",
-      "measured": "",
-      "pass": false,
+      "measured": "avg 100.0%, quantity 100.0%, unit 100.0%",
+      "pass": true,
       "mandatory": true,
       "veto": false,
-      "evidence": "not yet produced",
-      "result": "FAIL"
+      "evidence": "eval\\results\\field_extraction_accuracy.json",
+      "result": "PASS"
     },
     {
       "id": "factor_match_top1",
       "group": "matching",
       "name": "Factor matching accuracy (Top-1)",
       "target": ">= 85% (>= 34 of 40 Golden cases)",
-      "measured": "",
-      "pass": false,
+      "measured": "34/40 (85.0%)",
+      "pass": true,
       "mandatory": true,
       "veto": false,
-      "evidence": "not yet produced",
-      "result": "FAIL"
+      "evidence": "eval\\results\\factor_match_top1.json",
+      "result": "PASS"
     },
     {
       "id": "factor_match_top3",
       "group": "matching",
       "name": "Factor matching accuracy (Top-3 hit)",
       "target": ">= 95% (>= 38 of 40 Golden cases)",
-      "measured": "",
-      "pass": false,
+      "measured": "39/40 (97.5%)",
+      "pass": true,
       "mandatory": false,
       "veto": false,
-      "evidence": "not yet produced",
-      "result": "FAIL"
+      "evidence": "eval\\results\\factor_match_top3.json",
+      "result": "PASS"
     },
     {
       "id": "scope_decision_accuracy",
       "group": "boundary",
       "name": "Scope decision accuracy (scope level 10 cases and Scope 3 category 12 cases, each >= 90%)",
       "target": ">= 90% on both subsets",
-      "measured": "",
-      "pass": false,
+      "measured": "scope 9/10, category 12/12",
+      "pass": true,
       "mandatory": true,
       "veto": false,
-      "evidence": "not yet produced",
-      "result": "FAIL"
+      "evidence": "eval\\results\\scope_decision_accuracy.json",
+      "result": "PASS"
     },
     {
       "id": "calculation_correctness",
       "group": "calculation",
       "name": "Calculation correctness (3-decimal display precision, zero tolerance)",
       "target": "100%",
-      "measured": "",
-      "pass": false,
+      "measured": "10/10 exact at 3-decimal display",
+      "pass": true,
       "mandatory": true,
       "veto": false,
-      "evidence": "not yet produced",
-      "result": "FAIL"
+      "evidence": "eval\\results\\calculation_correctness.json",
+      "result": "PASS"
     },
     {
       "id": "aggregation_consistency",
       "group": "calculation",
       "name": "Aggregation consistency (sum of parts equals total at 3-decimal display precision)",
       "target": "0 inconsistencies",
-      "measured": "",
-      "pass": false,
+      "measured": "0 inconsistencies (4 dimensions, display-consistent parts)",
+      "pass": true,
       "mandatory": true,
       "veto": false,
-      "evidence": "not yet produced",
-      "result": "FAIL"
+      "evidence": "eval\\results\\aggregation_consistency.json",
+      "result": "PASS"
     },
     {
       "id": "report_citation_coverage",
       "group": "report",
       "name": "Report citation coverage",
       "target": "100%",
-      "measured": "",
-      "pass": false,
+      "measured": "100%",
+      "pass": true,
       "mandatory": true,
       "veto": false,
-      "evidence": "not yet produced",
-      "result": "FAIL"
+      "evidence": "eval\\results\\report_citation_coverage.json",
+      "result": "PASS"
     },
     {
       "id": "invalid_references",
       "group": "report",
       "name": "Invalid reference count (hallucination veto)",
       "target": "0 (non-zero vetoes the overall verdict)",
-      "measured": "",
-      "pass": false,
+      "measured": "0",
+      "pass": true,
       "mandatory": true,
       "veto": true,
-      "evidence": "not yet produced",
-      "result": "FAIL"
+      "evidence": "eval\\results\\invalid_references.json",
+      "result": "PASS"
     },
     {
       "id": "e2e_latency_p90",
       "group": "performance",
       "name": "End-to-end latency for 20 documents (P90)",
       "target": "<= 3 minutes",
-      "measured": "",
-      "pass": false,
+      "measured": "61.3s (P90 of 10 public one-click runs)",
+      "pass": true,
       "mandatory": true,
       "veto": false,
-      "evidence": "not yet produced",
-      "result": "FAIL"
+      "evidence": "eval\\results\\e2e_latency_p90.json",
+      "result": "PASS"
     },
     {
       "id": "ai_cost_per_document",
       "group": "performance",
       "name": "AI processing cost per document",
       "target": "<= USD 0.03",
-      "measured": "",
-      "pass": false,
+      "measured": "$0.00058/document (102 model calls, $0.0117 total over 20 documents)",
+      "pass": true,
       "mandatory": true,
       "veto": false,
-      "evidence": "not yet produced",
-      "result": "FAIL"
+      "evidence": "eval\\results\\ai_cost_per_document.json",
+      "result": "PASS"
     }
   ],
   "summary": {
-    "passed": 0,
-    "failed": 11,
-    "overall": "FAIL",
-    "vetoed": true
+    "passed": 11,
+    "failed": 0,
+    "overall": "PASS",
+    "vetoed": false
   }
 }

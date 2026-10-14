@@ -49,15 +49,19 @@ export const EXTRACTION_SCHEMA = {
   required: ['records'],
 };
 
+const finite = (v) => typeof v === 'number' && Number.isFinite(v);
+
 export function validateExtraction(result) {
   if (!result || !Array.isArray(result.records)) throw new Error('records array missing');
   for (const r of result.records) {
     if (!r.item_description) throw new Error('item_description empty');
-    if (r.quantity != null && (typeof r.quantity !== 'number' || r.quantity <= 0)) throw new Error('quantity invalid');
+    if (r.quantity != null && (!finite(r.quantity) || r.quantity <= 0)) throw new Error('quantity invalid');
     if (r.unit != null && !UNIT_SET.includes(r.unit)) throw new Error(`unit '${r.unit}' outside enum`);
     if (r.currency != null && !CURRENCIES.includes(r.currency)) throw new Error('currency outside enum');
     if (r.transport_mode != null && !TRANSPORT_MODES.includes(r.transport_mode)) throw new Error('transport_mode outside enum');
-    if (r.amount != null && r.amount < 0) throw new Error('negative amount');
+    if (r.amount != null && (!finite(r.amount) || r.amount < 0)) throw new Error('amount invalid');
+    if (r.gross_weight_kg != null && !finite(r.gross_weight_kg)) throw new Error('gross_weight_kg invalid');
+    if (r.distance_km != null && !finite(r.distance_km)) throw new Error('distance_km invalid');
     for (const v of Object.values(r.field_confidence ?? {})) {
       if (typeof v !== 'number' || v < 0 || v > 1) throw new Error('field confidence outside [0,1]');
     }

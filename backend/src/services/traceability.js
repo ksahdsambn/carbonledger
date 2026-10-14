@@ -53,10 +53,9 @@ export async function resolveReference({ store, storage, sourceRef, documentsInd
     const unit = units.find((u) => u.page_number === parsed.page);
     return { ok: true, parsed, document: doc, unit: unit || null };
   }
-  // sheet/row reference
+  // sheet/row reference: csv rows use sheet=row=N; xlsx uses sheet=Sheet1
   if (doc.format === 'xlsx' && parsed.sheet && !/^Sheet/i.test(parsed.sheet)) {
-    // csv rows use sheet=row=N; xlsx uses sheet=Sheet1
-    if (!/^Sheet/.test(parsed.sheet)) return { ok: false, reason: 'sheet_mismatch' };
+    return { ok: false, reason: 'sheet_mismatch' };
   }
   return { ok: true, parsed, document: doc, unit: null };
 }

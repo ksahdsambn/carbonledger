@@ -37,7 +37,7 @@ async function withStatus(store, taskId, docId, status, fn) {
  * @param {Map<string, object>} o.mockCatalog filename -> {classification, records[]}
  *        (offline development only; ignored in real adapter mode)
  */
-export async function runPipeline({ store, storage, taskId, mockCatalog = new Map() }) {
+export async function runPipeline({ store, storage, taskId, mockCatalog = new Map(), ratio = 1.0 }) {
   const startedAt = Date.now();
   const task = await store.get('tasks', taskId);
   if (!task) throw new AppError('ERR_TASK_NOT_FOUND', { task_id: taskId });
@@ -46,7 +46,9 @@ export async function runPipeline({ store, storage, taskId, mockCatalog = new Ma
   const factorsById = Object.fromEntries((await listFactors(store)).map((f) => [f.factor_id, f]));
   const indexMs = Date.now() - indexT0;
 
-  const docs = (await store.query('documents', 'task_id', taskId)).filter((d) => d.status !== 'discarded');
+  const docs = (await store.query('documents', 'task_id', taskId)).filter(
+    (d) => d.status !== 'discarded' && d.status !== 'pending_duplicate',
+  );
   const docMs = [];
 
   // Documents are mutually independent, so they are processed by a bounded
@@ -56,8 +58,29 @@ export async function runPipeline({ store, storage, taskId, mockCatalog = new Ma
   async function processDocument(doc) {
     const recordsOut = [];
     const calcsOut = [];
-    const matchesOut = [];
-    if (doc.status === 'completed') return { records: recordsOut, calcs: calcsOut, matches: matchesOut };
+    if (doc.status === 'completed') {
+      // A completed document keeps its earlier records on re-runs: reload them
+      // so a second run still assembles a complete report (D-33).
+      const prev = (await store.query('activity_records', 'task_id', taskId))
+        .filter((r) => (r.source_ref ?? '').startsWith(`${doc.id}#`));
+      for (const r of prev) {
+        recordsOut.push(r);
+        if (r.excluded_from_calc) continue;
+        const calc = await store.get('calculations', `calc_${r.record_id}`);
+        if (calc) calcsOut.push(calc);
+      }
+      return { records: recordsOut, calcs: calcsOut };
+    }
+    // Reprocessing replaces the document's previous records so a re-run is
+    // idempotent instead of duplicating them (D-04/D-33).
+    const stale = (await store.query('activity_records', 'task_id', taskId))
+      .filter((r) => (r.source_ref ?? '').startsWith(`${doc.id}#`));
+    for (const r of stale) {
+      await store.delete('activity_records', r.record_id);
+      await store.delete('calculations', `calc_${r.record_id}`);
+      await store.delete('matches', r.match_id ?? `match_${r.record_id}`);
+      await store.delete('review_items', `rev_${r.record_id}`);
+    }
     await withStatus(store, taskId, doc.id, 'parsing', async () => {
       let units = await store.query('document_units', 'document_id', doc.id);
       if (units.length === 0) {
@@ -66,6 +89,10 @@ export async function runPipeline({ store, storage, taskId, mockCatalog = new Ma
       }
       const mockMeta = mockCatalog.get(doc.original_filename) ?? {};
       const perDocRecords = [];
+      // The extracting state is entered once per document, before the unit
+      // loop: the transition table has no self-loop, so setting it per unit
+      // made every multi-page document fail on its second page (D-04).
+      await setDocumentStatus(store, taskId, doc.id, 'extracting');
       for (const unit of units) {
         // --- classification ---
         let current = unit;
@@ -82,7 +109,6 @@ export async function runPipeline({ store, storage, taskId, mockCatalog = new Ma
           log.warn('unit_needs_manual_confirmation', { task_id: taskId, unit: current.id });
         }
         // --- extraction ---
-        await setDocumentStatus(store, taskId, doc.id, 'extracting');
         const refFrag = (r) => (r.source_ref ? r.source_ref.split('#')[1] ?? '' : '');
         const expected = (mockMeta.records ?? []).filter((r) => {
           const pageMatch = /^page=(\d+)/.exec(refFrag(r));
@@ -134,7 +160,7 @@ export async function runPipeline({ store, storage, taskId, mockCatalog = new Ma
           const assessment = assessRecord({
             match: { confidence: selection.confidence },
             record, factor,
-            candidates: recall.candidates.map((c) => ({ confidence: 0.5, factor: c.factor })),
+            candidates: recall.candidates.map((c) => ({ match_confidence: c.score, factor: c.factor })),
           });
           // task GWP version vs factor GWP label (PRD 4.5 cross-version rule)
           assessment.gwp_version_consistent = factor.gwp_version === task.gwp_version;
@@ -161,7 +187,6 @@ export async function runPipeline({ store, storage, taskId, mockCatalog = new Ma
           record.no_high_confidence_factor = assessment.no_high_confidence_factor;
           record.match_id = matchId;
           await store.put('activity_records', record.record_id, record);
-          matchesOut.push({ record, selection, factor, assessment });
   
           if (factor && record.quantity != null) {
             try {
@@ -200,13 +225,16 @@ export async function runPipeline({ store, storage, taskId, mockCatalog = new Ma
           recordsOut.push(failed);
         }
       }
-      const needsReview = perDocRecords.some((r) => r.uncertainty_level === 'high');
+      // needs_review must reflect the ASSESSED records: the raw extraction
+      // objects never carry uncertainty_level (D-42).
+      const needsReview = recordsOut.some((r) => r.uncertainty_level === 'high' || r.processing_failed);
       await setDocumentStatus(store, taskId, doc.id, needsReview ? 'needs_review' : 'completed');
     });
-    return { records: recordsOut, calcs: calcsOut, matches: matchesOut };
+    return { records: recordsOut, calcs: calcsOut };
   }
 
-  const concurrency = Math.max(1, Number(process.env.PIPELINE_CONCURRENCY || 4));
+  const parsedConcurrency = Number(process.env.PIPELINE_CONCURRENCY || 4);
+  const concurrency = Number.isFinite(parsedConcurrency) && parsedConcurrency >= 1 ? Math.floor(parsedConcurrency) : 4;
   const perDoc = new Array(docs.length).fill(null);
   let cursor = 0;
   const worker = async () => {
@@ -220,7 +248,7 @@ export async function runPipeline({ store, storage, taskId, mockCatalog = new Ma
         perDoc[i] = await processDocument(doc);
       } catch (err) {
         log.error('document_pipeline_failed', { task_id: taskId, doc: doc.id, error: String(err.message).slice(0, 200), stack: String(err.stack).split('\n').slice(0, 6).join(' | ') });
-        perDoc[i] = { records: [], calcs: [], matches: [] };
+        perDoc[i] = { records: [], calcs: [] };
       }
       docMs.push(Date.now() - docT0);
     }
@@ -229,12 +257,10 @@ export async function runPipeline({ store, storage, taskId, mockCatalog = new Ma
 
   const allRecords = [];
   const calcs = [];
-  const matchResults = [];
   for (const part of perDoc) {
     if (!part) continue;
     allRecords.push(...part.records);
     calcs.push(...part.calcs);
-    matchResults.push(...part.matches);
   }
   const docsMs = Date.now() - startedAt;
 
@@ -245,7 +271,7 @@ export async function runPipeline({ store, storage, taskId, mockCatalog = new Ma
   const agg = aggregate(calcsWithMeta);
   const top = topEmitters(calcsWithMeta);
   const scenarioOut = await computeScenarios({
-    store, taskId, records: allRecords.filter((r) => !r.excluded_from_calc), calcs, factorsById, taskGwpVersion: task.gwp_version,
+    store, taskId, records: allRecords.filter((r) => !r.excluded_from_calc), calcs, factorsById, taskGwpVersion: task.gwp_version, ratio,
   });
   await openReviewForTask({ store, taskId, records: allRecords });
   const report = await assembleReport({ store, taskId, task, records: allRecords, calcs, calcsWithMeta, agg, top, scenarios: scenarioOut, factorsById });

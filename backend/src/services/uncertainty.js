@@ -122,6 +122,7 @@ export function needsCrossUnitConversion(record, factor) {
 /** Three-level distribution for reports (FR-704). */
 export function levelDistribution(assessedRecords) {
   const dist = { low: 0, medium: 0, high: 0 };
-  for (const r of assessedRecords) dist[r.uncertainty_level] += 1;
+  // A missing level collapses to medium instead of creating a NaN 'undefined' key (D-21).
+  for (const r of assessedRecords) dist[r.uncertainty_level ?? 'medium'] += 1;
   return dist;
 }

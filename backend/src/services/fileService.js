@@ -1,6 +1,7 @@
 // File ingestion service (T-011, PRD 4.1): validation, hashing, page-unit
 // counting, persistence, metadata records and the 7-state file machine.
 import { createHash, randomUUID } from 'node:crypto';
+import { PDFDocument } from 'pdf-lib';
 import { AppError } from '../errors.js';
 import { log } from '../logging.js';
 
@@ -20,6 +21,14 @@ function extensionOf(filename) {
   return m ? m[1].toLowerCase() : '';
 }
 
+// Upload filenames are attacker-controlled and end up inside storage keys, so
+// only a sanitized basename may ever be embedded (D-07 path traversal).
+export function safeFilename(name) {
+  const base = String(name).split(/[\\/]/).pop() ?? '';
+  const cleaned = base.replace(/[\x00-\x1f]/g, '').replace(/[^A-Za-z0-9._ ()-]/g, '_').slice(0, 120);
+  return cleaned || 'upload';
+}
+
 function magicOk(ext, buf) {
   if (buf.length < 8) return false;
   const hex = buf.subarray(0, 8).toString('hex');
@@ -28,12 +37,6 @@ function magicOk(ext, buf) {
   if (ext === 'png') return hex.startsWith('89504e470d0a1a0a');
   if (ext === 'xlsx') return hex.startsWith('504b0304'); // zip local header
   return true; // csv: text, validated below
-}
-
-export function countPdfPages(buf) {
-  const text = buf.toString('latin1');
-  const matches = text.match(/\/Type\s*\/Page[^s]/g);
-  return matches ? matches.length : 0;
 }
 
 /**
@@ -52,7 +55,11 @@ export async function ingestFile({ store, storage, taskId, filename, buffer }) {
 
   let unitCount = 1;
   if (ext === 'pdf') {
-    const pages = countPdfPages(buffer);
+    // Parse with pdf-lib instead of counting raw /Type /Page bytes: compressed
+    // object streams hide page objects from a byte regex (D-26).
+    let pages = 0;
+    try { pages = (await PDFDocument.load(buffer, { updateMetadata: false })).getPageCount(); }
+    catch { return fail('ERR_FILE_CORRUPT', { reason: 'not a parseable PDF' }); }
     if (pages === 0) return fail('ERR_FILE_CORRUPT', { reason: 'no parseable pages' });
     unitCount = pages;
   } else if (ext === 'xlsx') {
@@ -73,7 +80,7 @@ export async function ingestFile({ store, storage, taskId, filename, buffer }) {
   const duplicateOf = existing.find((d) => d.content_hash === contentHash && !d.duplicate_discarded);
 
   const id = `doc_${randomUUID().slice(0, 8)}`;
-  const storageKey = `${taskId}/${id}_${filename}`;
+  const storageKey = `${taskId}/${id}_${safeFilename(filename)}`;
   await storage.put(storageKey, buffer);
 
   const record = {
@@ -116,11 +123,13 @@ export async function resolveDuplicate({ store, taskId, documentId, keep }) {
 
 const TRANSITIONS = {
   queued: ['parsing', 'failed'],
-  parsing: ['extracting', 'failed', 'needs_review'],
-  extracting: ['matching', 'failed', 'needs_review'],
-  matching: ['completed', 'needs_review', 'failed'],
+  // Processing states may re-enter 'parsing' so an interrupted or reviewed
+  // document can be reprocessed by a fresh run (D-04: idempotent re-runs).
+  parsing: ['parsing', 'extracting', 'failed', 'needs_review'],
+  extracting: ['parsing', 'matching', 'failed', 'needs_review'],
+  matching: ['parsing', 'completed', 'needs_review', 'failed'],
   completed: ['matching'],
-  needs_review: ['matching', 'completed', 'failed'],
+  needs_review: ['parsing', 'matching', 'completed', 'failed'],
   failed: ['queued'],
 };
 

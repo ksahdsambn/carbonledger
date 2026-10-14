@@ -24,7 +24,6 @@ function activityBasis(record, factor) {
   if (ru === 'kg' && fu === 't') return { value: q / 1000, detail: `${q} kg -> ${q / 1000} t` };
   if (ru === 'kWh' && fu === 'MMBtu') return { value: q / 293, detail: `${q} kWh -> ${(q / 293).toFixed(6)} MMBtu` };
   if (ru === 'L' && fu === 'm3') return { value: q / 1000, detail: `${q} L -> ${q / 1000} m3` };
-  if (ru === 'L' && fu === 'L') return { value: q, detail: `${q} L` };
   return null; // unbridgeable — the self-check should have flagged this
 }
 
@@ -33,10 +32,11 @@ function activityBasis(record, factor) {
  * Gas-separated factors (ghg_coverage includes 'folding required') are folded
  * with the task's GWP version and the step is audited (PRD 4.8).
  */
-export async function computeEmission({ store, record, factor, taskGwpVersion = 'AR6' }) {
+export async function computeEmission({ store, record, factor, taskGwpVersion = 'AR6', persist = true }) {
   const steps = [];
   const basis = activityBasis(record, factor);
   if (!basis) throw new Error(`cannot bridge record unit ${record.unit} to factor unit ${factor.activity_unit}`);
+  if (!Number.isFinite(basis.value)) throw new Error(`non-finite activity basis for record ${record.record_id}`); // D-15
   steps.push({ action: 'activity_basis', detail: basis.detail, value: basis.value, unit: factor.activity_unit });
 
   let factorValue = factor.value;
@@ -76,15 +76,20 @@ export async function computeEmission({ store, record, factor, taskGwpVersion = 
     steps,
     ts: new Date().toISOString(),
   };
-  await store.put('calculations', calcId, calc);
-  await store.put('audit_trail', `aud_${calcId}`, {
-    task_id: record.task_id ?? null,
-    action_type: 'calculation',
-    actor: 'calculation-engine',
-    object_id: record.record_id,
-    details: { steps },
-    ts: new Date().toISOString(),
-  });
+  // Scenario recomputation passes persist:false so it can reuse this engine
+  // without overwriting the ledger's baseline calculations and audit trail
+  // (D-05): what-if values must never become the recorded baseline.
+  if (persist) {
+    await store.put('calculations', calcId, calc);
+    await store.put('audit_trail', `aud_${calcId}`, {
+      task_id: record.task_id ?? null,
+      action_type: 'calculation',
+      actor: 'calculation-engine',
+      object_id: record.record_id,
+      details: { steps },
+      ts: new Date().toISOString(),
+    });
+  }
   return calc;
 }
 

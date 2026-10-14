@@ -7,7 +7,11 @@ const t3 = (kg) => Math.round((kg / 1000) * 1000) / 1000;
 
 function csvEscape(v) {
   const s = v == null ? '' : String(v);
-  return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+  // CSV formula injection (D-11): a string cell that starts with a formula
+  // trigger character is neutralized with a leading apostrophe. Numeric values
+  // keep their textual form so numeric columns still parse as numbers.
+  const cell = typeof v === 'string' && /^[=+\-@\t\r]/.test(s) ? `'${s}` : s;
+  return /[",\n]/.test(cell) ? `"${cell.replace(/"/g, '""')}"` : cell;
 }
 
 export function activityDetailCsv(report, calcs, records) {
@@ -24,7 +28,7 @@ export function activityDetailCsv(report, calcs, records) {
 
 export function categorySummaryCsv(report) {
   const catChapter = report.chapters.find((c) => c.no === 4);
-  const catTable = catChapter?.blocks.find((b) => b.type === 'table' && b.header[0].startsWith('Scope 3'));
+  const catTable = catChapter?.blocks.find((b) => b.type === 'table' && b.header?.[0]?.startsWith('Scope 3'));
   const lines = [(['Scope 3 category', 't CO2e']).join(',')];
   for (const row of catTable?.rows ?? []) lines.push([row[0], row[1]].map(csvEscape).join(','));
   return '\uFEFF' + lines.join('\r\n');
@@ -32,11 +36,12 @@ export function categorySummaryCsv(report) {
 
 /** Renders the report to a paginated PDF with running header and page numbers. */
 export function reportPdf(report) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
     const doc = new PDFDocument({ size: 'A4', margin: 50, bufferPages: true });
     const chunks = [];
     doc.on('data', (c) => chunks.push(c));
     doc.on('end', () => resolve(Buffer.concat(chunks)));
+    doc.on('error', (e) => reject(e)); // a generator failure must reject, not hang (D-27)
 
     const title = `CarbonLedger Emissions Report — ${report.meta.entity}`;
     let y = 0;
@@ -101,6 +106,7 @@ export function reportPdf(report) {
 }
 
 function renderTable(doc, header, rows) {
+  if (!header || header.length === 0) return; // empty header cannot size columns (D-27)
   const widths = header.map(() => Math.floor(495 / header.length));
   const drawRow = (cells, bold) => {
     let x = 50;

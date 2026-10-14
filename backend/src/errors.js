@@ -55,6 +55,14 @@ export const ERROR_CODES = {
     http: 404,
     message: 'The requested accounting task does not exist.',
   },
+  ERR_FORBIDDEN: {
+    http: 403,
+    message: 'This task belongs to another identity; access is denied.',
+  },
+  ERR_RATE_LIMITED: {
+    http: 429,
+    message: 'Too many requests; please slow down.',
+  },
 };
 
 export class AppError extends Error {

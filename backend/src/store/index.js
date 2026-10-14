@@ -6,7 +6,7 @@
 //     GCP credentials are present (wired in T-043).
 // Collections and field semantics are identical across adapters.
 
-import { mkdirSync, readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { mkdirSync, readFileSync, writeFileSync, existsSync, renameSync } from 'node:fs';
 import { join } from 'node:path';
 
 const COLLECTIONS = [
@@ -37,7 +37,9 @@ export class LocalFileStore {
       if (existsSync(file)) {
         try {
           this.cache.set(name, new Map(Object.entries(JSON.parse(readFileSync(file, 'utf8')))));
-        } catch {
+        } catch (err) {
+          // A corrupt collection file must never be swallowed silently (D-20).
+          console.error(JSON.stringify({ ts: new Date().toISOString(), level: 'error', event: 'store_collection_unreadable', collection: name, error: String(err.message).slice(0, 160) }));
           this.cache.set(name, new Map());
         }
       } else {
@@ -47,8 +49,12 @@ export class LocalFileStore {
   }
 
   #persist(name) {
+    // Write-then-rename keeps the collection file atomic: a crash mid-write
+    // can no longer leave a half-written JSON behind (D-20).
     const file = join(this.rootDir, `${name}.json`);
-    writeFileSync(file, JSON.stringify(Object.fromEntries(this.cache.get(name))));
+    const tmp = `${file}.${process.pid}.tmp`;
+    writeFileSync(tmp, JSON.stringify(Object.fromEntries(this.cache.get(name))));
+    renameSync(tmp, file);
   }
 
   async put(name, id, data) {

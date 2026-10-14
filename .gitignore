@@ -27,3 +27,4 @@ Thumbs.db
 
 # firebase deploy cache
 .firebase/
+__pycache__/

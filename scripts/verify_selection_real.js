@@ -16,6 +16,12 @@ import { buildSemanticIndex, recallCandidates } from '../backend/src/services/re
 import { selectFactor, makeSelectionValidator } from '../backend/src/services/pipelineModelCalls.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+if (!process.env.GEMINI_API_KEY) {
+  console.error('GEMINI_API_KEY not set — real adapter required for this verification');
+  process.exit(2);
+}
+
 const store = new LocalFileStore(mkdtempSync(join(tmpdir(), 't025-')));
 await loadFactorLibrary(store);
 console.log('building semantic index with real embeddings (743 factors, one-off)...');
@@ -64,11 +70,13 @@ console.log(`COST LEDGER (selection stage incl. one-off index build): $${cost.to
 
 const pass = top1 >= 34 && top3 >= 38 && invalidRef === 0 && badRationale.length === 0 && maxLatency <= 8000;
 writeFileSync(join(ROOT, 'eval/results/factor_match_top1.json'), JSON.stringify({
+  adapter: 'real',
   measured: `${top1}/40 (${(top1 / 40 * 100).toFixed(1)}%)`,
   pass: top1 >= 34,
   detail: { top1, top3, invalidRef, maxLatency, est_cost_usd: Number(cost.toFixed(6)) },
 }, null, 2));
 writeFileSync(join(ROOT, 'eval/results/factor_match_top3.json'), JSON.stringify({
+  adapter: 'real',
   measured: `${top3}/40 (${(top3 / 40 * 100).toFixed(1)}%)`,
   pass: top3 >= 38,
   detail: { top3 },

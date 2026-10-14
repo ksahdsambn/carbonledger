@@ -20,6 +20,12 @@ import { extractRecords } from '../backend/src/services/pipelineModelCalls.js';
 import { normalizeRecord } from '../backend/src/services/normalization.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+if (!process.env.GEMINI_API_KEY) {
+  console.error('GEMINI_API_KEY not set — real adapter required for this verification');
+  process.exit(2);
+}
+
 const store = new LocalFileStore(mkdtempSync(join(tmpdir(), 't016-')));
 const storage = new LocalFileStorage(mkdtempSync(join(tmpdir(), 't016u-')));
 const taskId = 'task_extract_real';
@@ -144,6 +150,7 @@ console.log(`COST LEDGER (extraction stage, incl. classification pre-pass): $${c
 const pass = rates.quantity >= 0.98 && rates.unit >= 0.98 && avg >= 0.95 && noFabrication && gd10.length === 3 && withConf.length >= 20 && validHand.length >= 2 && zeroRecords;
 mkdirSync(join(ROOT, 'eval/results'), { recursive: true });
 writeFileSync(join(ROOT, 'eval/results/field_extraction_accuracy.json'), JSON.stringify({
+  adapter: 'real',
   measured: `avg ${(avg * 100).toFixed(1)}%, quantity ${(rates.quantity * 100).toFixed(1)}%, unit ${(rates.unit * 100).toFixed(1)}%`,
   pass: rates.quantity >= 0.98 && rates.unit >= 0.98 && avg >= 0.95,
   detail: { rates, mistakes: mistakes.length, records: normed.length, est_cost_usd: Number(cost.toFixed(6)) },

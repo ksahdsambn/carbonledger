@@ -21,8 +21,3 @@ export function trackRun(taskId, promise) {
 export function waitForRun(taskId) {
   return inFlight.get(taskId) ?? null;
 }
-
-/** True while a pipeline run owns this task. */
-export function isRunning(taskId) {
-  return inFlight.has(taskId);
-}

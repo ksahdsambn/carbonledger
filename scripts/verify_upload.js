@@ -61,10 +61,12 @@ for (let i = 0; i < samples.length; i += 1) {
 }
 
 // --- 2: oversize rejection, corrupt rejection, batch isolation ---
+// The multer middleware enforces the 10 MB cap while the request streams in
+// (D-12), so an oversized file is rejected before it is fully buffered.
 const big = Buffer.alloc(11 * 1024 * 1024, 7);
 const rb = await upload(`/api/tasks/${task.task_id}/documents`, [['big.pdf', big]]);
-ok(rb.body.results[0].ok === false && rb.body.results[0].code === 'ERR_FILE_TOO_LARGE', '11MB rejected with ERR_FILE_TOO_LARGE');
-ok(/10 MB/.test(rb.body.results[0].message), 'rejection message is English and states the limit');
+ok(rb.status === 413 && rb.body.error?.code === 'ERR_FILE_TOO_LARGE', '11MB rejected at the middleware with ERR_FILE_TOO_LARGE');
+ok(/10 MB/.test(rb.body.error?.message ?? ''), 'rejection message is English and states the limit');
 
 const corrupt = readFileSync(join(ROOT, 'data/golden/anomalies/AN-01_corrupted.pdf'));
 const good = readFileSync(join(ROOT, 'data/golden/documents/GD-04_utility_electricity.pdf'));

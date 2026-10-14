@@ -46,7 +46,7 @@ export const CURRENCIES = ['USD', 'CNY', 'EUR', 'JPY', 'HKD'];
 /** Converts a quantity to its base unit; returns null when not convertible. */
 export function convertUnit(quantity, unit) {
   const c = CONVERSIONS[unit];
-  if (!c) return null;
+  if (!c || !Number.isFinite(quantity)) return null; // non-finite input is not convertible (D-15)
   return { quantity: quantity * c.factor, unit: c.to, factor: c.factor, from: unit };
 }
 
@@ -101,9 +101,13 @@ export function validateTransportMode(mode) {
 export function identifyCurrency(text) {
   if (!text) return null;
   const t = String(text);
+  // Unambiguous markers first; a bare ¥ is only reached when nothing else
+  // matched, so ¥jp and 円 can actually reach JPY, and HK$ wins over the
+  // later bare-$ rule (D-24).
   const table = [
-    [/USD|\$|dollars?\b/i, 'USD'], [/CNY|人民币|RMB|¥/i, 'CNY'], [/EUR|€/i, 'EUR'],
-    [/JPY|円|yen\b|¥jp/i, 'JPY'], [/HKD|港币/i, 'HKD'],
+    [/JPY|円|yen\b|¥\s*jp/i, 'JPY'], [/HKD|HK\$|港币/i, 'HKD'],
+    [/EUR|€/i, 'EUR'], [/USD|\$|dollars?\b/i, 'USD'],
+    [/CNY|人民币|RMB|¥/i, 'CNY'],
   ];
   for (const [re, code] of table) if (re.test(t)) return code;
   return null;

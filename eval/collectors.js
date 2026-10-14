@@ -22,6 +22,11 @@ export function makeCollector(resultsDir, files) {
         return { measured: '', pass: false, evidence: 'not yet produced' };
       }
       const data = JSON.parse(readFileSync(path, 'utf8'));
+      // Real-adapter metrics must never be satisfied by mock evidence (D-28):
+      // result files that self-identify as mock are treated as unmeasured.
+      if (data.adapter === 'mock') {
+        return { measured: '', pass: false, evidence: `${path} (mock evidence — real adapter required)` };
+      }
       return {
         measured: String(data.measured),
         pass: Boolean(data.pass),

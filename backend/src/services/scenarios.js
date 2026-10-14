@@ -13,7 +13,8 @@ function familyOf(factorName) {
 }
 
 async function rerunWithFactor({ store, record, factor, taskGwpVersion }) {
-  const calc = await computeEmission({ store, record, factor, taskGwpVersion });
+  // persist:false — scenario numbers are computed, never recorded (D-05).
+  const calc = await computeEmission({ store, record, factor, taskGwpVersion, persist: false });
   return calc.emission_kgco2e;
 }
 

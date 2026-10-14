@@ -22,9 +22,11 @@ import { readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-const upload = multer({ storage: multer.memoryStorage() });
+// Upload limits are enforced by the middleware itself so an oversized file is
+// rejected while streaming in, never after being fully buffered (D-12).
+const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024, files: 50 } });
 
-export async function buildApp() {
+export async function buildApp(options = {}) {
   const app = express();
   app.use(express.json({ limit: '12mb' }));
 
@@ -40,6 +42,74 @@ export async function buildApp() {
   app.use((req, res, next) => {
     log.info('http_request', { method: req.method, path: req.path });
     res.setHeader('Cache-Control', 'no-store'); // dynamic API responses must bypass CDNs
+    next();
+  });
+
+  // Cross-cutting middleware is registered BEFORE any route so it actually
+  // covers every endpoint (the previous placement let early routes such as
+  // /config and /factors bypass CORS and the rate limit entirely).
+
+  // Anonymous Firebase identity (M-3, D-10): the SPA's ID token is verified
+  // with Firebase Authentication and the verified uid becomes the task owner,
+  // so a task and its files are reachable only by the identity that created
+  // them (NFR-301). A request without a token stays allowed but unowned, which
+  // keeps the API usable from the verification scripts and offline runs.
+  // The verifier is injectable so tests assert ownership without Firebase.
+  const verifyToken = options.verifyToken ?? (async (token) => {
+    const { getAuth } = await import('firebase-admin/auth');
+    return (await getAuth().verifyIdToken(token)).uid;
+  });
+  app.use(async (req, _res, next) => {
+    req.uid = null;
+    const header = req.headers.authorization ?? '';
+    if (header.startsWith('Bearer ')) {
+      try {
+        req.uid = await verifyToken(header.slice(7));
+      } catch (err) {
+        log.warn('id_token_rejected', { error: String(err.message).slice(0, 120) });
+      }
+    }
+    next();
+  });
+
+  // CORS for the deployed origin and local dev (D-37): an explicit allowlist,
+  // never a wildcard over every Firebase project's domain.
+  const allowed = (process.env.CORS_ORIGINS || 'http://localhost:5173,http://127.0.0.1:5173,https://myproject-dc19d.web.app')
+    .split(',').map((s) => s.trim()).filter(Boolean);
+  app.use((req, res, next) => {
+    const origin = req.headers.origin;
+    // Exact-string comparison; a malformed Origin never reaches URL parsing,
+    // so it cannot crash the request (D-13).
+    if (origin && allowed.includes(origin)) {
+      res.setHeader('Access-Control-Allow-Origin', origin);
+      res.setHeader('Vary', 'Origin');
+      res.setHeader('Access-Control-Allow-Headers', 'content-type,authorization');
+      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
+      if (req.method === 'OPTIONS') { res.status(204).end(); return; }
+    }
+    next();
+  });
+
+  // Basic per-IP rate limiting for the public deployment (NFR-303).
+  const rateBuckets = new Map();
+  const parsedLimit = Number(process.env.RATE_LIMIT_PER_MIN || 60);
+  const RATE_LIMIT = Number.isFinite(parsedLimit) && parsedLimit > 0 ? parsedLimit : 60; // D-13: never NaN
+  app.use((req, res, next) => {
+    if (req.path === '/healthz') { next(); return; }
+    // x-forwarded-for is client-forgeable, so it is only trusted behind an
+    // explicit TRUST_PROXY=1 (reverse-proxy deployment); otherwise the socket
+    // address — which cannot be spoofed — keys the bucket (D-13).
+    const ip = (process.env.TRUST_PROXY === '1'
+      ? String(req.headers['x-forwarded-for'] ?? '').split(',')[0].trim() : '') || req.socket.remoteAddress || 'unknown';
+    const now = Date.now();
+    if (rateBuckets.size > 10000) rateBuckets.clear(); // bounded memory (D-13)
+    const b = rateBuckets.get(ip) ?? { tokens: RATE_LIMIT, ts: now };
+    if (now - b.ts > 60000) { b.tokens = RATE_LIMIT; b.ts = now; }
+    if (b.tokens <= 0) {
+      throw new AppError('ERR_RATE_LIMITED');
+    }
+    b.tokens -= 1;
+    rateBuckets.set(ip, b);
     next();
   });
 
@@ -60,57 +130,15 @@ export async function buildApp() {
   const store = await createStore();
   const storage = await createStorage();
 
-  // Anonymous Firebase identity (M-3, D-10): the SPA's ID token is verified
-  // with Firebase Authentication and the verified uid becomes the task owner,
-  // so a task and its files are reachable only by the identity that created
-  // them (NFR-301). A request without a token stays allowed but unowned, which
-  // keeps the API usable from the verification scripts and offline runs.
-  app.use(async (req, _res, next) => {
-    req.uid = null;
-    const header = req.headers.authorization ?? '';
-    if (header.startsWith('Bearer ')) {
-      try {
-        const { getAuth } = await import('firebase-admin/auth');
-        const decoded = await getAuth().verifyIdToken(header.slice(7));
-        req.uid = decoded.uid;
-      } catch (err) {
-        log.warn('id_token_rejected', { error: String(err.message).slice(0, 120) });
-      }
-    }
+  // NFR-301 conditional ownership (D-06): a task that HAS an owner is closed
+  // to every other identity (wrong token or no token alike); ownerless tasks
+  // stay open so scripts, offline runs and the public demo keep working.
+  const requireTaskOwner = async (req, _res, next) => {
+    const task = await store.get('tasks', req.params.taskId);
+    if (!task) throw new AppError('ERR_TASK_NOT_FOUND', { task_id: req.params.taskId });
+    if (task.owner && task.owner !== req.uid) throw new AppError('ERR_FORBIDDEN', { task_id: req.params.taskId });
     next();
-  });
-
-  // CORS for the Firebase Hosting origin (and local dev).
-  const allowed = (process.env.CORS_ORIGINS || 'http://localhost:5173').split(',');
-  app.use((req, res, next) => {
-    const origin = req.headers.origin;
-    if (origin && (allowed.includes(origin) || /\.web\.app$|\.firebaseapp\.com$/.test(new URL(origin).hostname))) {
-      res.setHeader('Access-Control-Allow-Origin', origin);
-      res.setHeader('Vary', 'Origin');
-      res.setHeader('Access-Control-Allow-Headers', 'content-type,authorization');
-      res.setHeader('Access-Control-Allow-Methods', 'GET,POST,OPTIONS');
-      if (req.method === 'OPTIONS') { res.status(204).end(); return; }
-    }
-    next();
-  });
-
-  // Basic per-IP rate limiting for the public deployment (NFR-303).
-  const rateBuckets = new Map();
-  const RATE_LIMIT = Number(process.env.RATE_LIMIT_PER_MIN || 60);
-  app.use((req, res, next) => {
-    if (req.path === '/healthz') { next(); return; }
-    const ip = req.headers['x-forwarded-for']?.split(',')[0] ?? req.socket.remoteAddress ?? 'unknown';
-    const now = Date.now();
-    const b = rateBuckets.get(ip) ?? { tokens: RATE_LIMIT, ts: now };
-    if (now - b.ts > 60000) { b.tokens = RATE_LIMIT; b.ts = now; }
-    if (b.tokens <= 0) {
-      res.status(429).json({ error: { code: 'ERR_RATE_LIMITED', message: 'Too many requests; please slow down.' } });
-      return;
-    }
-    b.tokens -= 1;
-    rateBuckets.set(ip, b);
-    next();
-  });
+  };
   loadFactorLibrary(store).catch((err) => log.error('factor_library_load_failed', { error: String(err) }));
 
   app.get('/factors', async (req, res) => {
@@ -136,13 +164,13 @@ export async function buildApp() {
     res.status(201).json(task);
   });
 
-  app.get('/api/tasks/:taskId', async (req, res) => {
+  app.get('/api/tasks/:taskId', requireTaskOwner, async (req, res) => {
     const task = await getTask(store, req.params.taskId);
     const documents = await store.query('documents', 'task_id', req.params.taskId);
     res.json({ ...task, documents });
   });
 
-  app.post('/api/tasks/:taskId/documents', upload.array('files', 50), async (req, res) => {
+  app.post('/api/tasks/:taskId/documents', requireTaskOwner, upload.array('files', 50), async (req, res) => {
     await getTask(store, req.params.taskId); // 404 if unknown task
     const results = [];
     for (const f of req.files || []) {
@@ -154,15 +182,15 @@ export async function buildApp() {
     res.json({ count: results.length, results });
   });
 
-  app.get('/api/tasks/:taskId/documents', async (req, res) => {
+  app.get('/api/tasks/:taskId/documents', requireTaskOwner, async (req, res) => {
     res.json({ documents: await store.query('documents', 'task_id', req.params.taskId) });
   });
 
-  app.get('/api/tasks/:taskId/documents/:docId/file', async (req, res) => {
+  app.get('/api/tasks/:taskId/documents/:docId/file', requireTaskOwner, async (req, res) => {
     const doc = await store.get('documents', req.params.docId);
-    const task = await store.get('tasks', req.params.taskId);
-    // NFR-301: uploaded files are only accessible within their owning task.
-    if (!doc || doc.task_id !== req.params.taskId || (task?.owner && task.owner !== req.uid)) {
+    // NFR-301: uploaded files are only accessible within their owning task
+    // (ownership itself is enforced by requireTaskOwner).
+    if (!doc || doc.task_id !== req.params.taskId) {
       throw new AppError('ERR_TASK_NOT_FOUND', { document_id: req.params.docId });
     }
     const buf = await getDocumentFile(storage, doc);
@@ -170,14 +198,14 @@ export async function buildApp() {
     res.send(buf);
   });
 
-  app.post('/api/tasks/:taskId/documents/:docId/duplicate', async (req, res) => {
+  app.post('/api/tasks/:taskId/documents/:docId/duplicate', requireTaskOwner, async (req, res) => {
     const doc = await resolveDuplicate({
       store, taskId: req.params.taskId, documentId: req.params.docId, keep: Boolean(req.body?.keep),
     });
     res.json(doc);
   });
 
-  app.post('/api/tasks/:taskId/documents/:docId/status', async (req, res) => {
+  app.post('/api/tasks/:taskId/documents/:docId/status', requireTaskOwner, async (req, res) => {
     const doc = await setDocumentStatus(store, req.params.taskId, req.params.docId, req.body?.status);
     res.json(doc);
   });
@@ -187,18 +215,28 @@ export async function buildApp() {
     const reports = await store.query('reports', 'task_id', taskId);
     return reports.sort((a, b) => String(b.generated_at).localeCompare(String(a.generated_at)))[0] ?? null;
   };
+  // Runs of one task are serialized (D-33): a second trigger queues behind the
+  // run in flight instead of racing it over the same ledger and report.
+  const launchRun = (taskId, start) => {
+    const prev = waitForRun(taskId);
+    const run = (prev ? prev.catch(() => {}) : Promise.resolve()).then(start);
+    trackRun(taskId, run);
+    run.then((out) => log.info('pipeline_job_done', { task_id: taskId, ...out.summary }))
+      .catch((err) => log.error('pipeline_job_failed', { task_id: taskId, error: String(err.message).slice(0, 200) }));
+  };
 
-  app.post('/api/tasks/:taskId/run', async (req, res) => {
+  app.post('/api/tasks/:taskId/run', requireTaskOwner, async (req, res) => {
     const catalog = req.body?.useMockCatalog
       ? buildMockCatalogFromDataset(join(repoRoot, 'data/demo'), readFileSync)
       : new Map();
+    // Optional scenario ratio from the P6 slider (D-30); defaults to 1.0.
+    const ratioIn = Number(req.body?.ratio);
+    const ratio = Number.isFinite(ratioIn) && ratioIn >= 0 && ratioIn <= 1 ? ratioIn : 1.0;
     // Async job pattern: the pipeline continues on the instance after the
     // response (CPU allocation is always-on); clients poll task state. The run
     // is tracked so a report request waits for it rather than assembling a
     // report of its own from a half-written ledger.
-    trackRun(req.params.taskId, runPipeline({ store, storage, taskId: req.params.taskId, mockCatalog: catalog }))
-      .then((out) => log.info('pipeline_job_done', { task_id: req.params.taskId, ...out.summary }))
-      .catch((err) => log.error('pipeline_job_failed', { task_id: req.params.taskId, error: String(err.message).slice(0, 200) }));
+    launchRun(req.params.taskId, () => runPipeline({ store, storage, taskId: req.params.taskId, mockCatalog: catalog, ratio }));
     res.status(202).json({ task_id: req.params.taskId, started: true });
   });
 
@@ -217,17 +255,15 @@ export async function buildApp() {
       const file = d.file.split('/').pop();
       await ingestFile({ store, storage, taskId: task.task_id, filename: file, buffer: readFileSync(join(repoRoot, d.file)) });
     }
-    trackRun(task.task_id, runPipeline({ store, storage, taskId: task.task_id, mockCatalog: buildMockCatalogFromDataset(demoDir, readFileSync) }))
-      .then((out) => log.info('pipeline_job_done', { task_id: task.task_id, ...out.summary }))
-      .catch((err) => log.error('pipeline_job_failed', { task_id: task.task_id, error: String(err.message).slice(0, 200) }));
+    launchRun(task.task_id, () => runPipeline({ store, storage, taskId: task.task_id, mockCatalog: buildMockCatalogFromDataset(demoDir, readFileSync) }));
     res.status(202).json({ task_id: task.task_id, started: true });
   });
 
-  app.get('/api/tasks/:taskId/dashboard', async (req, res) => {
+  app.get('/api/tasks/:taskId/dashboard', requireTaskOwner, async (req, res) => {
     res.json(await recalculateTask({ store, taskId: req.params.taskId }));
   });
 
-  app.get('/api/tasks/:taskId/report', async (req, res) => {
+  app.get('/api/tasks/:taskId/report', requireTaskOwner, async (req, res) => {
     // Wait for a pipeline run that is about to write this task's report, so a
     // poll can never assemble a second report from a partially written ledger.
     const running = waitForRun(req.params.taskId);
@@ -244,7 +280,7 @@ export async function buildApp() {
     res.json({ report, citations });
   });
 
-  app.get('/api/tasks/:taskId/report/export', async (req, res) => {
+  app.get('/api/tasks/:taskId/report/export', requireTaskOwner, async (req, res) => {
     const report = await latestReport(req.params.taskId);
     if (!report) throw new AppError('ERR_TASK_NOT_FOUND', { hint: 'no report generated yet' });
     const records = await store.query('activity_records', 'task_id', req.params.taskId);
@@ -265,11 +301,11 @@ export async function buildApp() {
     }
   });
 
-  app.get('/api/tasks/:taskId/review', async (req, res) => {
+  app.get('/api/tasks/:taskId/review', requireTaskOwner, async (req, res) => {
     res.json({ items: await listReviewQueue(store, req.params.taskId) });
   });
 
-  app.post('/api/tasks/:taskId/review/:recordId', async (req, res) => {
+  app.post('/api/tasks/:taskId/review/:recordId', requireTaskOwner, async (req, res) => {
     const { action } = req.body ?? {};
     const taskId = req.params.taskId;
     const recordId = req.params.recordId;
@@ -285,7 +321,7 @@ export async function buildApp() {
     res.json(refreshed);
   });
 
-  app.get('/api/tasks/:taskId/records/:recordId/audit', async (req, res) => {
+  app.get('/api/tasks/:taskId/records/:recordId/audit', requireTaskOwner, async (req, res) => {
     const records = await store.query('activity_records', 'task_id', req.params.taskId);
     const record = records.find((r) => r.record_id === req.params.recordId);
     if (!record) throw new AppError('ERR_TASK_NOT_FOUND', { record_id: req.params.recordId });
@@ -296,7 +332,7 @@ export async function buildApp() {
     res.json({ record, calculation: calc, audit_trail: audits });
   });
 
-  app.get('/api/tasks/:taskId/traces', async (req, res) => {
+  app.get('/api/tasks/:taskId/traces', requireTaskOwner, async (req, res) => {
     const stage = req.query.stage;
     let traces = await store.query('ai_traces', 'task_id', req.params.taskId);
     if (stage) traces = traces.filter((t) => t.stage === stage);
@@ -309,6 +345,9 @@ export async function buildApp() {
 
   // eslint-disable-next-line no-unused-vars
   app.use((err, _req, res, _next) => {
+    // Multer rejections keep the machine-readable contract (D-12).
+    if (err?.code === 'LIMIT_FILE_SIZE') err = new AppError('ERR_FILE_TOO_LARGE');
+    else if (err?.code === 'LIMIT_UNEXPECTED_FILE') err = new AppError('ERR_ENUM_INVALID', { hint: 'at most 50 files per request' });
     const { status, body } = errorResponse(err);
     if (status >= 500) log.error('http_error', { status, code: body.error.code });
     res.status(status).json(body);

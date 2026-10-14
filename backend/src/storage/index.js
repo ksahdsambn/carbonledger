@@ -2,15 +2,21 @@
 // LocalFileStorage stores objects under a local root for dev, tests and the
 // offline evaluation tool; the Firebase Storage adapter is wired in T-043.
 import { mkdirSync, writeFileSync, readFileSync } from 'node:fs';
-import { dirname, join } from 'node:path';
+import { dirname, resolve, sep } from 'node:path';
+import { AppError } from '../errors.js';
 
 export class LocalFileStorage {
   constructor(rootDir = 'data/.uploads') {
     this.rootDir = rootDir;
   }
 
+  // Defense in depth (D-07): every key must resolve inside the root, so a
+  // crafted key can never read or write outside the storage root.
   #path(key) {
-    return join(this.rootDir, key);
+    const root = resolve(this.rootDir);
+    const p = resolve(this.rootDir, key);
+    if (p !== root && !p.startsWith(root + sep)) throw new AppError('ERR_STORAGE_ACCESS', { key: String(key).slice(0, 80) });
+    return p;
   }
 
   async put(key, buffer) {

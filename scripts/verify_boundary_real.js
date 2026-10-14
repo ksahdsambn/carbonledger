@@ -17,6 +17,12 @@ import { decideBoundary, markSuspectedDuplicates } from '../backend/src/services
 import { SCOPE3_CATEGORIES } from '../backend/src/services/pipelineModelCalls.js';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+
+if (!process.env.GEMINI_API_KEY) {
+  console.error('GEMINI_API_KEY not set — real adapter required for this verification');
+  process.exit(2);
+}
+
 const store = new LocalFileStore(mkdtempSync(join(tmpdir(), 't023-')));
 const golden = JSON.parse(readFileSync(join(ROOT, 'data/golden/answers/activity_records.json'), 'utf8'));
 const demo = JSON.parse(readFileSync(join(ROOT, 'data/demo/expected_records.json'), 'utf8'));
@@ -87,6 +93,7 @@ console.log(`COST LEDGER (boundary stage): $${cost.toFixed(4)}`);
 
 const pass = scopeCorrect >= 9 && catCorrect >= 11 && badRationale.length === 0 && dupInput[1].suspected_duplicate === true && !dupInput[2].suspected_duplicate;
 writeFileSync(join(ROOT, 'eval/results/scope_decision_accuracy.json'), JSON.stringify({
+  adapter: 'real',
   measured: `scope ${scopeCorrect}/10, category ${catCorrect}/12`,
   pass: scopeCorrect >= 9 && catCorrect >= 11,
   detail: { scopeCorrect, catCorrect, badRationale: badRationale.length, est_cost_usd: Number(cost.toFixed(6)) },

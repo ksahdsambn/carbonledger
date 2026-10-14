@@ -3,8 +3,18 @@
 // with English reason, audited operator+timestamp actions, batch recalc.
 import { aggregate, topEmitters } from './calculation.js';
 import { levelDistribution } from './uncertainty.js';
+import { AppError } from '../errors.js';
+import { randomUUID } from 'node:crypto';
+import { CONVERSIONS, TRANSPORT_MODES, CURRENCIES } from './normalization.js';
 
 const LEVEL_ORDER = { high: 0, medium: 1, low: 2 };
+
+/** Every review action must target a record that belongs to this task (D-14). */
+async function getTaskRecord(store, taskId, recordId) {
+  const record = await store.get('activity_records', recordId);
+  if (!record || record.task_id !== taskId) throw new AppError('ERR_TASK_NOT_FOUND', { record_id: recordId });
+  return record;
+}
 
 /** Opens review items for records that force review (high uncertainty etc.). */
 export async function openReviewForTask({ store, taskId, records }) {
@@ -43,7 +53,9 @@ export async function listReviewQueue(store, taskId) {
 }
 
 async function audit(store, taskId, recordId, action, details) {
-  await store.put('audit_trail', `aud_rev_${recordId}_${Date.now()}`, {
+  // Random suffix: two actions on the same record within one millisecond must
+  // not collide and overwrite each other's audit entry (D-32).
+  await store.put('audit_trail', `aud_rev_${recordId}_${Date.now()}_${randomUUID().slice(0, 8)}`, {
     task_id: taskId,
     action_type: action,
     actor: 'reviewer', // operator identity from the authenticated session
@@ -53,11 +65,27 @@ async function audit(store, taskId, recordId, action, details) {
   });
 }
 
+const UNIT_ENUM = [...Object.keys(CONVERSIONS), 't.km', 'p.km', 'MMBtu'];
+
+/** Patch validation (D-14/D-15): values must keep the ledger free of garbage. */
+function validatePatch(patch) {
+  for (const [k, v] of Object.entries(patch)) {
+    if (v == null || v === '') continue;
+    if (k === 'quantity') { if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0) throw new AppError('ERR_ENUM_INVALID', { field: k }); }
+    else if (k === 'amount') { if (typeof v !== 'number' || !Number.isFinite(v) || v < 0) throw new AppError('ERR_ENUM_INVALID', { field: k }); }
+    else if (k === 'unit' && !UNIT_ENUM.includes(v)) throw new AppError('ERR_ENUM_INVALID', { field: k, value: v });
+    else if (k === 'transport_mode' && !TRANSPORT_MODES.includes(v)) throw new AppError('ERR_ENUM_INVALID', { field: k });
+    else if (k === 'currency' && !CURRENCIES.includes(v)) throw new AppError('ERR_ENUM_INVALID', { field: k });
+    else if (typeof v === 'object') throw new AppError('ERR_ENUM_INVALID', { field: k });
+    else if (String(v).length > 500) throw new AppError('ERR_ENUM_INVALID', { field: k, reason: 'too long' });
+  }
+}
+
 /** FR-1102: edit the four editable fields + fill missing required fields. */
 export async function editRecordFields({ store, taskId, recordId, patch, operator = 'reviewer' }) {
-  const record = await store.get('activity_records', recordId);
-  if (!record || record.task_id !== taskId) throw new Error('record not found');
+  const record = await getTaskRecord(store, taskId, recordId);
   const allowed = ['quantity', 'unit', 'transport_mode', 'origin_location', 'destination_location', 'activity_date', 'amount', 'currency'];
+  validatePatch(patch ?? {});
   const applied = {};
   for (const [k, v] of Object.entries(patch)) {
     if (!allowed.includes(k)) continue;
@@ -77,9 +105,8 @@ export async function editRecordFields({ store, taskId, recordId, patch, operato
 /** FR-1103: manual factor assignment outranks the automatic match. */
 export async function assignFactorManually({ store, taskId, recordId, factorId, operator = 'reviewer' }) {
   const factor = await store.get('emission_factors', factorId);
-  if (!factor) throw new Error(`factor ${factorId} not found`);
-  const record = await store.get('activity_records', recordId);
-  if (!record) throw new Error('record not found');
+  if (!factor) throw new AppError('ERR_TASK_NOT_FOUND', { factor_id: factorId });
+  const record = await getTaskRecord(store, taskId, recordId);
   const matchId = record.match_id ?? `match_${recordId}`;
   await store.put('matches', matchId, {
     task_id: taskId, activity_record_id: recordId,
@@ -98,9 +125,8 @@ export async function assignFactorManually({ store, taskId, recordId, factorId, 
 
 /** FR-1104: exclude a record from accounting with an English reason. */
 export async function excludeRecord({ store, taskId, recordId, reason, operator = 'reviewer' }) {
-  if (!reason || String(reason).trim().length < 5) throw new Error('an English exclusion reason is required');
-  const record = await store.get('activity_records', recordId);
-  if (!record) throw new Error('record not found');
+  if (!reason || String(reason).trim().length < 5) throw new AppError('ERR_ENUM_INVALID', { hint: 'an English exclusion reason is required' });
+  const record = await getTaskRecord(store, taskId, recordId);
   record.excluded_from_calc = String(reason);
   await store.put('activity_records', recordId, record);
   await audit(store, taskId, recordId, 'review_exclusion', { operator, reason });
