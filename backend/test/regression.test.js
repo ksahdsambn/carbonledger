@@ -281,11 +281,18 @@ test('D-19/D-21/D-24/D-34: citation veto, distribution purity, currency order, t
   assert.equal(identifyCurrency('total ¥jp 500'), 'JPY');
   assert.equal(identifyCurrency('円 3,000'), 'JPY');
   assert.equal(identifyCurrency('500 yen'), 'JPY');
-  assert.equal(identifyCurrency('合计 ¥500'), 'CNY');
-  assert.equal(identifyCurrency('RMB 300'), 'CNY');
-  assert.equal(identifyCurrency('HK$ 90'), 'HKD');
+  assert.equal(identifyCurrency('total ¥500'), 'JPY');
+  assert.equal(identifyCurrency('RMB 300'), null, 'RMB is no longer a recognized currency');
+  assert.equal(identifyCurrency('C$ 90'), 'CAD');
+  assert.equal(identifyCurrency('£ 25'), 'GBP');
   assert.equal(identifyCurrency('$ 10'), 'USD');
   assert.equal(identifyCurrency('€ 10'), 'EUR');
+  assert.equal(identifyCurrency('European aluminium sheet'), null, 'ordinary word is not EUR');
+  assert.equal(identifyCurrency('AutoCAD design services'), null, 'AutoCAD is not CAD currency');
+  assert.equal(identifyCurrency('8Gbps network upgrade'), null, 'Gbps is not GBP');
+  assert.equal(identifyCurrency('Amount: USD 1,234.00 (approx. ¥180,000)'), 'USD', 'explicit code beats ¥ footnote');
+  assert.equal(identifyCurrency('Value: HK$ 1,750.00'), null, 'unsupported HKD is an honest null, never USD');
+  assert.equal(identifyCurrency('Currency: CNY 21,500.00'), null, 'unsupported CNY is an honest null');
   for (const bad of [{ entity_name: { deep: 'object' } }, { entity_name: 'x', period_from: '2026-13-99', period_to: '2026-06-30' }, { entity_name: 'x', period_from: '2026-07-01', period_to: '2026-01-01' }]) {
     await assert.rejects(
       createTask(store, { ...bad, period_from: bad.period_from ?? '2026-01-01', period_to: bad.period_to ?? '2026-06-30', gwp_version: 'AR6' }),
@@ -393,6 +400,6 @@ if (existsSync(join(ROOT, 'data/factors/emission_factors.json'))) {
   test('factor library present for regression fixtures', async () => {
     const store = new LocalFileStore(mkdtempSync(join(tmpdir(), 'reg-fl-')));
     await loadFactorLibrary(store);
-    assert.equal((await listFactors(store)).length, 743);
+    assert.equal((await listFactors(store)).length, 741);
   });
 }

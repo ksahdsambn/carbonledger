@@ -144,7 +144,7 @@ export async function buildApp(options = {}) {
   app.get('/factors', async (req, res) => {
     // Factor library browser (FR-605 public data): keyword terms are ANDed
     // (comma separated, same contract as before); with no criteria at all the
-    // whole library is returned in id order so the UI can browse all 743
+    // whole library is returned in id order so the UI can browse all 741
     // factors. Optional type/gwp/year filters and offset/limit pagination
     // keep the payload bounded; `count` stays the TOTAL number of matches.
     const q = String(req.query.q || '').trim();

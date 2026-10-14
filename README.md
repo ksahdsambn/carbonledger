@@ -2,7 +2,7 @@
 
 **Track: Sustainability & Social Impact** (AI Builder Cup 2026 — Google Cloud JAPAC Hackathon)
 
-CarbonLedger compresses the cost of producing a Scope 3 report from "RMB 30,000 + 3 weeks"
+CarbonLedger compresses the cost of producing a Scope 3 report from "$30,000 + 3 weeks"
 to "1 hour + near-zero marginal cost", while making every single number traceable back to
 its source document.
 
@@ -16,7 +16,7 @@ ten-chapter English report with PDF/CSV exports and a full audit trail.
 
 - **Frontend**: React (Vite) single-page app — the nine PRD pages (task creation, upload,
   records, matching viewer, dashboard, scenarios, report reader, review queue, AI traces)
-  plus two global views (factor library browser over all 743 factors, task history with a
+  plus two global views (factor library browser over all 741 factors, task history with a
   nav-bar task switcher). The dashboard renders hand-rolled SVG charts (scope donut,
   category/supplier bars, monthly trend line, KPI cards); the matching viewer shows the
   best-vs-runner-up comparison with the stored rationale; the report reader has a chapter
@@ -37,7 +37,7 @@ ten-chapter English report with PDF/CSV exports and a full audit trail.
   and the verified uid owns the task, so one visitor can never read another visitor's files
   or records. Requests without a token stay allowed but unowned, which keeps the API usable
   from scripts and offline runs.
-- **Factor library**: 743 curated factors from public sources, shipped as a static JSON
+- **Factor library**: 741 curated factors from public sources, shipped as a static JSON
   file (`data/factors/emission_factors.json`) — loading never touches the network.
   Dual-channel recall: keyword/structured matching + semantic vector search
   (in-process cosine index) over Google official embeddings; each channel can be disabled
@@ -70,8 +70,8 @@ ten-chapter English report with PDF/CSV exports and a full audit trail.
 | EPA USEEIO open-source industry-average models | current | https://github.com/USEPA/USEEIO |
 
 Factors cover five industries (electronics manufacturing, apparel/textiles, food
-processing, logistics, general office services), each ≥ 40 factors, 743 unique factors
-in total. Data years: 2025 (63) and 2026 (680). All factors are AR5-labelled per the
+processing, logistics, general office services), each ≥ 40 factors, 741 unique factors
+in total. Data years: 2025 (63) and 2026 (678). All factors are AR5-labelled per the
 sources; tasks selecting AR6 exercise the cross-version disclosure rule.
 
 ## Live demo

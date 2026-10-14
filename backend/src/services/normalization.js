@@ -40,7 +40,7 @@ export const TRANSPORT_MODES = [
   'Inland waterway transport', 'Pipeline transport', 'Not applicable',
 ];
 
-export const CURRENCIES = ['USD', 'CNY', 'EUR', 'JPY', 'HKD'];
+export const CURRENCIES = ['USD', 'EUR', 'GBP', 'CAD', 'JPY'];
 
 /** Converts a quantity to its base unit; returns null when not convertible. */
 export function convertUnit(quantity, unit) {
@@ -50,25 +50,35 @@ export function convertUnit(quantity, unit) {
 }
 
 // Location normalization: ISO alpha-2 country + city, two-level structure
-// (FR-402). Handles bilingual aliases and common port/airport names.
+// (FR-402). Case-insensitive aliases covering common port/airport names,
+// centred on the US home market plus international gateways.
 const LOCATION_ALIASES = {
-  'hong kong': ['HK', 'Hong Kong'], 'hk': ['HK', 'Hong Kong'],
-  'kwai chung': ['HK', 'Kwai Chung'], '葵涌': ['HK', 'Kwai Chung'],
-  'hong kong kwai chung': ['HK', 'Kwai Chung'], '香港葵涌码头': ['HK', 'Kwai Chung'],
-  'shenzhen': ['CN', 'Shenzhen'], 'yantian': ['CN', 'Shenzhen'], '深圳': ['CN', 'Shenzhen'],
-  'shanghai': ['CN', 'Shanghai'], 'guangzhou': ['CN', 'Guangzhou'], 'dongguan': ['CN', 'Dongguan'],
-  'ningbo': ['CN', 'Ningbo'], 'hangzhou': ['CN', 'Hangzhou'],
+  'new york': ['US', 'New York'], 'new york city': ['US', 'New York'], 'nyc': ['US', 'New York'],
+  'jfk': ['US', 'New York'], 'newark': ['US', 'Newark'], 'boston': ['US', 'Boston'],
+  'philadelphia': ['US', 'Philadelphia'], 'baltimore': ['US', 'Baltimore'], 'norfolk': ['US', 'Norfolk'],
+  'atlanta': ['US', 'Atlanta'], 'savannah': ['US', 'Savannah'], 'charleston': ['US', 'Charleston'],
+  'jacksonville': ['US', 'Jacksonville'], 'miami': ['US', 'Miami'], 'tampa': ['US', 'Tampa'],
+  'orlando': ['US', 'Orlando'], 'charlotte': ['US', 'Charlotte'], 'raleigh': ['US', 'Raleigh'],
+  'chicago': ['US', 'Chicago'], 'detroit': ['US', 'Detroit'], 'cleveland': ['US', 'Cleveland'],
+  'columbus': ['US', 'Columbus'], 'indianapolis': ['US', 'Indianapolis'], 'cincinnati': ['US', 'Cincinnati'],
+  'louisville': ['US', 'Louisville'], 'nashville': ['US', 'Nashville'], 'memphis': ['US', 'Memphis'],
+  'kansas city': ['US', 'Kansas City'], 'st louis': ['US', 'St Louis'], 'st. louis': ['US', 'St Louis'],
+  'minneapolis': ['US', 'Minneapolis'], 'milwaukee': ['US', 'Milwaukee'], 'denver': ['US', 'Denver'],
+  'salt lake city': ['US', 'Salt Lake City'], 'las vegas': ['US', 'Las Vegas'], 'phoenix': ['US', 'Phoenix'],
+  'dallas': ['US', 'Dallas'], 'fort worth': ['US', 'Fort Worth'], 'houston': ['US', 'Houston'],
+  'austin': ['US', 'Austin'], 'san antonio': ['US', 'San Antonio'], 'new orleans': ['US', 'New Orleans'],
+  'los angeles': ['US', 'Los Angeles'], 'lax': ['US', 'Los Angeles'], 'long beach': ['US', 'Long Beach'],
+  'oakland': ['US', 'Oakland'], 'san francisco': ['US', 'San Francisco'], 'san diego': ['US', 'San Diego'],
+  'portland': ['US', 'Portland'], 'seattle': ['US', 'Seattle'], 'tacoma': ['US', 'Tacoma'],
+  'pittsburgh': ['US', 'Pittsburgh'],
   'tokyo': ['JP', 'Tokyo'], 'osaka': ['JP', 'Osaka'], 'narita': ['JP', 'Tokyo'],
   'london': ['GB', 'London'], 'manchester': ['GB', 'Manchester'], 'heathrow': ['GB', 'London'],
   'edinburgh': ['GB', 'Edinburgh'], 'newcastle': ['GB', 'Newcastle'],
   'rotterdam': ['NL', 'Rotterdam'], 'hamburg': ['DE', 'Hamburg'], 'hannover': ['DE', 'Hannover'],
   'berlin': ['DE', 'Berlin'], 'munich': ['DE', 'Munich'], 'munchen': ['DE', 'Munich'],
   'paris': ['FR', 'Paris'], 'lyon': ['FR', 'Lyon'], 'milan': ['IT', 'Milan'], 'naples': ['IT', 'Naples'],
-  'new york': ['US', 'New York'], 'los angeles': ['US', 'Los Angeles'], 'austin': ['US', 'Austin'],
-  'chicago': ['US', 'Chicago'], 'st louis': ['US', 'St Louis'],
   'singapore': ['SG', 'Singapore'], 'jebel ali': ['AE', 'Jebel Ali'], 'warsaw': ['PL', 'Warsaw'],
-  'antwerp': ['BE', 'Antwerp'], 'xi an': ['CN', "Xi'an"], "xi'an": ['CN', "Xi'an"],
-  'zhengzhou': ['CN', 'Zhengzhou'], 'east midlands': ['GB', 'East Midlands'],
+  'antwerp': ['BE', 'Antwerp'], 'east midlands': ['GB', 'East Midlands'],
 };
 
 /** Normalizes free-text location to "CC/City"; returns null if unrecognized. */
@@ -100,13 +110,19 @@ export function validateTransportMode(mode) {
 export function identifyCurrency(text) {
   if (!text) return null;
   const t = String(text);
-  // Unambiguous markers first; a bare ¥ is only reached when nothing else
-  // matched, so ¥jp and 円 can actually reach JPY, and HK$ wins over the
-  // later bare-$ rule (D-24).
+  // Word-bounded codes so ordinary words never match ("European" is not EUR,
+  // "AutoCAD" is not CAD, "8Gbps" is not GBP). Unsupported-currency markers
+  // (HK$, CNY, RMB) return an honest null before the bare-$ rule can swallow
+  // them; a bare ¥ is the last resort so an explicit USD/EUR code on the same
+  // line always wins over a conversion footnote.
   const table = [
-    [/JPY|円|yen\b|¥\s*jp/i, 'JPY'], [/HKD|HK\$|港币/i, 'HKD'],
-    [/EUR|€/i, 'EUR'], [/USD|\$|dollars?\b/i, 'USD'],
-    [/CNY|人民币|RMB|¥/i, 'CNY'],
+    [/\bGBP\b|£/i, 'GBP'],
+    [/C\$|canadian\s+dollars?\b|\bCAD\s*[\d,.]|[\d,.]\s*CAD\b/i, 'CAD'],
+    [/\bEUR\b|\beuros?\b|€/i, 'EUR'],
+    [/HK\$|\bCNY\b|\bRMB\b/i, null],
+    [/\bUSD\b|US\$|\$|dollars?\b/i, 'USD'],
+    [/\bJPY\b|円|yen\b/i, 'JPY'],
+    [/¥/i, 'JPY'],
   ];
   for (const [re, code] of table) if (re.test(t)) return code;
   return null;

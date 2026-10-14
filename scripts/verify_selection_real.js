@@ -24,7 +24,7 @@ if (!process.env.GEMINI_API_KEY) {
 
 const store = new LocalFileStore(mkdtempSync(join(tmpdir(), 't025-')));
 await loadFactorLibrary(store);
-console.log('building semantic index with real embeddings (743 factors, one-off)...');
+console.log('building semantic index with real embeddings (741 factors, one-off)...');
 await buildSemanticIndex({ store, taskId: 't25' });
 const factorsById = Object.fromEntries((await store.list('emission_factors')).map((f) => [f.factor_id, f]));
 

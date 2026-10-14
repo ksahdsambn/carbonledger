@@ -220,7 +220,7 @@ const withCjk = visible.filter((f) => cjk.test(readFileSync(join(ROOT, f), 'utf8
 const englishGuard = readFileSync(join(ROOT, 'backend/src/services/pipelineModelCalls.js'), 'utf8').includes('rationale must be English');
 const reportText = JSON.stringify(report);
 check('B4', 'compliance', 'All UI copy, report body, README and video subtitles are English', withCjk.length === 0 && !cjk.test(reportText) && englishGuard,
-  `checked ${visible.length} user-visible artifacts plus the generated report: no CJK characters; the model-output validator rejects non-English rationales. (Chinese strings in the normalization tables are input aliases for parsing Chinese-language source documents, not output copy.)`);
+  `checked ${visible.length} user-visible artifacts plus the generated report: no CJK characters; the model-output validator rejects non-English rationales. (The only non-ASCII marker left in the normalization tables is the Japanese yen sign family for currency identification, not output copy.)`);
 
 // B5 track label identical in three places
 const TRACK_LABEL = 'Sustainability & Social Impact';

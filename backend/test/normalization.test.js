@@ -28,13 +28,13 @@ test('all 10 PRD 4.4 conversion pairs are exact', () => {
   assert.equal(convertUnit(1, 'kg').quantity, 1); // identity
 });
 
-test('bilingual locations normalize identically (FR-402)', () => {
-  const a = normalizeLocation('香港葵涌码头');
-  const b = normalizeLocation('Hong Kong Kwai Chung');
-  assert.equal(a, 'HK/Kwai Chung');
-  assert.equal(b, 'HK/Kwai Chung');
+test('location aliases normalize identically (FR-402)', () => {
+  const a = normalizeLocation('new york city');
+  const b = normalizeLocation('New York');
+  assert.equal(a, 'US/New York');
+  assert.equal(b, 'US/New York');
   assert.equal(a, b);
-  assert.equal(normalizeLocation('yan tian, shenzhen'), null); // unknown stays null
+  assert.equal(normalizeLocation('yan tian terminal'), null); // unknown stays null
   assert.equal(normalizeLocation('GB/london'), 'GB/London'); // already-normalized passthrough
 });
 
@@ -47,10 +47,11 @@ test('transport mode closed enum accepts canonical and rejects garbage', () => {
 
 test('currency identification without FX', () => {
   assert.equal(identifyCurrency('Total: USD 12,400.00'), 'USD');
-  assert.equal(identifyCurrency('金额：人民币 96,000'), 'CNY');
+  assert.equal(identifyCurrency('Total: $96,000'), 'USD');
+  assert.equal(identifyCurrency('£ 2,300'), 'GBP');
+  assert.equal(identifyCurrency('CAD 1,750'), 'CAD');
   assert.equal(identifyCurrency('€ 2,300'), 'EUR');
   assert.equal(identifyCurrency('JPY 4,500'), 'JPY');
-  assert.equal(identifyCurrency('HKD 1,750'), 'HKD');
   assert.equal(identifyCurrency('no money here'), null);
 });
 
@@ -60,12 +61,12 @@ test('gap list flags missing required fields and normalization writes audit step
     record_id: 'GR-T1', task_id: 't', quantity: 5500, unit: 'lb',
     item_description: 'aluminium foil, $12,400', amount: 12400, currency: null,
     activity_date: null, transport_mode: 'Road freight',
-    origin_location: '香港葵涌码头', destination_location: 'Tokyo',
+    origin_location: 'Long Beach', destination_location: 'Tokyo',
   };
   const { record, steps, gaps } = await normalizeRecord(rec, { store });
   assert.equal(record.unit, 'kg');
   assert.ok(Math.abs(record.quantity - 2494.8) < 1e-9);
-  assert.equal(record.origin_location, 'HK/Kwai Chung');
+  assert.equal(record.origin_location, 'US/Long Beach');
   assert.equal(record.destination_location, 'JP/Tokyo');
   assert.ok(gaps.includes('activity_date'));
   assert.ok(steps.some((s) => s.action === 'unit_conversion'));

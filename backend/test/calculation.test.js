@@ -110,10 +110,10 @@ test('10 known-answer calculation problems (3-decimal tonne display, zero tolera
 test('aggregation and display consistency (FR-802/803/805)', async () => {
   const store = new LocalFileStore(mkdtempSync(join(tmpdir(), 'agg-')));
   const meta = [
-    { scope: 'Scope 1', category: null, supplier_name: 'Sinopec', item_description: 'diesel', activity_date: '2026-01-15' },
+    { scope: 'Scope 1', category: null, supplier_name: 'Valero', item_description: 'diesel', activity_date: '2026-01-15' },
     { scope: 'Scope 2', category: null, supplier_name: 'Grid', item_description: 'electricity', activity_date: '2026-02-15' },
     { scope: 'Scope 3', category: 'Cat-1', supplier_name: 'Aluworks', item_description: 'aluminium', activity_date: '2026-02-16' },
-    { scope: 'Scope 3', category: 'Cat-4', supplier_name: 'COSCO', item_description: 'sea freight', activity_date: '2026-03-01' },
+    { scope: 'Scope 3', category: 'Cat-4', supplier_name: 'Maersk', item_description: 'sea freight', activity_date: '2026-03-01' },
   ];
   // awkward parts: values chosen so naive per-part rounding breaks the total
   const raws = [1000.0004, 2000.0004, 3000.0006, 0.0005];

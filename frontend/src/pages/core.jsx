@@ -59,7 +59,7 @@ export function P1Home({ onTask }) {
       <section className="hero">
         <h1>CarbonLedger</h1>
         <p className="value-prop">CarbonLedger compresses the cost of producing a Scope 3 report
-          from "RMB 30,000 + 3 weeks" to "1 hour + near-zero marginal cost", while making every
+          from "$30,000 + 3 weeks" to "1 hour + near-zero marginal cost", while making every
           single number traceable back to its source document.</p>
         <p className="hint">Track: Sustainability &amp; Social Impact</p>
       </section>
@@ -73,9 +73,15 @@ export function P1Home({ onTask }) {
         </div>
         <fieldset>
           <legend>GWP version</legend>
-          {['AR5', 'AR6'].map((v) => (
-            <label key={v} className="radio"><input type="radio" name="gwp" checked={form.gwp_version === v} onChange={() => setForm({ ...form, gwp_version: v })} />{v}</label>
-          ))}
+          <div className="gwp-options">
+            {['AR5', 'AR6'].map((v) => (
+              <label key={v} className="radio">
+                <input type="radio" name="gwp" checked={form.gwp_version === v} onChange={() => setForm({ ...form, gwp_version: v })} />
+                {v}
+                <span className="radio-hint">{v === 'AR6' ? 'IPCC Sixth Assessment · default' : 'IPCC Fifth Assessment'}</span>
+              </label>
+            ))}
+          </div>
         </fieldset>
         {err && <p className="error" role="alert">{err}</p>}
         <button type="submit" disabled={busy}>{busy ? 'Creating…' : 'Create task and continue'}</button>

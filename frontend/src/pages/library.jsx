@@ -1,4 +1,4 @@
-// Global pages reachable without a task: the factor library browser (all 743
+// Global pages reachable without a task: the factor library browser (all 741
 // public factors, searchable and filterable) and the task history view.
 import React, { useEffect, useState } from 'react';
 import api from '../api.js';
@@ -56,7 +56,7 @@ export function FactorsLibrary({ params }) {
   return (
     <main className="page">
       <h2>Emission factor library</h2>
-      <p className="hint">743 curated public factors (UK DESNZ 2026, US EPA 2025, USEEIO) shipped offline with the app. Keywords are ANDed; combine filters to narrow.</p>
+      <p className="hint">741 curated public factors (UK DESNZ 2026, US EPA 2025, USEEIO) shipped offline with the app. Keywords are ANDed; combine filters to narrow.</p>
       {focus && (
         <section className="card focus-card" aria-label="Factor detail">
           <div className="row card-head">
@@ -90,7 +90,7 @@ export function FactorsLibrary({ params }) {
         </div>
       </form>
       <Err error={err} onRetry={load} />
-      {data && total === 0 && <Empty title="No factors match">Loosen the keywords or clear a filter — all 743 factors are available.</Empty>}
+      {data && total === 0 && <Empty title="No factors match">Loosen the keywords or clear a filter — all 741 factors are available.</Empty>}
       {data && total > 0 && (
         <>
           <p className="hint" role="status">{total} factor{total === 1 ? '' : 's'} · page {page + 1} of {lastPage + 1}</p>

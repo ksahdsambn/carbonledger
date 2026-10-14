@@ -20,10 +20,10 @@ test('semantic index builds over the full library and recall mechanics hold', as
   const store = new LocalFileStore(mkdtempSync(join(tmpdir(), 'recall-')));
   await loadFactorLibrary(store);
   const idx = await buildSemanticIndex({ store, taskId: 't-recall' });
-  assert.equal(idx.total, 743);
+  assert.equal(idx.total, 741);
 
   const record = {
-    item_description: 'Air freight of electronic components HKG to NRT',
+    item_description: 'Air freight of electronic components LAX to NRT',
     transport_mode: 'Air transport (general cargo)',
   };
   for (const channel of ['both', 'keyword', 'semantic']) {

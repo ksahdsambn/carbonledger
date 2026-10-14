@@ -47,17 +47,22 @@ def norm_unit(u):
     return UNIT_MAP.get(str(u).strip().lower(), str(u).strip())
 
 # ISO alpha-2 for countries appearing in electricity / hotel sheets.
+# China and Hong Kong rows are intentionally excluded from the library.
 ISO = {"united kingdom": "GB", "uk": "GB", "france": "FR", "germany": "DE",
        "italy": "IT", "spain": "ES", "netherlands": "NL", "belgium": "BE",
        "ireland": "IE", "poland": "PL", "sweden": "SE", "denmark": "DK",
-       "china (mainland)": "CN", "china": "CN", "japan": "JP", "india": "IN",
+       "japan": "JP", "india": "IN",
        "united states": "US", "usa": "US", "canada": "CA", "australia": "AU",
-       "singapore": "SG", "hong kong sar": "HK", "hong kong": "HK",
+       "singapore": "SG",
        "taiwan": "TW", "south korea": "KR", "thailand": "TH", "vietnam": "VN",
        "malaysia": "MY", "indonesia": "ID", "mexico": "MX", "brazil": "BR",
        "world average": "WW", "other": "ZZ"}
 def iso_of(text):
     return ISO.get(str(text).strip().lower(), None)
+
+# Region rows dropped from the library entirely (substring match on the
+# location column, so "China", "Hong Kong, China", "Macau, China" etc. all go).
+EXCLUDED_LOC_KEYWORDS = ("china", "hong kong")
 
 def num(v):
     try:
@@ -252,6 +257,8 @@ def build_defra(factors):
                               cfg.get("type2_col"), cfg.get("loc_col")):
             if cfg.get("row_filter") and not cfg["row_filter"](rec):
                 continue
+            if any(k in rec["loc"].strip().lower() for k in EXCLUDED_LOC_KEYWORDS):
+                continue  # excluded regions are dropped from the library entirely
             for col, (variant, boundary) in cfg["total_cols"].items():
                 value = num(rec["row_cells"][ci(col) - 1])
                 if value is None or value <= 0:

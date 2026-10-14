@@ -6,15 +6,15 @@ Export target: PDF, 10–14 pages. Track on the cover, verbatim value propositio
 - Title: **CarbonLedger — Scope 3 Carbon Accounting and Disclosure Agent**
 - Track: **Sustainability & Social Impact**
 - Value proposition (verbatim): CarbonLedger compresses the cost of producing a Scope 3
-  report from "RMB 30,000 + 3 weeks" to "1 hour + near-zero marginal cost", while making
+  report from "$30,000 + 3 weeks" to "1 hour + near-zero marginal cost", while making
   every single number traceable back to its source document.
 - Team + hackathon branding.
 
 ## Page 2 — The problem
 - SMEs face three barriers: evidence scattered across scans, photos and spreadsheets;
   factor selection is semantic reasoning ("air-freighting 1,200 kg of temperature-sensitive
-  goods from Hong Kong to Tokyo" is not a string-match problem); consultant reports cost
-  RMB 20,000–50,000 and are repeated every year.
+  goods from Long Beach to Tokyo" is not a string-match problem); consultant reports cost
+  $20,000–$50,000 and are repeated every year.
 - Numbers: manual compilation 2–3 weeks per report; hard for auditors to verify.
 
 ## Page 3 — The solution
@@ -40,7 +40,7 @@ Export target: PDF, 10–14 pages. Track on the cover, verbatim value propositio
 ## Page 6 — Pipeline and data
 - Eleven-step journey from task creation to review closure; uncertainty routing to a
   human review queue; every AI call traced (latency, tokens, cost).
-- 743 public factors (DEFRA 2026 + EPA 2025 + USEEIO) shipped offline; five industries.
+- 741 public factors (DEFRA 2026 + EPA 2025 + USEEIO) shipped offline; five industries.
 
 ## Page 7 — Architecture
 - React SPA on Firebase Hosting; Node/Express on Cloud Run (scale-to-zero);

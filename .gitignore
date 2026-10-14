@@ -8,9 +8,13 @@ backend/dist/
 
 # Local runtime state (dev/test storage, uploaded files, exports)
 data/.local-store/
+backend/data/
 data/.uploads/
 exports/
 *.log
+
+# Local verification screenshots
+output/
 
 # Secrets and credentials — never commit any of these
 .env

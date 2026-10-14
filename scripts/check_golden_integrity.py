@@ -14,7 +14,7 @@ cases = json.loads((ROOT / "data/golden/answers/matching_cases.json").read_text(
 
 DOC_TYPES = {"supplier_invoice", "purchase_order", "logistics_waybill", "utility_bill",
              "travel_expense", "packing_list", "other"}
-CURRENCIES = {"USD", "CNY", "EUR", "JPY", "HKD"}
+CURRENCIES = {"USD", "EUR", "GBP", "CAD", "JPY"}
 UNITS = {"kg", "t", "kWh", "L", "m3", "km"}  # base units after normalization (PRD 4.4)
 MODES = {"Road freight", "Rail transport", "Sea transport (container)", "Sea transport (bulk)",
          "Air transport (general cargo)", "Air transport (cold chain)", "International express",

@@ -23,11 +23,11 @@ test('three scenarios auto-compute, hand-recomputation matches, zero-case and ra
   const store = new LocalFileStore(mkdtempSync(join(tmpdir(), 'scen-')));
   await loadFactorLibrary(store);
   const records = [
-    rec('R1', { item_description: 'air freight HKG-NRT', transport_mode: 'Air transport (general cargo)', gross_weight_kg: 1200, distance_km: 2960, supplier_name: 'Nippon Air' }),
-    rec('R2', { item_description: 'road freight GZ-DG', transport_mode: 'Road freight', gross_weight_kg: 5000, distance_km: 300, supplier_name: 'South China Haulage' }),
-    rec('R3', { item_description: 'rail freight', transport_mode: 'Rail transport', gross_weight_kg: 40000, distance_km: 600, supplier_name: 'China Rail' }),
+    rec('R1', { item_description: 'air freight LAX-NRT', transport_mode: 'Air transport (general cargo)', gross_weight_kg: 1200, distance_km: 8780, supplier_name: 'Nippon Air' }),
+    rec('R2', { item_description: 'road freight MEM-NSH', transport_mode: 'Road freight', gross_weight_kg: 5000, distance_km: 300, supplier_name: 'Lone Star Haulage' }),
+    rec('R3', { item_description: 'rail freight', transport_mode: 'Rail transport', gross_weight_kg: 40000, distance_km: 600, supplier_name: 'Union Pacific Rail' }),
     rec('R4', { item_description: 'primary aluminium sheet', supplier_name: 'Aluworks' }),
-    rec('R5', { item_description: 'PET film', supplier_name: 'Dongguan Polymer' }),
+    rec('R5', { item_description: 'PET film', supplier_name: 'Heartland Polymer' }),
     rec('R6', { item_description: 'grid electricity', quantity: 45000, unit: 'kWh', supplier_name: 'Grid Co' }),
   ];
   const picks = {
@@ -51,14 +51,14 @@ test('three scenarios auto-compute, hand-recomputation matches, zero-case and ra
   const s1 = out.scenarios[0];
   const sea = byId['EF-D26-SEAFREIGHT-039'];
   const rail = Object.values(byId).find((f) => /Rail \/ Freight train — Diesel/.test(f.name));
-  const eR1 = (1200 / 1000) * 2960 * sea.value;
+  const eR1 = (1200 / 1000) * 8780 * sea.value;
   const eR2 = (5000 / 1000) * 300 * rail.value;
   const hR1 = s1.affected.find((x) => x.record_id === 'R1');
   const hR2 = s1.affected.find((x) => x.record_id === 'R2');
   assert.ok(Math.abs(hR1.alternative_kgco2e - eR1) < 1e-6, `R1 ${hR1.alternative_kgco2e} vs ${eR1}`);
   assert.ok(Math.abs(hR2.alternative_kgco2e - eR2) < 1e-6);
   const s2 = out.scenarios[1];
-  // top-3 suppliers by emissions are Aluworks/Grid/Dongguan; the electricity
+  // top-3 suppliers by emissions are Aluworks/Grid/Heartland; the electricity
   // category has a single factor in the library, so that record is noted
   // rather than swapped — two swappable records remain.
   assert.ok(s2.affected.length >= 2, `S-2 affected ${s2.affected.length}`);
