@@ -26,7 +26,6 @@ export const CONVERSIONS = {
   km: { to: 'km', factor: 1 },
 };
 
-export const BASE_UNITS = { mass: 'kg', energy: 'kWh', volume: 'L', distance: 'km' };
 export const UNIT_DIMENSION = {
   kg: 'mass', t: 'mass', lb: 'mass', g: 'mass',
   kWh: 'energy', MWh: 'energy', GJ: 'energy', BTU: 'energy',

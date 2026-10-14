@@ -67,25 +67,43 @@ async function audit(store, taskId, recordId, action, details) {
 
 const UNIT_ENUM = [...Object.keys(CONVERSIONS), 't.km', 'p.km', 'MMBtu'];
 
-/** Patch validation (D-14/D-15): values must keep the ledger free of garbage. */
-function validatePatch(patch) {
+/**
+ * Patch validation (D-14/D-15). The review UI's text inputs submit strings, so
+ * numeric fields accept a number or a numeric string and are coerced; a value
+ * that is not a finite in-range number is refused, keeping the ledger free of
+ * NaN/Infinity. Returns the normalized patch that is actually applied.
+ */
+function normalizePatch(patch) {
+  const out = {};
   for (const [k, v] of Object.entries(patch)) {
-    if (v == null || v === '') continue;
-    if (k === 'quantity') { if (typeof v !== 'number' || !Number.isFinite(v) || v <= 0) throw new AppError('ERR_ENUM_INVALID', { field: k }); }
-    else if (k === 'amount') { if (typeof v !== 'number' || !Number.isFinite(v) || v < 0) throw new AppError('ERR_ENUM_INVALID', { field: k }); }
-    else if (k === 'unit' && !UNIT_ENUM.includes(v)) throw new AppError('ERR_ENUM_INVALID', { field: k, value: v });
-    else if (k === 'transport_mode' && !TRANSPORT_MODES.includes(v)) throw new AppError('ERR_ENUM_INVALID', { field: k });
-    else if (k === 'currency' && !CURRENCIES.includes(v)) throw new AppError('ERR_ENUM_INVALID', { field: k });
-    else if (typeof v === 'object') throw new AppError('ERR_ENUM_INVALID', { field: k });
-    else if (String(v).length > 500) throw new AppError('ERR_ENUM_INVALID', { field: k, reason: 'too long' });
+    if (v == null || v === '') { out[k] = v; continue; }
+    if (k === 'quantity' || k === 'amount') {
+      const n = typeof v === 'number' ? v : Number(String(v).trim());
+      if (!Number.isFinite(n) || (k === 'quantity' ? n <= 0 : n < 0)) throw new AppError('ERR_ENUM_INVALID', { field: k, value: String(v).slice(0, 40) });
+      out[k] = n;
+    } else if (k === 'unit') {
+      if (!UNIT_ENUM.includes(v)) throw new AppError('ERR_ENUM_INVALID', { field: k, value: String(v).slice(0, 40) });
+      out[k] = v;
+    } else if (k === 'transport_mode') {
+      if (!TRANSPORT_MODES.includes(v)) throw new AppError('ERR_ENUM_INVALID', { field: k });
+      out[k] = v;
+    } else if (k === 'currency') {
+      if (!CURRENCIES.includes(v)) throw new AppError('ERR_ENUM_INVALID', { field: k });
+      out[k] = v;
+    } else {
+      if (typeof v === 'object') throw new AppError('ERR_ENUM_INVALID', { field: k });
+      if (String(v).length > 500) throw new AppError('ERR_ENUM_INVALID', { field: k, reason: 'too long' });
+      out[k] = v;
+    }
   }
+  return out;
 }
 
 /** FR-1102: edit the four editable fields + fill missing required fields. */
 export async function editRecordFields({ store, taskId, recordId, patch, operator = 'reviewer' }) {
   const record = await getTaskRecord(store, taskId, recordId);
   const allowed = ['quantity', 'unit', 'transport_mode', 'origin_location', 'destination_location', 'activity_date', 'amount', 'currency'];
-  validatePatch(patch ?? {});
+  patch = normalizePatch(patch ?? {});
   const applied = {};
   for (const [k, v] of Object.entries(patch)) {
     if (!allowed.includes(k)) continue;

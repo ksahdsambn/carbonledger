@@ -98,3 +98,22 @@ per-record factors do not follow from the stored matches.
 The earlier T-044 battery that recorded 9/10 runs was affected by the same race (one run
 reported 19/20 documents terminal). With the fix the battery records **10/10 runs passed,
 P90 = 61.3 s**. See `progress/evidence/T-044/public_runs.json`.
+
+## Addendum — 2026-10 audit re-check
+
+The 2026-10 full audit re-examined this fix and confirms it still holds and has been
+strengthened:
+
+- **One deterministic report document per task** (`rep_${taskId}`) — unchanged.
+- **Single-flight report generation** — unchanged, and now extended: `POST /run` and
+  `POST /api/demo/load` queue a second trigger behind the run in flight (defect D-33), so a
+  concurrent re-run can no longer assemble a report from a partial ledger at all. The
+  regression battery (`backend/test/regression.test.js`) covers the re-run completeness and
+  the report/ledger consistency path.
+- **Scenario isolation** (defect D-05) closes a related contamination route this report did
+  not cover: scenario recomputation used to write through the same `calc_<record_id>` keys as
+  the baseline ledger, so a stored report could read what-if values. `computeEmission` now
+  takes `persist:false` on the scenario path and the baseline ledger is never overwritten.
+
+The consistency guard `scripts/verify_consistency.js` remains the permanent regression check
+and passed 1/1 against a local service during the audit (20 rows, 0 mismatches).

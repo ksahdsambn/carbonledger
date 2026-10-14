@@ -19,8 +19,9 @@ ten-chapter English report with PDF/CSV exports and a full audit trail.
   Deployed to Firebase Hosting.
 - **Backend**: Node.js (Express) on **Cloud Run** (autoscaling, scale-to-zero). A storage
   abstraction selects Firebase Storage + Firestore in production and local adapters for
-  development, tests and the offline evaluation tool. An async task-queue abstraction
-  selects Cloud Tasks in production.
+  development, tests and the offline evaluation tool. Pipeline runs execute inline on the
+  instance (CPU is always allocated) and are tracked per task so a second trigger queues
+  behind the run in flight.
 - **AI layer**: every generative call goes through one unified wrapper that enforces
   structured output (response schemas), closed-set validation with retry, timeouts and
   retries from configuration, and records every call (input/output summary, latency, token
@@ -79,7 +80,7 @@ PDF/CSV exports. No registration required.
 ```bash
 npm install          # workspace deps
 npm run build        # frontend build + backend syntax pass
-npm test             # 34 automated checks (unit + e2e + upload suite)
+npm test             # 44 automated checks (43 unit/e2e cases + 1 upload suite)
 npm run smoke        # boot /healthz / graceful shutdown
 node backend/src/server.js   # start the API (http://localhost:8080)
 cd frontend && npm run dev   # dev UI on http://localhost:5173 (proxies /api)
@@ -138,7 +139,9 @@ never computed from mock runs.
 Additional runtime switches: `AI_MODE` (real/mock), `RECALL_CHANNEL` (both/keyword/semantic),
 `STORE_KIND`/`STORAGE_KIND` (local/firestore/firebase), `STORE_ROOT`/`STORAGE_ROOT`,
 `RATE_LIMIT_PER_MIN` (per-IP request budget on the public deployment, default 60),
-`PIPELINE_CONCURRENCY` (documents processed in parallel, default 4), `AI_PRICES_JSON`
+`TRUST_PROXY` (set to `1` behind a trusted reverse proxy so the rate limiter honours the
+forwarded client address; otherwise the socket address is used), `PIPELINE_CONCURRENCY`
+(documents processed in parallel, default 4), `AI_PRICES_JSON`
 (price-table override), `FACTOR_FILE` (factor data file), `CORS_ORIGINS`, and the
 build-time `VITE_FIREBASE_*` trio described under Deployment.
 
@@ -147,8 +150,10 @@ build-time `VITE_FIREBASE_*` trio described under Deployment.
 ERR_FILE_FORMAT_UNSUPPORTED, ERR_FILE_TOO_LARGE, ERR_FILE_CORRUPT, ERR_PARSE_FAILED,
 ERR_EXTRACTION_FAILED, ERR_MODEL_CALL_FAILED, ERR_MODEL_TIMEOUT, ERR_ENUM_INVALID,
 ERR_CANDIDATES_INSUFFICIENT, ERR_NO_CONFIDENT_FACTOR, ERR_REFERENCE_INVALID,
-ERR_STORAGE_ACCESS, ERR_TASK_NOT_FOUND — each with an English description
-(`backend/src/errors.js`).
+ERR_STORAGE_ACCESS, ERR_TASK_NOT_FOUND, ERR_FORBIDDEN, ERR_RATE_LIMITED — each with an
+English description (`backend/src/errors.js`). `ERR_FORBIDDEN` (403) is returned when a
+request reaches a task owned by another identity; `ERR_RATE_LIMITED` (429) when the
+per-IP request budget is exhausted.
 
 ## Evaluation
 
@@ -181,18 +186,32 @@ Supporting measurements, each with its own evidence file:
 - **Reliability and security** (`scripts/verify_public_faults.js`,
   `progress/evidence/T-046/public_faults.json`): a 20-file batch with 3 corrupt files ingests
   the other 17 with `ERR_FILE_CORRUPT` per rejection; a timed-out model call is retried
-  exactly twice and then marked failed with a machine-readable code; all 13 error codes are
-  documented below; cross-task, cross-identity and forged-header access are all rejected;
-  the public URL returns HTTP 429 after 44 rapid requests.
+  exactly twice and then marked failed with a machine-readable code, while a fatal upstream
+  answer (4xx) is not retried at all; all 15 error codes are documented below; cross-task,
+  cross-identity and forged-header access are all rejected; the public URL returns HTTP 429
+  after 44 rapid requests.
+- **2026-10 audit hardening** (`progress/DEFECT_REGISTER_2026-10-14.md`,
+  `backend/test/regression.test.js`): conditional task-ownership enforcement on every
+  task-scoped route (`ERR_FORBIDDEN` when a task has an owner and the caller is someone
+  else), filename sanitization plus storage-root containment for uploads, upload size/count
+  limits enforced by the middleware before buffering, CSV formula-injection neutralization,
+  finite-number guards across extraction/normalization/calculation/review, scenario
+  recomputation isolated from the stored ledger, socket-address rate-limit keys, an explicit
+  CORS allowlist, document-byte redaction in AI traces, and a 13-case regression battery
+  (V-01…V-12 scenarios).
 - **Report/ledger consistency** (`scripts/verify_consistency.js`,
   `progress/evidence/T-050/consistency.json`): every report row's factor and emission equals
   the recomputation from the stored ledger, across 13 consecutive tasks.
 - **Final acceptance checklist** (`scripts/verify_acceptance.js`,
   `progress/evidence/T-050/acceptance.md`): PRD 10.3 functional 8/8, compliance 5/5,
   engineering 5/5, plus keyboard access and colour-independence NFRs.
-- **Code size** (`scripts/count_lines.sh`): application code 4,132 lines; with all first-party
-  JavaScript verification and build tooling 6,976 lines (target ≤ 7,000); including the
-  offline Python dataset toolchain 8,771 lines (hard cap 10,000).
+- **Code size** (`scripts/count_lines.sh`): application code 4,514 lines; with all first-party
+  JavaScript verification and build tooling 7,602 lines; including the offline Python dataset
+  toolchain 9,397 lines (hard cap 10,000). Figure B currently **exceeds** the 7,000-line
+  NFR-504 target: the 2026-10 audit added a mandatory regression battery and security
+  middleware faster than dead code could be recovered; the overage is recorded in the defect
+  register (`progress/DEFECT_REGISTER_2026-10-14.md`, D-02) and figure C remains within the
+  hard cap.
 
 Video acceptance (4 items), the real-person 5-second usability check, and the deck PDF /
 video production steps remain manual; they are listed with instructions in
@@ -203,8 +222,13 @@ video production steps remain manual; they are listed with instructions in
 User-uploaded documents and all derived data are used only to produce the user's own
 report. **No user data is used for model training.** Uploaded files are isolated per
 accounting task: the task owner is the uid of the verified Firebase anonymous session, and
-a request from another task or another identity is rejected with `ERR_TASK_NOT_FOUND`.
-The public deployment also applies a per-IP rate limit (`ERR_RATE_LIMITED`).
+a request from another identity is rejected with `ERR_FORBIDDEN` (a task with no owner
+stays open so scripts and the one-click demo keep working). Upload filenames are sanitized
+and every stored object is confined to the storage root. AI traces record only summaries —
+document bytes are never written to a trace. The public deployment also applies a per-IP
+rate limit keyed by the connection's socket address (`ERR_RATE_LIMITED`); set
+`TRUST_PROXY=1` only when running behind a trusted reverse proxy so the forwarded client
+address can be honoured.
 
 ## Repository layout
 

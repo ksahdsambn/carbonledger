@@ -28,3 +28,6 @@ Thumbs.db
 # firebase deploy cache
 .firebase/
 __pycache__/
+
+# Browser automation artifacts (audit walkthrough)
+.playwright-cli/

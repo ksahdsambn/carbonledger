@@ -120,7 +120,7 @@ export async function assembleReport({ store, taskId, task, records, calcs, calc
       no: 2, title: 'Executive summary',
       blocks: [
         { type: 'text', text: `Total emissions for the reporting period amount to ${t3(totalKg)} t CO2e.` },
-        { type: 'table', header: ['Scope', 't CO2e', 'Share'], rows: scopeDisplay.parts.map((s) => [s.key, s.display_t, `${((s.value * 1000 / (totalKg || 1)) * 100).toFixed(1)}%`]) },
+        { type: 'table', header: ['Scope', 't CO2e', 'Share'], rows: scopeDisplay.parts.map((s) => [s.key, s.display_t, `${((s.value / (totalKg || 1)) * 100).toFixed(1)}%`]) },
         { type: 'table', header: ['Top emission source', 't CO2e'], rows: top.slice(0, 3).map((x) => [x.description, t3(x.emission_kgco2e)]) },
         { type: 'list', items: narratives.recommendations },
       ],

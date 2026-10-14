@@ -321,6 +321,18 @@ export async function buildApp(options = {}) {
     res.json(refreshed);
   });
 
+  app.get('/api/tasks/:taskId/records/:recordId/candidates', requireTaskOwner, async (req, res) => {
+    // The matching viewer shows the RECALL channel's candidates for a record
+    // (D-51): a plain keyword search ANDs every term and returns nothing for
+    // free-text descriptions, so it cannot drive manual factor assignment.
+    const records = await store.query('activity_records', 'task_id', req.params.taskId);
+    const record = records.find((r) => r.record_id === req.params.recordId);
+    if (!record) throw new AppError('ERR_TASK_NOT_FOUND', { record_id: req.params.recordId });
+    const { recallCandidates } = await import('./services/recall.js');
+    const recall = await recallCandidates({ store, record, taskId: req.params.taskId });
+    res.json({ count: recall.candidate_count, candidates: recall.candidates.filter((c) => c.factor).map((c) => ({ factor_id: c.factor_id, name: c.factor.name, activity_unit: c.factor.activity_unit, value: c.factor.value, score: c.score })) });
+  });
+
   app.get('/api/tasks/:taskId/records/:recordId/audit', requireTaskOwner, async (req, res) => {
     const records = await store.query('activity_records', 'task_id', req.params.taskId);
     const record = records.find((r) => r.record_id === req.params.recordId);
@@ -347,7 +359,7 @@ export async function buildApp(options = {}) {
   app.use((err, _req, res, _next) => {
     // Multer rejections keep the machine-readable contract (D-12).
     if (err?.code === 'LIMIT_FILE_SIZE') err = new AppError('ERR_FILE_TOO_LARGE');
-    else if (err?.code === 'LIMIT_UNEXPECTED_FILE') err = new AppError('ERR_ENUM_INVALID', { hint: 'at most 50 files per request' });
+    else if (err?.code === 'LIMIT_UNEXPECTED_FILE' || err?.code === 'LIMIT_FILE_COUNT') err = new AppError('ERR_ENUM_INVALID', { hint: 'at most 50 files per request' });
     const { status, body } = errorResponse(err);
     if (status >= 500) log.error('http_error', { status, code: body.error.code });
     res.status(status).json(body);

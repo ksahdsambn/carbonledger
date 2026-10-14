@@ -90,8 +90,13 @@ for (const taskId of taskIds) {
   for (const m of mismatches.slice(0, 4)) console.log('    ', JSON.stringify(m));
 }
 
-mkdirSync(join(ROOT, 'progress/evidence/T-050'), { recursive: true });
-writeFileSync(join(ROOT, 'progress/evidence/T-050/consistency.json'), JSON.stringify({
+// The canonical evidence file is only written for a run against the deployed
+// service. A local run (PUBLIC_BASE overridden) must never overwrite the public
+// evidence with local results (D-58); it writes beside it instead.
+const evidenceDir = join(ROOT, 'progress/evidence/T-050');
+mkdirSync(evidenceDir, { recursive: true });
+const evidenceFile = process.env.PUBLIC_BASE ? 'consistency-local.json' : 'consistency.json';
+writeFileSync(join(evidenceDir, evidenceFile), JSON.stringify({
   base_url: BASE,
   generated_at: new Date().toISOString(),
   tasks_checked: taskIds.length,

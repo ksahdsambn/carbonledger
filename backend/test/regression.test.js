@@ -99,6 +99,13 @@ test('D-04/V-01: a two-page PDF completes with records from every page; re-runs 
     const a = second.report.numeric_conclusions.find((n) => n.ref_type === 'record' && n.ref_id === m.activity_record_id);
     assert.ok(a && a.value_t === toDisplayTons(m.emission_kgco2e), 'per-record anchor exact');
   }
+  // D-52: chapter 2's Share column is a percentage of the total, so the scope
+  // shares must sum to 100% and no single share may exceed 100%.
+  const ch2 = second.report.chapters.find((c) => c.no === 2);
+  const shareTable = ch2.blocks.find((b) => b.type === 'table' && b.header.includes('Share'));
+  const shares = shareTable.rows.map((r) => Number(String(r[2]).replace('%', '')));
+  assert.ok(shares.every((x) => Number.isFinite(x) && x >= 0 && x <= 100), `shares in [0,100]: ${shares.join(', ')}`);
+  assert.ok(Math.abs(shares.reduce((a, b) => a + b, 0) - 100) < 0.5, `shares sum to ~100%: ${shares.join(' + ')}`);
 });
 
 test('D-05/V-04: scenario recomputation never overwrites the stored baseline ledger', async () => {
@@ -182,7 +189,12 @@ test('D-14/D-15/V-07: non-finite and cross-target writes are rejected on every p
   const t2 = await createTask(store, { entity_name: 'B', period_from: '2026-01-01', period_to: '2026-06-30', gwp_version: 'AR6' });
   const rec = { record_id: 'rec_own', task_id: t1.task_id, item_description: 'x', quantity: 5, unit: 'kg' };
   await store.put('activity_records', 'rec_own', rec);
-  for (const bad of [{ quantity: '5' }, { quantity: Infinity }, { quantity: 0 }, { amount: -1 }, { unit: 'stones' }, { currency: 'gbp' }]) {
+  // Numeric strings come from the review UI's text inputs and are coerced to
+  // numbers; anything non-finite or out of range is refused (D-14/D-15).
+  const coerced = await editRecordFields({ store, taskId: t1.task_id, recordId: 'rec_own', patch: { quantity: '5' } });
+  assert.equal(coerced.quantity, 5, 'numeric string coerced to a number');
+  assert.equal(typeof coerced.quantity, 'number', 'ledger stores a number, never a string');
+  for (const bad of [{ quantity: 'abc' }, { quantity: Infinity }, { quantity: NaN }, { quantity: 0 }, { quantity: -3 }, { amount: -1 }, { unit: 'stones' }, { currency: 'gbp' }]) {
     await assert.rejects(() => editRecordFields({ store, taskId: t1.task_id, recordId: 'rec_own', patch: bad }), (e) => e.code === 'ERR_ENUM_INVALID', `patch ${JSON.stringify(bad)} rejected`);
   }
   await assert.rejects(() => editRecordFields({ store, taskId: t2.task_id, recordId: 'rec_own', patch: { quantity: 9 } }), (e) => e.code === 'ERR_TASK_NOT_FOUND', 'cross-task edit rejected');

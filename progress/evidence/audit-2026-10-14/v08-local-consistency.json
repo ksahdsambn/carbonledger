@@ -1,0 +1,15 @@
+{
+  "base_url": "http://127.0.0.1:8080",
+  "generated_at": "2026-10-14T03:17:10.905Z",
+  "tasks_checked": 1,
+  "tasks_failed": 0,
+  "results": [
+    {
+      "task_id": "task_98530dfd",
+      "ok": true,
+      "rows": 20,
+      "mismatches": []
+    }
+  ],
+  "overall": "PASS"
+}

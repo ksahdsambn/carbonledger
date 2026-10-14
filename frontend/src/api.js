@@ -32,6 +32,7 @@ export const api = {
   reviewAction: (taskId, recordId, body) => json(`/api/tasks/${taskId}/review/${recordId}`, { method: 'POST', body }),
   traces: (taskId, stage) => json(`/api/tasks/${taskId}/traces${stage ? `?stage=${encodeURIComponent(stage)}` : ''}`),
   audit: (taskId, recordId) => json(`/api/tasks/${taskId}/records/${recordId}/audit`),
+  candidates: (taskId, recordId) => json(`/api/tasks/${taskId}/records/${recordId}/candidates`),
   factorSearch: (q) => json(`/factors?q=${encodeURIComponent(q.split(/\s+/).slice(0, 6).join(','))}`),
   // Authenticated blob download (file & export links carry no header on
   // plain <a> navigation, which owner-checked endpoints require).

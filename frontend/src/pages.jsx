@@ -158,6 +158,9 @@ export function P3Records({ taskId }) {
   const [expanded, setExpanded] = useState(null);
   useEffect(() => { api.dashboard(taskId).then((d) => setData(d)).catch(() => setData(null)); }, [taskId]);
   const recs = data?.records ?? [];
+  // The "Factor" column must show the factor actually selected for a record
+  // (the dashboard's calc rows carry it), not the internal match id (D-53).
+  const factorByRecord = new Map((data?.calcs ?? []).map((c) => [c.activity_record_id, c.factor_id]));
   return (
     <main className="page">
       <h2>Activity records</h2>
@@ -170,7 +173,7 @@ export function P3Records({ taskId }) {
               <td>{r.record_id}</td><td>{r.item_description}</td>
               <td>{r.quantity != null ? `${r.quantity} ${r.unit ?? ''}` : '—'}</td>
               <td>{r.scope}{r.category ? ` ${r.category}` : ''}</td>
-              <td>{r.match_id ? r.match_id.replace('match_', '') : '—'}</td>
+              <td>{factorByRecord.get(r.record_id) ?? '—'}</td>
               <td><span className={`lvl lvl-${r.uncertainty_level}`}><span aria-hidden>{LEVEL_ICON[r.uncertainty_level]}</span> {LEVEL_LABEL[r.uncertainty_level]}</span></td>
             </tr>
             {expanded === r.record_id && (
@@ -178,7 +181,7 @@ export function P3Records({ taskId }) {
                 <h4>Fields &amp; per-field confidence</h4>
                 <table className="tbl mini"><tbody>
                   {Object.entries(r).filter(([k]) => !['field_confidence', 'id'].includes(k)).map(([k, v]) => (
-                    <tr key={k}><td>{k}</td><td>{typeof v === 'object' ? JSON.stringify(v) : String(v ?? '—')}</td>
+                    <tr key={k}><td>{k}</td><td>{v === null ? '—' : typeof v === 'object' ? JSON.stringify(v) : String(v ?? '—')}</td>
                       <td>{r.field_confidence?.[k] != null ? r.field_confidence[k].toFixed(2) : ''}</td></tr>
                   ))}
                 </tbody></table>
@@ -211,7 +214,7 @@ export function P4Matching({ taskId, params }) {
   const [factors, setFactors] = useState([]);
   useEffect(() => { api.dashboard(taskId).then(setDash).catch(() => {}); }, [taskId]);
   const rec = dash?.records?.find((r) => r.record_id === recordId);
-  useEffect(() => { if (rec) api.factorSearch(rec.item_description).then((r) => setFactors(r.factors.slice(0, 15))).catch(() => {}); }, [rec?.record_id]);
+  useEffect(() => { if (rec) api.candidates(taskId, recordId).then((r) => setFactors(r.candidates.slice(0, 15))).catch(() => {}); }, [rec?.record_id]);
   if (!rec) return <main className="page"><h2>Factor matching viewer</h2><p>Select a record on P3.</p></main>;
   const assign = async (fid) => {
     await api.reviewAction(taskId, recordId, { action: 'assign', factor_id: fid });
