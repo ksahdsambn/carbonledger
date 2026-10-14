@@ -3,7 +3,9 @@
 // ownership matrix (V-02), path traversal (V-03), scenario isolation (V-04),
 // anchor values (V-05), CSV formula injection (V-06), numeric guards (V-07),
 // embedding short-response (V-12), plus unit regressions for D-08/D-16/D-19/
-// D-21/D-24/D-34 and the CORS/rate-limit behaviour of V-09.
+// D-21/D-24/D-34 and the CORS/rate-limit behaviour of V-09. The second review
+// round added D-60 (failed-document retry), D-62 (review close ownership),
+// D-63 (strict numeric config) and D-65/D-66 (non-finite and embedding-shape).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync, mkdtempSync, rmSync, readdirSync, existsSync } from 'node:fs';
@@ -21,7 +23,7 @@ import { runPipeline } from '../src/services/pipeline.js';
 import { computeEmission, toDisplayTons } from '../src/services/calculation.js';
 import { computeScenarios } from '../src/services/scenarios.js';
 import { validateExtraction } from '../src/services/pipelineModelCalls.js';
-import { editRecordFields, assignFactorManually, excludeRecord, recalculateTask } from '../src/services/reviewQueue.js';
+import { editRecordFields, assignFactorManually, excludeRecord, closeReviewItem, recalculateTask } from '../src/services/reviewQueue.js';
 import { identifyCurrency } from '../src/services/normalization.js';
 import { levelDistribution } from '../src/services/uncertainty.js';
 import { activityDetailCsv } from '../src/services/exportService.js';
@@ -200,14 +202,21 @@ test('D-14/D-15/V-07: non-finite and cross-target writes are rejected on every p
   await assert.rejects(() => editRecordFields({ store, taskId: t2.task_id, recordId: 'rec_own', patch: { quantity: 9 } }), (e) => e.code === 'ERR_TASK_NOT_FOUND', 'cross-task edit rejected');
   await assert.rejects(() => excludeRecord({ store, taskId: t2.task_id, recordId: 'rec_own', reason: 'not in this task at all' }), (e) => e.code === 'ERR_TASK_NOT_FOUND', 'cross-task exclusion rejected');
   await assert.rejects(() => assignFactorManually({ store, taskId: t2.task_id, recordId: 'rec_own', factorId: 'EF-D26-UKELECTRICITY-001' }), (e) => e.code === 'ERR_TASK_NOT_FOUND', 'cross-task assignment rejected');
+  await assert.rejects(() => closeReviewItem({ store, taskId: t2.task_id, recordId: 'rec_own', note: 'nope' }), (e) => e.code === 'ERR_TASK_NOT_FOUND', 'cross-task close rejected (D-62)');
 });
 
-test('D-16: invalid numeric config values fall back to defaults instead of NaN', () => {
+test('D-16/D-63: invalid numeric config values fall back to defaults instead of NaN', () => {
   const { values } = loadConfig({ AI_RETRY_COUNT: 'abc', BATCH_SIZE: '-4', AI_TIMEOUT_SECONDS: '0', FACTOR_MATCH_CONFIDENCE_THRESHOLD: 'nope' });
   assert.equal(values.AI_RETRY_COUNT, 2);
   assert.equal(values.BATCH_SIZE, 10);
   assert.equal(values.AI_TIMEOUT_SECONDS, 60);
   assert.equal(values.FACTOR_MATCH_CONFIDENCE_THRESHOLD, 0.65);
+  // D-63: a numeric prefix is not a valid value — it must fall back, not be
+  // silently truncated by parseInt/parseFloat.
+  const { values: v2 } = loadConfig({ BATCH_SIZE: '7.5', AI_RETRY_COUNT: '5x', FACTOR_MATCH_CONFIDENCE_THRESHOLD: '0.6junk' });
+  assert.equal(v2.BATCH_SIZE, 10, 'an int must be written as an integer');
+  assert.equal(v2.AI_RETRY_COUNT, 2, 'numeric prefix rejected');
+  assert.equal(v2.FACTOR_MATCH_CONFIDENCE_THRESHOLD, 0.65, 'numeric prefix rejected');
 });
 
 test('D-18/V-12: a short embedding batch response is retried, then fails loudly', async () => {
@@ -302,11 +311,52 @@ test('D-13/D-37/V-09: rate limiting is socket-keyed and CORS is a strict allowli
     const local = await fetch(base + '/config', { headers: { origin: 'http://localhost:5173' } });
     assert.equal(local.headers.get('access-control-allow-origin'), 'http://localhost:5173');
     const malformed = await fetch(base + '/config', { headers: { origin: 'http://[::1' } });
-    assert.equal(malformed.status, 429 < malformed.status ? malformed.status : malformed.status, 'request completes'); // malformed origin never crashes; 429 possible once exhausted
+    assert.ok(malformed.status < 500, 'malformed origin never causes a server error (D-61)');
     assert.ok([200, 429].includes(malformed.status));
   } finally {
     server.close();
     delete process.env.RATE_LIMIT_PER_MIN;
+  }
+});
+
+test('D-60: a failed document is retried on the next run and keeps its records', async () => {
+  const store = new LocalFileStore(mkdtempSync(join(tmpdir(), 'reg-fr-')));
+  const storage = new LocalFileStorage(mkdtempSync(join(tmpdir(), 'reg-fru-')));
+  await loadFactorLibrary(store);
+  const task = await createTask(store, { entity_name: 'Retry Co', period_from: '2026-01-01', period_to: '2026-06-30', gwp_version: 'AR6' });
+  const ing = await ingestFile({ store, storage, taskId: task.task_id, filename: 'retry.pdf', buffer: await twoPagePdf() });
+  const first = await runPipeline({ store, storage, taskId: task.task_id, mockCatalog: mockCatalogFor('retry.pdf') });
+  assert.equal(first.summary.records, 2, 'baseline run produces both records');
+  const doc = await store.get('documents', ing.document_id);
+  doc.status = 'failed'; // a terminal-looking failure with records already persisted
+  await store.put('documents', ing.document_id, doc);
+  const retried = await runPipeline({ store, storage, taskId: task.task_id, mockCatalog: mockCatalogFor('retry.pdf') });
+  assert.equal(retried.summary.records, 2, 'failed document is reprocessed, not dropped');
+  const retriedStatus = (await store.get('documents', ing.document_id)).status;
+  assert.ok(['completed', 'needs_review'].includes(retriedStatus), `failed is retryable again (got ${retriedStatus})`);
+  assert.equal((await store.query('activity_records', 'task_id', task.task_id)).length, 2, 'retry does not duplicate or lose records');
+});
+
+test('D-65: a non-finite factor value cannot reach the ledger', async () => {
+  const store = new LocalFileStore(mkdtempSync(join(tmpdir(), 'reg-nf-')));
+  await loadFactorLibrary(store);
+  const record = { record_id: 'rnf', task_id: 'tnf', item_description: 'x', quantity: 10, unit: 'kg' };
+  const factor = { factor_id: 'EF-X', value: Number.POSITIVE_INFINITY, activity_unit: 'kg', emission_unit: 'kgCO2e', ghg_coverage: 'CO2', gwp_version: 'AR6' };
+  await assert.rejects(computeEmission({ store, record, factor, taskGwpVersion: 'AR6' }), /non-finite emission/);
+  assert.ok(!(await store.get('calculations', 'calc_rnf')), 'nothing was persisted');
+});
+
+test('D-66: an embedding element without vector values fails loudly', async () => {
+  process.env.AI_MODE = 'real';
+  process.env.GEMINI_API_KEY = 'test-key-never-sent';
+  const original = globalThis.fetch;
+  globalThis.fetch = async () => ({ ok: true, json: async () => ({ embeddings: [{ values: [0.1] }, {}] }) }); // right count, second element empty
+  try {
+    await assert.rejects(embedTexts({ taskId: 't', texts: ['a', 'b'] }), (e) => e.code === 'ERR_MODEL_CALL_FAILED');
+  } finally {
+    globalThis.fetch = original;
+    process.env.AI_MODE = 'mock';
+    delete process.env.GEMINI_API_KEY;
   }
 });
 

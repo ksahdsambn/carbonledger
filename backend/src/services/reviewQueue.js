@@ -152,6 +152,7 @@ export async function excludeRecord({ store, taskId, recordId, reason, operator 
 }
 
 export async function closeReviewItem({ store, taskId, recordId, note, operator = 'reviewer' }) {
+  await getTaskRecord(store, taskId, recordId); // D-62: same ownership rule as edit/assign/exclude
   const items = await store.query('review_items', 'record_id', recordId);
   for (const item of items) {
     if (item.task_id !== taskId) continue;

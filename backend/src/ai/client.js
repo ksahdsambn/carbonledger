@@ -238,6 +238,12 @@ export async function embedTexts({ taskId, texts, traceStore }) {
           if (!Array.isArray(parsed.embeddings) || parsed.embeddings.length !== chunk.length) {
             throw new AppError('ERR_MODEL_CALL_FAILED', { stage: 'embedding-batch', detail: `expected ${chunk.length} vectors, got ${parsed.embeddings?.length ?? 0}` });
           }
+          // A matching count is not enough: an element without a non-empty
+          // values array would be indexed positionally and turn every cosine
+          // similarity into NaN instead of failing loudly (D-66).
+          if (parsed.embeddings.some((e) => !Array.isArray(e?.values) || e.values.length === 0)) {
+            throw new AppError('ERR_MODEL_CALL_FAILED', { stage: 'embedding-batch', detail: 'an embedding element carries no vector values' });
+          }
           data = parsed;
         } catch (err) {
           if (err.name === 'AbortError' || String(err.message) === 'timeout') {

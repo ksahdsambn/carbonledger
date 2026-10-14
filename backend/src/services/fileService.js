@@ -130,7 +130,10 @@ const TRANSITIONS = {
   matching: ['parsing', 'completed', 'needs_review', 'failed'],
   completed: ['matching'],
   needs_review: ['parsing', 'matching', 'completed', 'failed'],
-  failed: ['queued'],
+  // A failed document must stay retryable by a fresh run (6.3.3): without the
+  // 'parsing' edge a re-run threw ERR_ENUM_INVALID and the document stayed
+  // failed forever, silently dropping it from the report (D-60).
+  failed: ['queued', 'parsing'],
 };
 
 export async function setDocumentStatus(store, taskId, documentId, next) {

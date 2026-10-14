@@ -43,7 +43,6 @@ export function mockClassification({ filename, docHint }) {
   if (docHint) return { doc_type: docHint, confidence: 0.98, quality: 'clear' };
   const n = (filename || '').toLowerCase();
   const rule = [
-    [/blurry|blank/, null], // blurry docs: ambiguous, exercised below
     [/invoice/, 'supplier_invoice'],
     [/_po_|po_|purchase/, 'purchase_order'],
     [/awb|waybill|freight|delivery/, 'logistics_waybill'],

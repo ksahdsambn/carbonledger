@@ -80,5 +80,3 @@ export async function factorYearDistribution(store) {
   for (const f of all) dist[f.data_year] = (dist[f.data_year] || 0) + 1;
   return dist;
 }
-
-export const FACTOR_LIBRARY_FILE = FACTOR_FILE;

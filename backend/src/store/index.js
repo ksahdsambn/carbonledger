@@ -93,5 +93,3 @@ export async function createStore(kind = process.env.STORE_KIND || 'local', opti
   }
   throw new Error(`Unknown store kind '${kind}'`);
 }
-
-export const STORE_COLLECTIONS = COLLECTIONS;

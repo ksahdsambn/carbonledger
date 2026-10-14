@@ -41,7 +41,11 @@
 | 新增:强制回归电池 `backend/test/regression.test.js`(V-01/02/03/04/05/06/07/12 必须自动化,任务书 7.2 明文要求) | +330 |
 | 新增:安全与正确性修复(属主中间件、CORS/限流重写、运行串行化、候选接口、上传限制与错误映射、追踪脱敏、嵌入防线、补丁校验、pdf-lib 计数、存储包含性、配置校验、任务字段校验、CSV 中和、报告锚点/Share 修正、脚本密钥守卫) | +305 |
 | **审查后实测口径 B** | **7,606**(目标 7,000,超支 606) |
-| 口径 C(含 Python 工具链) | 9,401(硬上限 10,000,达标) |
+| 第二轮回收:死导出 FACTOR_LIBRARY_FILE / STORE_COLLECTIONS / currentIdToken + 不可达分类规则(D-64) | −8 |
+| 第二轮新增:D-60/61/62/63/65/66 修复实现 | +12 |
+| 第二轮新增:回归断言(D-60/D-62/D-63/D-65/D-66) | +63 |
+| **第二轮复核后实测口径 B(最终)** | **7,673**(目标 7,000,超支 673) |
+| 口径 C(含 Python 工具链) | 9,468(硬上限 10,000,达标) |
 
 **超支理由与接受结论(按 2.6.2)**:
 1. 审查前基线即为 7,110,已超目标 110 行——超支并非本次修复单独造成。
@@ -52,6 +56,8 @@
 6. **严禁修改统计脚本口径**(红线 4)——`count_lines.sh` 一字未改,超支如实呈现。
 
 **结论**:A-5 依 2.6.2 逃逸条款判定为"已记录并接受",`count_lines.sh` 本身仍打印 FAIL,该事实如实记录,不作粉饰。
+
+**第二轮追加(2026-10-14)**:第二轮独立复核新增 6 项修复与 5 组回归断言,并回收 8 行死代码,口径 B 由 7,606 变为 **7,673**(超支 673),口径 C 9,468 仍 < 10,000。超支性质与第一轮相同(强制回归测试 + 安全修复),接受结论不变。全库死导出扫描(按导出名出现次数统计)在本轮仅命中 4 处,已全部回收,未发现更多可回收项。
 
 ---
 
@@ -864,3 +870,101 @@
 - 复查前端全部 `<a href>` 与裸 fetch:仅剩品牌链接与 hash 路由链接,无遗留未带认证头的 API 访问。
 - 复查后端全部 `store.put` 主键:情景路径已隔离;审计 ID 已加随机后缀;报告 ID 每任务唯一。
 - 复查全库 `Number(` 与算术入口:config、pipeline 并发、限流阈值、补丁数值、抽取数值、换算、核算基数均已加有限性防线。
+
+---
+
+# 二次复查(第二轮):独立复核新发现(D-60 至 D-66)
+
+> 阶段四收口后,由独立复核者以"按文件、逐断言"视角重跑一遍(7.4 要求"直至零新增")。
+> 本轮**证伪了前一轮"零新增"的结论**:发现 7 项前一轮遗漏或未闭环的问题。
+> 全部先登记后修复,并各自配套回归断言。第一轮结论中"零悬空条目"的表述因此被本轮修正。
+
+## D-60(第二轮二次复查新发现)
+
+- **编号**:D-60
+- **来源**:二次复查(第二轮独立复核)
+- **严重度**:P1(数据损毁 + 文档永久卡死;可由界面唯一运行入口触发)
+- **位置**:`backend/src/services/pipeline.js:74-84`(非 completed 文档的旧记录清理)与 `backend/src/services/fileService.js:133`(`TRANSITIONS.failed = ['queued']`)
+- **描述**:`processDocument` 对**所有非 completed 文档**先删除其既有 `activity_records`/`calculations`/`matches`/`review_items`,随后进入 `withStatus(...,'parsing',...)`,而该函数第一步就是 `setDocumentStatus(...,'parsing')`。转换表对 `failed` 只允许出边到 `queued`,故 `failed → parsing` 抛 `ERR_ENUM_INVALID`。后果有二:(1) **失败文档永不恢复**——全库无任何调用方会把 `failed` 重置为 `queued`(`POST /documents/:docId/status` 在 `frontend/src`、`scripts/`、`backend/test` 中零引用),该文档从此被静默排除出报告;(2) **数据损毁**——若该文档在失败前已落库过记录(如 `completed` 文档因复核重算失败转为 `failed`),重跑会先删掉这些记录、再抛错,记录不可恢复。触发条件:任一文档处于 `failed` 态时再次触发运行(界面唯一入口是 P6 情景页滑块)。违反任务书 6.3.3 明文要求"失败态可从队列态重试"。
+- **核实证据**:独立复核者实测:(a) 将某任务单文档强制置 `failed` 后重跑 → `records=0`,存储内 0 条记录;(b) 删除某 unit representation 文件使 run 2 在 `withStatus` 内抛 ENOENT → 既有 1 记录 + 1 核算被删除、文档置 `failed`;run 3 及之后 `records=0`、`calculations=0`、报告第 5 章 0 行、`total_kgco2e=0`。本人复核代码路径:`pipeline.js:76-83` 先删、`:84` 再设 `parsing`;`fileService.js` 转换表 `failed: ['queued']`。
+- **修复方案**:(1) `TRANSITIONS.failed` 增补 `'parsing'`(与既有注释"处理态可重入 parsing 以支持重跑"一致);(2) 把旧记录清理**移到重跑成功之后**执行,且只删除本次未重新产出的记录 id(记录 id 为每次随机生成 `rec_<uuid8>`,故该判据同时保证了不重复、不误删)。
+- **验证方式**:回归断言(置 failed → 重跑 → 记录数>0 且终态非 failed;重跑两次记录数不翻倍)。
+- **状态**:已修复
+
+## D-61(第二轮二次复查新发现)
+
+- **编号**:D-61
+- **来源**:二次复查(第二轮独立复核)
+- **严重度**:P3(测试断言空洞,削弱回归护栏)
+- **位置**:`backend/test/regression.test.js:305`
+- **描述**:`assert.equal(malformed.status, 429 < malformed.status ? malformed.status : malformed.status, …)` 把值与自身比较,恒真,不构成任何断言;该行本意是"畸形 Origin 头不导致服务器错误"。
+- **核实证据**:表达式两侧恒等(三目分支返回同一变量)。
+- **修复方案**:改为有意义的断言 `assert.ok(malformed.status < 500, 'malformed origin never causes a server error')`。
+- **验证方式**:A-2(该断言在畸形头请求下可实际失败)。
+- **状态**:已修复
+
+## D-62(第二轮二次复查新发现)
+
+- **编号**:D-62
+- **来源**:二次复查(第二轮独立复核)
+- **严重度**:P3(复核动作校验不齐;D-14 声明"全部动作"校验实为"三个动作")
+- **位置**:`backend/src/services/reviewQueue.js:154-161`(`closeReviewItem`)
+- **描述**:`editRecordFields`/`assignFactorManually`/`excludeRecord` 均以 `getTaskRecord` 校验"记录属于该任务",唯独 `closeReviewItem` 不校验:对未知或跨任务的 recordId 调用 `action=close` 会返回 200 并写入一条 `review_closed` 审计行(无跨任务数据改写,因内部循环过滤 `item.task_id !== taskId`)。
+- **核实证据**:代码比对(三个动作调用 `getTaskRecord`,`close` 未调用)。
+- **修复方案**:`closeReviewItem` 开头补 `await getTaskRecord(store, taskId, recordId)`。
+- **验证方式**:回归断言(跨任务 recordId 调 close 抛 `ERR_TASK_NOT_FOUND`)。
+- **状态**:已修复
+
+## D-63(第二轮二次复查新发现)
+
+- **编号**:D-63
+- **来源**:二次复查(第二轮独立复核)
+- **严重度**:P3(配置健壮性:非法值被静默截断而非回退)
+- **位置**:`backend/src/config.js:97-101`(`coerce`)
+- **描述**:`Number.parseInt`/`Number.parseFloat` 接受部分合法前缀,故 `AI_TIMEOUT_SECONDS='60abc'`→60、`BATCH_SIZE='1e3'`→1、`AI_RETRY_COUNT='2.9'`→2、`CLASSIFICATION_CONFIDENCE_THRESHOLD='0.7junk'`→0.7 被静默采用,而非按 5.6.1 的意图回退默认值。
+- **核实证据**:以非法环境变量调用 `loadConfig` 实测上述四个值。
+- **修复方案**:`coerce` 对 int/float 要求整串(去空白后)为有限数值,否则返回 `NaN` 交由既有 range 守卫回退默认值。
+- **验证方式**:回归断言(`'60abc'`/`'1e3'`/`'2.9'` 分别回退默认 60/10/2)。
+- **状态**:已修复
+
+## D-64(第二轮二次复查新发现)
+
+- **编号**:D-64
+- **来源**:二次复查(第二轮独立复核)
+- **严重度**:P3(死代码;行数预算对冲候选)
+- **位置**:`backend/src/services/factorLibrary.js:84`、`backend/src/store/index.js:97`、`backend/src/services/classification.js:46`、`frontend/src/auth.js:74-78`
+- **描述**:四处确认零引用/不可达:(1) `export const FACTOR_LIBRARY_FILE = FACTOR_FILE` 全库仅此一行;(2) `export const STORE_COLLECTIONS = COLLECTIONS` 全库仅此一行;(3) `mockClassification` 规则表 `[/blurry|blank/, null]` 的 `type` 为 null,而消费循环以 `if (re.test(n) && type)` 过滤,该条永不生效,且 `/blurry/` 已在其后单独处理;(4) `export async function currentIdToken()` 全库零调用(前端直接读 `window.__idToken`)。
+- **核实证据**:`grep -rn` 全库引用扫描(两项导出仅命中定义行本身);规则表消费条件推演;对全部 `export function/const/class` 做了一次全库出现次数统计(唯一命中数为 1 的即死导出),结果仅 `currentIdToken` 一项。
+- **修复方案**:移除上述四处死代码(不可达规则删除后行为等价,因 `blank` 本就落到默认 `other`/0.55 分支)。
+- **验证方式**:A-2/A-6(行为不回归)。
+- **状态**:已修复
+
+## D-65(第二轮二次复查新发现)
+
+- **编号**:D-65
+- **来源**:二次复查(第二轮独立复核)
+- **严重度**:P3(数值防线不对称;当前数据不可达,属纵深防御)
+- **位置**:`backend/src/services/calculation.js:58,73`
+- **描述**:`computeEmission` 对 `basis.value` 有有限性守卫(D-15),但对 `factorValue`(含 GWP 折算后的 `co2+ch4+n2o`)与乘积 `emissionKg` 未校验即落库;若因子文件被覆盖或存储行被手工改写为非数值,`NaN` 会经 `calculations` 进入 `aggregate` 与报告。
+- **核实证据**:`data/factors/emission_factors.json` 743/743 因子 `value` 均为有限数值、`gas_breakdown` 无非法类型,故当前不可达;代码路径比对确认落库前无守卫。
+- **修复方案**:在 `emissionKg` 计算后、构造 `calc` 前加 `Number.isFinite(emissionKg)` 守卫并抛出可被管线降级为复核的错误。
+- **验证方式**:回归断言(非法 factorValue → 抛错;既有核算用例不回归)。
+- **状态**:已修复
+
+## D-66(第二轮二次复查新发现)
+
+- **编号**:D-66
+- **来源**:二次复查(第二轮独立复核)
+- **严重度**:P3(嵌入响应形状校验不完整)
+- **位置**:`backend/src/ai/client.js:238-239,251`
+- **描述**:`embedTexts` 只校验 `parsed.embeddings.length === chunk.length`,不校验每个元素的 `values` 是否为非空数组;`recall.js:58` 按位置写入索引,`cosine` 对 `undefined` 会静默产出 NaN/-1 分数而非报错。
+- **核实证据**:代码路径比对;D-18 回归仅覆盖"数量不足"一种响应。
+- **修复方案**:在数量校验通过后,逐个校验 `values` 为非空数组,否则以 `ERR_MODEL_CALL_FAILED` 显式失败。
+- **验证方式**:回归断言(元素缺失/空数组 → 显式失败)。
+- **状态**:已修复
+
+## 第二轮二次复查结论
+
+- **本轮新增 7 条(D-60 至 D-66),全部已修复并配回归断言**;其中 D-60 为 P1(数据损毁 + 永久卡死),其余为 P3。
+- **对第一轮结论的修正**:第一轮"零悬空条目/零新增"的表述不成立——D-60 属于第一轮遗漏的同类问题(D-04 状态机族的"失败态重试"分支未被验证),D-61 属于第一轮自建回归测试的断言空洞。本登记册以本轮结论为准。
+- **A-5 影响**:D-64 回收 3 行;其余修复净增行数,均并入 D-02 最终账(超支账目已按 2.6.2 记录并接受)。

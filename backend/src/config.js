@@ -94,10 +94,16 @@ const RANGES = {
   AI_TIMEOUT_SECONDS: [1, 600],
 };
 
+// D-63: parseInt/parseFloat accept a numeric prefix ('60abc' -> 60, '7.5' -> 7),
+// so a malformed value was applied silently instead of falling back. The whole
+// string must be a finite number, and an int must be written as an integer;
+// anything else yields NaN and trips the range guard below.
 function coerce(value, type) {
-  if (type === 'int') return Number.parseInt(value, 10);
-  if (type === 'float') return Number.parseFloat(value);
-  return value;
+  if (type !== 'int' && type !== 'float') return value;
+  const s = String(value).trim();
+  const n = s === '' ? NaN : Number(s);
+  if (!Number.isFinite(n)) return NaN;
+  return type === 'int' && !Number.isInteger(n) ? NaN : n;
 }
 
 /**

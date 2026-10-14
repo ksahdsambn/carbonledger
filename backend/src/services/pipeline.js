@@ -72,15 +72,12 @@ export async function runPipeline({ store, storage, taskId, mockCatalog = new Ma
       return { records: recordsOut, calcs: calcsOut };
     }
     // Reprocessing replaces the document's previous records so a re-run is
-    // idempotent instead of duplicating them (D-04/D-33).
+    // idempotent instead of duplicating them (D-04/D-33). The cleanup happens
+    // only AFTER the document reprocesses successfully: deleting first
+    // destroyed the persisted records of a document whose reprocess then
+    // failed, and a failed document could never recover (D-60).
     const stale = (await store.query('activity_records', 'task_id', taskId))
       .filter((r) => (r.source_ref ?? '').startsWith(`${doc.id}#`));
-    for (const r of stale) {
-      await store.delete('activity_records', r.record_id);
-      await store.delete('calculations', `calc_${r.record_id}`);
-      await store.delete('matches', r.match_id ?? `match_${r.record_id}`);
-      await store.delete('review_items', `rev_${r.record_id}`);
-    }
     await withStatus(store, taskId, doc.id, 'parsing', async () => {
       let units = await store.query('document_units', 'document_id', doc.id);
       if (units.length === 0) {
@@ -230,6 +227,17 @@ export async function runPipeline({ store, storage, taskId, mockCatalog = new Ma
       const needsReview = recordsOut.some((r) => r.uncertainty_level === 'high' || r.processing_failed);
       await setDocumentStatus(store, taskId, doc.id, needsReview ? 'needs_review' : 'completed');
     });
+    // Record ids are regenerated on every run (rec_<uuid>), so a successfully
+    // reprocessed document leaves its previous ids behind; drop exactly those
+    // and keep the ones this run re-produced (D-60).
+    const freshIds = new Set(recordsOut.map((r) => r.record_id));
+    for (const r of stale) {
+      if (freshIds.has(r.record_id)) continue;
+      await store.delete('activity_records', r.record_id);
+      await store.delete('calculations', `calc_${r.record_id}`);
+      await store.delete('matches', r.match_id ?? `match_${r.record_id}`);
+      await store.delete('review_items', `rev_${r.record_id}`);
+    }
     return { records: recordsOut, calcs: calcsOut };
   }
 

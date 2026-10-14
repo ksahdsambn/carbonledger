@@ -56,6 +56,10 @@ export async function computeEmission({ store, record, factor, taskGwpVersion = 
   }
 
   const emissionKg = basis.value * factorValue;
+  // The basis is guarded above; the factor side (including the folded gas sum)
+  // is not, so a corrupt or hand-edited factor would persist NaN into the
+  // ledger and from there into aggregation and the report (D-65).
+  if (!Number.isFinite(emissionKg)) throw new Error(`non-finite emission value for record ${record.record_id}`);
   steps.push({
     action: 'multiplication', formula: `${basis.value} ${factor.activity_unit} x ${factorValue} ${factor.emission_unit}/${factor.activity_unit}`,
     result_kgco2e: emissionKg,

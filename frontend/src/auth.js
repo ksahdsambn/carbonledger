@@ -70,9 +70,3 @@ export async function ensureAnonymousSession() {
     return fresh.uid;
   }
 }
-
-/** Current ID token, refreshing it first when it is close to expiry. */
-export async function currentIdToken() {
-  await ensureAnonymousSession();
-  return window.__idToken ?? null;
-}
