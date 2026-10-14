@@ -360,6 +360,24 @@ test('D-66: an embedding element without vector values fails loudly', async () =
   }
 });
 
+test('D-67: a re-run that extracts nothing keeps the ledger instead of emptying it', async () => {
+  const store = new LocalFileStore(mkdtempSync(join(tmpdir(), 'reg-empty-')));
+  const storage = new LocalFileStorage(mkdtempSync(join(tmpdir(), 'reg-emptyu-')));
+  await loadFactorLibrary(store);
+  const task = await createTask(store, { entity_name: 'Empty Co', period_from: '2026-01-01', period_to: '2026-06-30', gwp_version: 'AR6' });
+  await ingestFile({ store, storage, taskId: task.task_id, filename: 'empty-rerun.pdf', buffer: await twoPagePdf() });
+  const first = await runPipeline({ store, storage, taskId: task.task_id, mockCatalog: mockCatalogFor('empty-rerun.pdf') });
+  assert.equal(first.summary.records, 2);
+  const doc = (await store.query('documents', 'task_id', task.task_id))[0];
+  assert.notEqual(doc.status, 'completed', 'precondition: the second run reprocesses this document');
+  // The second run has no mock catalog, so the mock adapter extracts nothing.
+  // That must not wipe the records the first run produced (D-67).
+  const second = await runPipeline({ store, storage, taskId: task.task_id, mockCatalog: new Map() });
+  assert.equal(second.summary.records, 2, 'existing records survive an empty re-extraction');
+  assert.equal((await store.query('activity_records', 'task_id', task.task_id)).length, 2, 'store keeps both records');
+  assert.ok(second.summary.total_kgco2e > 0, 'the ledger still totals');
+});
+
 test('D-26: a corrupt PDF is rejected, not mis-counted', async () => {
   const store = new LocalFileStore(mkdtempSync(join(tmpdir(), 'reg-cp-')));
   const storage = new LocalFileStorage(mkdtempSync(join(tmpdir(), 'reg-cpu-')));

@@ -231,12 +231,26 @@ export async function runPipeline({ store, storage, taskId, mockCatalog = new Ma
     // reprocessed document leaves its previous ids behind; drop exactly those
     // and keep the ones this run re-produced (D-60).
     const freshIds = new Set(recordsOut.map((r) => r.record_id));
-    for (const r of stale) {
-      if (freshIds.has(r.record_id)) continue;
-      await store.delete('activity_records', r.record_id);
-      await store.delete('calculations', `calc_${r.record_id}`);
-      await store.delete('matches', r.match_id ?? `match_${r.record_id}`);
-      await store.delete('review_items', `rev_${r.record_id}`);
+    if (stale.length > 0 && freshIds.size === 0) {
+      // The reprocess produced nothing while the document already had records:
+      // a caller that omitted the mock catalog, or a soft-empty extraction,
+      // would otherwise empty the ledger silently while reporting success
+      // (D-67). Keeping the previous records is the conservative choice.
+      log.warn('document_reprocess_empty', { task_id: taskId, doc: doc.id, kept_records: stale.length });
+      for (const r of stale) {
+        recordsOut.push(r);
+        if (r.excluded_from_calc) continue;
+        const calc = await store.get('calculations', `calc_${r.record_id}`);
+        if (calc) calcsOut.push(calc);
+      }
+    } else {
+      for (const r of stale) {
+        if (freshIds.has(r.record_id)) continue;
+        await store.delete('activity_records', r.record_id);
+        await store.delete('calculations', `calc_${r.record_id}`);
+        await store.delete('matches', r.match_id ?? `match_${r.record_id}`);
+        await store.delete('review_items', `rev_${r.record_id}`);
+      }
     }
     return { records: recordsOut, calcs: calcsOut };
   }

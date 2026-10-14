@@ -80,7 +80,7 @@ PDF/CSV exports. No registration required.
 ```bash
 npm install          # workspace deps
 npm run build        # frontend build + backend syntax pass
-npm test             # 47 automated checks (46 unit/e2e cases + 1 upload suite)
+npm test             # 48 automated checks (47 unit/e2e cases + 1 upload suite)
 npm run smoke        # boot /healthz / graceful shutdown
 node backend/src/server.js   # start the API (http://localhost:8080)
 cd frontend && npm run dev   # dev UI on http://localhost:5173 (proxies /api)
@@ -197,17 +197,17 @@ Supporting measurements, each with its own evidence file:
   limits enforced by the middleware before buffering, CSV formula-injection neutralization,
   finite-number guards across extraction/normalization/calculation/review, scenario
   recomputation isolated from the stored ledger, socket-address rate-limit keys, an explicit
-  CORS allowlist, document-byte redaction in AI traces, and a 16-case regression battery
-  (V-01…V-12 scenarios, plus the second-review defects D-60/D-62/D-63/D-65/D-66).
+  CORS allowlist, document-byte redaction in AI traces, and a 17-case regression battery
+  (V-01…V-12 scenarios, plus the second-review defects D-60/D-62/D-63/D-65/D-66/D-67).
 - **Report/ledger consistency** (`scripts/verify_consistency.js`,
   `progress/evidence/T-050/consistency.json`): every report row's factor and emission equals
   the recomputation from the stored ledger, across 13 consecutive tasks.
 - **Final acceptance checklist** (`scripts/verify_acceptance.js`,
   `progress/evidence/T-050/acceptance.md`): PRD 10.3 functional 8/8, compliance 5/5,
   engineering 5/5, plus keyboard access and colour-independence NFRs.
-- **Code size** (`scripts/count_lines.sh`): application code 4,530 lines; with all first-party
-  JavaScript verification and build tooling 7,673 lines; including the offline Python dataset
-  toolchain 9,468 lines (hard cap 10,000). Figure B currently **exceeds** the 7,000-line
+- **Code size** (`scripts/count_lines.sh`): application code 4,544 lines; with all first-party
+  JavaScript verification and build tooling 7,705 lines; including the offline Python dataset
+  toolchain 9,500 lines (hard cap 10,000). Figure B currently **exceeds** the 7,000-line
   NFR-504 target: the 2026-10 audit added a mandatory regression battery and security
   middleware faster than dead code could be recovered; the overage is recorded in the defect
   register (`progress/DEFECT_REGISTER_2026-10-14.md`, D-02) and figure C remains within the
