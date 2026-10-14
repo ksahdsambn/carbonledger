@@ -238,4 +238,4 @@ writeFileSync(join(ROOT, 'progress/evidence/T-046/public_faults.json'), JSON.str
 writeFileSync(join(ROOT, 'progress/evidence/T-046/error_codes.json'), JSON.stringify(registry, null, 2));
 console.log(`\nEvidence written: progress/evidence/T-046/public_faults.json`);
 console.log(`OVERALL: ${summary.overall}`);
-process.exit(allPass ? 0 : 1);
+process.exitCode = allPass ? 0 : 1; // D-68: exit after handles close (Windows libuv)

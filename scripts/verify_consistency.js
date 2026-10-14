@@ -106,4 +106,7 @@ writeFileSync(join(evidenceDir, evidenceFile), JSON.stringify({
 }, null, 2));
 
 console.log(`\nReport/ledger consistency: ${taskIds.length - failures}/${taskIds.length} tasks consistent -> ${failures === 0 ? 'PASS' : 'FAIL'}`);
-process.exit(failures === 0 ? 0 : 1);
+// D-68: process.exit() here aborted with a libuv assertion on Windows (the
+// script holds no handle besides undici's sockets), reporting PASS but exiting
+// 127. Setting exitCode lets the process close its handles and exit correctly.
+process.exitCode = failures === 0 ? 0 : 1;

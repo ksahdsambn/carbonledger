@@ -366,4 +366,4 @@ writeFileSync(join(ROOT, 'progress/evidence/T-050/acceptance.md'), md);
 console.log(`\nfunctional ${functionalPass}/8, compliance ${compliancePass}/5, engineering ${engineeringPass}/5`);
 console.log(`manual pending items: ${manual.length}`);
 console.log(`OVERALL: ${summary.overall}`);
-process.exit(overall ? 0 : 1);
+process.exitCode = overall ? 0 : 1; // D-68: exit after handles close (Windows libuv)

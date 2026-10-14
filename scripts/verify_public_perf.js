@@ -206,4 +206,4 @@ writeFileSync(join(ROOT, 'eval/results/ai_cost_per_document.json'), JSON.stringi
 
 console.log('\nEvidence written: progress/evidence/T-044/public_runs.json, progress/evidence/T-045/public_perf.json');
 console.log(`OVERALL: ${runsPass && firstScreenPass && concPass && costPass ? 'PASS' : 'FAIL'}`);
-process.exit(runsPass && firstScreenPass && concPass && costPass ? 0 : 1);
+process.exitCode = runsPass && firstScreenPass && concPass && costPass ? 0 : 1; // D-68
