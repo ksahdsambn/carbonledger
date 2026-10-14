@@ -98,11 +98,15 @@ never computed from mock runs.
 ## Deployment (Cloud Run + Firebase)
 
 1. Backend to Cloud Run. CPU must stay allocated because the pipeline continues after the
-   HTTP response returns:
+   HTTP response returns. Region is us-central1 because the Artifact Registry free tier
+   (0.5 GB) applies only to us-central1/us-east1/us-west1, and the service scales to zero
+   when idle, so the deployment idles at $0. The 1Gi limit is required: boot builds the
+   factor/vector index and OOMs at the 512Mi default.
 
    ```bash
-   gcloud run deploy carbonledger-backend --source . --region asia-southeast1 \
+   gcloud run deploy carbonledger-backend --source . --region us-central1 \
      --allow-unauthenticated --no-cpu-throttling --min-instances 0 --max-instances 3 \
+     --memory 1Gi --cpu 1 \
      --set-env-vars "GEMINI_API_KEY=<key>,STORE_KIND=firestore,STORAGE_KIND=firebase,\
    STORAGE_BUCKET_NAME=<bucket>,GCP_PROJECT_ID=<project>,AI_TIMEOUT_SECONDS=60,DEFAULT_GWP_VERSION=AR6"
    ```

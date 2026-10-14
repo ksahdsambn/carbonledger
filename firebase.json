@@ -3,9 +3,9 @@
     "public": "frontend/dist",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
-      { "source": "/api/**", "run": { "serviceId": "carbonledger-backend", "region": "asia-southeast1" } },
-      { "source": "/factors/**", "run": { "serviceId": "carbonledger-backend", "region": "asia-southeast1" } },
-      { "source": "/factors", "run": { "serviceId": "carbonledger-backend", "region": "asia-southeast1" } }
+      { "source": "/api/**", "run": { "serviceId": "carbonledger-backend", "region": "us-central1" } },
+      { "source": "/factors/**", "run": { "serviceId": "carbonledger-backend", "region": "us-central1" } },
+      { "source": "/factors", "run": { "serviceId": "carbonledger-backend", "region": "us-central1" } }
     ],
     "headers": [
       { "source": "**", "headers": [
