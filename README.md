@@ -205,9 +205,9 @@ Supporting measurements, each with its own evidence file:
 - **Final acceptance checklist** (`scripts/verify_acceptance.js`,
   `progress/evidence/T-050/acceptance.md`): PRD 10.3 functional 8/8, compliance 5/5,
   engineering 5/5, plus keyboard access and colour-independence NFRs.
-- **Code size** (`scripts/count_lines.sh`): application code 4,514 lines; with all first-party
-  JavaScript verification and build tooling 7,602 lines; including the offline Python dataset
-  toolchain 9,397 lines (hard cap 10,000). Figure B currently **exceeds** the 7,000-line
+- **Code size** (`scripts/count_lines.sh`): application code 4,513 lines; with all first-party
+  JavaScript verification and build tooling 7,606 lines; including the offline Python dataset
+  toolchain 9,401 lines (hard cap 10,000). Figure B currently **exceeds** the 7,000-line
   NFR-504 target: the 2026-10 audit added a mandatory regression battery and security
   middleware faster than dead code could be recovered; the overage is recorded in the defect
   register (`progress/DEFECT_REGISTER_2026-10-14.md`, D-02) and figure C remains within the
