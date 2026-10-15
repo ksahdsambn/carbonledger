@@ -8,7 +8,7 @@
 // D-63 (strict numeric config) and D-65/D-66 (non-finite and embedding-shape).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, writeFileSync, mkdtempSync, rmSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, mkdtempSync, rmSync, readdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -29,6 +29,8 @@ import { levelDistribution } from '../src/services/uncertainty.js';
 import { activityDetailCsv } from '../src/services/exportService.js';
 import { loadConfig } from '../src/config.js';
 import { embedTexts } from '../src/ai/client.js';
+import { trackRun } from '../src/services/taskRuns.js';
+import { invalidateFactorCache } from '../src/services/factorLibrary.js';
 
 process.env.AI_MODE = 'mock';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '../..');
@@ -167,9 +169,13 @@ test('D-07/V-03: traversal filenames are sanitized and storage stays inside its 
   await loadFactorLibrary(store);
   const task = await createTask(store, { entity_name: 'Traversal Co', period_from: '2026-01-01', period_to: '2026-06-30', gwp_version: 'AR6' });
   const buf = await twoPagePdf();
+  // Snapshot BEFORE any ingest (the root is pre-created so its ancestor
+  // directories are in the baseline): every malicious payload below —
+  // including the first one — is inside the detection window (D-109).
+  mkdirSync(storage.rootDir, { recursive: true });
+  const before = new Set((function walk(d, acc) { for (const e of readdirSync(d, { withFileTypes: true })) { acc.add(join(d, e.name)); if (e.isDirectory()) walk(join(d, e.name), acc); } return acc; }(sandbox, new Set())));
   const r = await ingestFile({ store, storage, taskId: task.task_id, filename: '../../escape plan.pdf', buffer: buf });
   assert.ok(r.ok, `ingest should succeed with sanitized name: ${r.code}`);
-  const before = new Set((function walk(d, acc) { for (const e of readdirSync(d, { withFileTypes: true })) { acc.add(join(d, e.name)); if (e.isDirectory()) walk(join(d, e.name), acc); } return acc; }(sandbox, new Set())));
   await ingestFile({ store, storage, taskId: task.task_id, filename: '..\\..\\b.pdf', buffer: buf });
   await ingestFile({ store, storage, taskId: task.task_id, filename: '/abs/b.png', buffer: buf.subarray(0, 8) });
   const after = (function walk(d, acc) { for (const e of readdirSync(d, { withFileTypes: true })) { acc.add(join(d, e.name)); if (e.isDirectory()) walk(join(d, e.name), acc); } return acc; }(sandbox, new Set()));
@@ -209,6 +215,14 @@ test('D-14/D-15/V-07: non-finite and cross-target writes are rejected on every p
   await assert.rejects(() => editRecordFields({ store, taskId: t2.task_id, recordId: 'rec_own', patch: { quantity: 9 } }), (e) => e.code === 'ERR_TASK_NOT_FOUND', 'cross-task edit rejected');
   await assert.rejects(() => excludeRecord({ store, taskId: t2.task_id, recordId: 'rec_own', reason: 'not in this task at all' }), (e) => e.code === 'ERR_TASK_NOT_FOUND', 'cross-task exclusion rejected');
   await assert.rejects(() => assignFactorManually({ store, taskId: t2.task_id, recordId: 'rec_own', factorId: 'EF-D26-UKELECTRICITY-001' }), (e) => e.code === 'ERR_TASK_NOT_FOUND', 'cross-task assignment rejected');
+  // D-104 guard: a '_' bookkeeping doc (or any non-factor row) can never be
+  // assigned as a factor, even within the right task.
+  await assert.rejects(() => assignFactorManually({ store, taskId: t1.task_id, recordId: 'rec_own', factorId: '_library_meta' }), (e) => e.code === 'ERR_TASK_NOT_FOUND', 'meta doc is not assignable as a factor');
+  // D-111: a poisoned match (pre-guard store) must not 500 the dashboard —
+  // the record is skipped from aggregation instead.
+  await store.put('matches', 'match_rec_own', { task_id: t1.task_id, activity_record_id: 'rec_own', selected_factor_id: '_library_meta' });
+  const dash = await recalculateTask({ store, taskId: t1.task_id });
+  assert.equal(dash.calcs.length, 0, 'poisoned match skipped, no throw');
   await assert.rejects(() => closeReviewItem({ store, taskId: t2.task_id, recordId: 'rec_own', note: 'nope' }), (e) => e.code === 'ERR_TASK_NOT_FOUND', 'cross-task close rejected (D-62)');
 });
 
@@ -401,8 +415,7 @@ test('D-26: a corrupt PDF is rejected, not mis-counted', async () => {
   assert.equal(r.code, 'ERR_FILE_CORRUPT');
 });
 
-test('D-104: a library refresh deletes removed factors, updates changed values and hides its meta doc', async () => {
-  const dir = mkdtempSync(join(tmpdir(), 'reg-flfp-'));
+test('D-104: a library refresh deletes removed factors, updates changed values and hides its meta doc', async () => {  const dir = mkdtempSync(join(tmpdir(), 'reg-flfp-'));
   const row = (id, value) => ({ factor_id: id, name: `test ${id}`, value, activity_unit: 'kg', emission_unit: 'kgCO2e', activity_type: 'test', gwp_version: 'AR6', data_year: 2026 });
   const writeFile = (name, rows) => writeFileSync(join(dir, name), JSON.stringify({ meta: { total_factors: rows.length }, factors: rows }));
   const fileA = join(dir, 'a.json'); const fileB = join(dir, 'b.json');
@@ -426,6 +439,42 @@ test('D-104: a library refresh deletes removed factors, updates changed values a
   assert.ok(!(await listFactors(store)).some((f) => String(f.id).startsWith('_')), 'meta doc hidden from the factor list');
   assert.equal((await store.get('emission_factors', '_library_meta')).fingerprint.length, 64);
   assert.equal((await loadFactorLibrary(store, join(dir, 'c.json'))).skipped, true, 'unchanged content skips the reload');
+});
+
+test('D-108: a list read that crosses an invalidation returns its snapshot but never caches it', async () => {
+  let rows = [{ factor_id: 'F1', id: 'F1', value: 1 }];
+  const slow = {
+    // Captures the rows AT CALL TIME, then resolves slowly — a read that
+    // started before a refresh and lands after it.
+    async list(name) { const snapshot = name === 'emission_factors' ? rows : []; await new Promise((r) => setTimeout(r, 30)); return snapshot; },
+  };
+  const inFlightRead = listFactors(slow); // starts reading the old rows
+  invalidateFactorCache(slow); // a refresh completes mid-read
+  rows = [{ factor_id: 'F2', id: 'F2', value: 2 }];
+  const first = await inFlightRead;
+  assert.equal(first.map((f) => f.factor_id).join(), 'F1', 'the in-flight read returns its own snapshot');
+  const second = await listFactors(slow);
+  assert.equal(second.map((f) => f.factor_id).join(), 'F2', 'the stale snapshot is not cached across the invalidation');
+});
+
+test('D-107: a failed background run surfaces through the report response, a success clears it', async () => {
+  const verifyToken = async (t) => { if (t === 'alice-token') return 'uid-alice'; throw new Error('bad token'); };
+  const { server, base } = await bootApp(verifyToken);
+  try {
+    const alice = { authorization: 'Bearer alice-token', 'content-type': 'application/json' };
+    const task = (await json(base, '/api/tasks', { method: 'POST', headers: alice, body: JSON.stringify({ entity_name: 'RunFail Co', period_from: '2026-01-01', period_to: '2026-06-30', gwp_version: 'AR6' }) })).body;
+    // Produce a stored report first with a normal (empty) run.
+    await json(base, `/api/tasks/${task.task_id}/run`, { method: 'POST', headers: alice, body: '{}' });
+    const first = await json(base, `/api/tasks/${task.task_id}/report`, { headers: alice });
+    assert.equal(first.status, 200, 'report readable after a successful run');
+    assert.equal(first.body.last_run_error, null, 'successful run leaves no error');
+    // Simulate the next background run failing after its 202 handshake.
+    trackRun(task.task_id, Promise.reject(new Error('model endpoint exploded'))).catch(() => {});
+    await new Promise((r) => setTimeout(r, 20)); // let the rejection settle
+    const second = await json(base, `/api/tasks/${task.task_id}/report`, { headers: alice });
+    assert.equal(second.status, 200, 'stale report still served');
+    assert.equal(second.body.last_run_error, 'model endpoint exploded', 'failure reason surfaces with the report');
+  } finally { server.close(); }
 });
 
 process.on('exit', () => { rmSync(STORE_DIR, { recursive: true, force: true }); rmSync(UP_DIR, { recursive: true, force: true }); });

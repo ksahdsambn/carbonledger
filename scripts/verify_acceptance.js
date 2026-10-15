@@ -270,7 +270,16 @@ try {
 check('C3', 'engineering', 'No secrets are present in the repository', secretOk, secretOut.trim().split('\n').slice(-1)[0]);
 
 // C4 self-developed code size within target and hard cap
-const lineOut = execFileSync('bash', ['scripts/count_lines.sh'], { cwd: ROOT, encoding: 'utf8' });
+// count_lines.sh exits 1 while the budget is exceeded (correct judgement);
+// execFileSync would throw on that and kill this script before the waiver
+// below can be applied, so capture stdout regardless of the exit code (D-110).
+let lineOut = '';
+try {
+  lineOut = execFileSync('bash', ['scripts/count_lines.sh'], { cwd: ROOT, encoding: 'utf8' });
+} catch (e) {
+  lineOut = String(e.stdout ?? '');
+  if (!/figure B/.test(lineOut)) throw e; // a real failure (no output) is not a budget verdict
+}
 const figureB = Number(/B\. A \+ scripts\/\*\*\/\*\.js verification and build tooling:\s+(\d+)/.exec(lineOut)?.[1]);
 const figureC = Number(/C\. B \+ offline Python dataset toolchain:\s+(\d+)/.exec(lineOut)?.[1]);
 // The 2026-10 frontend enrichment (T-052) was applied with the NFR-504 budget

@@ -192,14 +192,22 @@ export function P6Scenarios({ taskId }) {
                 await api.runPipeline(taskId, ratio);
                 const r = await api.report(taskId);
                 setRep(r.report);
+                // A background run failure arrives as 200 + last_run_error:
+                // the stored report is the previous run's, so say so (D-107).
+                if (r.last_run_error) setRunErr(`The recompute failed on the server: ${r.last_run_error}. The numbers below are from the previous run.`);
               } catch (e) {
-                setRunErr(e.message ?? String(e)); // keep the old report, show why the rerun failed
+                // A report-fetch timeout means the run is still going (real-AI
+                // runs outlast the 60 s fetch budget) — not a failed recompute.
+                const timedOut = e?.name === 'TimeoutError' || /timed out|aborted/i.test(String(e?.message ?? ''));
+                setRunErr(timedOut
+                  ? 'The recompute is still running; the numbers below are from the previous run until it finishes.'
+                  : `Recompute at the selected ratio failed: ${e.message ?? String(e)}. The numbers below are from the previous run.`);
               }
               setBusy(false);
             }}
             aria-label="Replacement ratio percent" /></label>
         <p className="hint">{busy ? 'Recomputing scenarios at the selected ratio…' : 'Adjust the slider and release to recompute at the selected ratio.'}</p>
-        {runErr && <p className="error" role="alert">Recompute at the selected ratio failed: {runErr}. The numbers below are from the previous run.</p>}
+        {runErr && <p className="error" role="alert">{runErr}</p>}
       </section>
       <div className="scenario-grid">
         {scenarios.map((s, i) => (

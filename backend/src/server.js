@@ -15,7 +15,7 @@ import { ingestFile, resolveDuplicate, setDocumentStatus, getDocumentFile } from
 import { runPipeline } from './services/pipeline.js';
 import { listReviewQueue, editRecordFields, assignFactorManually, excludeRecord, closeReviewItem, recalculateTask } from './services/reviewQueue.js';
 import { scanReportCitations, generateReportForTask } from './services/reportService.js';
-import { trackRun, waitForRun } from './services/taskRuns.js';
+import { trackRun, waitForRun, lastRunError } from './services/taskRuns.js';
 import { activityDetailCsv, categorySummaryCsv, reportPdf } from './services/exportService.js';
 import { buildMockCatalogFromDataset } from './services/mockCatalog.js';
 import { readFileSync } from 'node:fs';
@@ -319,6 +319,8 @@ export async function buildApp(options = {}) {
   app.get('/api/tasks/:taskId/report', requireTaskOwner, async (req, res) => {
     // Wait for a pipeline run that is about to write this task's report, so a
     // poll can never assemble a second report from a partially written ledger.
+    // The most recent FAILED run is surfaced with the response (D-107): the
+    // client sees why the numbers are stale instead of a silent old report.
     const running = waitForRun(req.params.taskId);
     if (running) await running.catch(() => {});
     let report = await latestReport(req.params.taskId);
@@ -330,7 +332,7 @@ export async function buildApp(options = {}) {
       log.info('report_lazy_generated', { task_id: req.params.taskId });
     }
     const citations = await scanReportCitations(store, report);
-    res.json({ report, citations });
+    res.json({ report, citations, last_run_error: lastRunError(req.params.taskId) });
   });
 
   app.get('/api/tasks/:taskId/report/export', requireTaskOwner, async (req, res) => {

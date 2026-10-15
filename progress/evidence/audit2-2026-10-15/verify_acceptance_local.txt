@@ -1,0 +1,46 @@
+--- creating the reference demo task (20 documents) ---
+demo task task_96e9878c: total 306.893 t CO2e, citations 100%/0 invalid
+[PASS] A1 All five formats (PDF, JPG, PNG, XLSX, CSV) parse successfully
+         uploaded 5 files, accepted 5: GD-01_invoice_metal_scan.pdf, GD-05_utility_gas_photo.jpg, GD-07_packing_cartons.png, GD-02_po_polymer.xlsx, GD-08_invoice_steel.csv
+[PASS] A2 One-click load of 20 documents produces a full report within 3 minutes
+         T-044 evidence: 10/10 timed runs passed, P90 = 61.3s (target <= 180s)
+[PASS] A3 Every citation anchor resolves to its original file (coverage 100%, 0 invalid)
+         coverage 100%, invalid 0; sampled 12 record anchors and opened each source document (12 downloads, e.g. {"anchor":"rec_b1747e02","locator":"doc_7e0eaed5#page=1","document":"D-01_fleet_diesel_invoice.pdf"})
+[PASS] A4 High-uncertainty records are queued for review automatically
+         review queue has 18 open item(s); high-uncertainty records in ledger: 18, all present in queue: true
+[PASS] A5 A review edit recalculates and refreshes the report
+         record rec_86f7f20d: quantity 12 -> 24; total 306892.913 -> 308284.913 kgCO2e; stored report total refreshed 306892.913 -> 308284.913 t
+[PASS] A6 All three scenarios are computed with absolute and percentage reductions
+         chapter 7 rows: Transport mode shift = 0.225 t (0.07%) | Supplier swap = 58.887 t (19.19%) | Material substitution = 1.61 t (0.52%)
+[PASS] A7 PDF and CSV exports succeed with no encoding problems
+         PDF 38824 bytes, 38 pages (>= 6); CSV detail 20 rows, category 15 rows, both decode as UTF-8 with no replacement characters
+[PASS] A8 Task state survives a page refresh
+         a fresh client (no cookies) re-read the task: 20 documents and 20 records persisted server-side; the SPA restores the active task from localStorage on load and keeps the anonymous session across reloads
+[FAIL] B1 Deployed on Cloud Run + Firebase and the public URL is reachable
+         firebase.json declares the Cloud Run rewrites (gcloud unavailable in this shell); public URL http://127.0.0.1:8080 -> HTTP 404; hosting rewrites /api/** and /factors/** to the Cloud Run service
+[PASS] B2 All generative capability comes from Gemini models and recall uses the Google official embedding model, with no third-party model service
+         model endpoints referenced in first-party code: generativelanguage.googleapis.com, identitytoolkit.googleapis.com, securetoken.googleapis.com; non-Google model endpoints: none; configured models: gemini-3.5-flash-lite, gemini-3.5-flash-lite, gemini-3.5-flash-lite, gemini-embedding-001, gemini-3.5-flash-lite, gemini-embedding-001, gemini-3.5-flash-lite
+[FAIL] B3 The public URL has no login barrier: anonymous sign-in completes automatically with no credentials
+         anonymous sign-in without any credential returned uid T534WpnI…; a task created with that ID token is owned by the same uid (false); the SPA calls ensureAnonymousSession() on load and renders no credential form
+[PASS] B4 All UI copy, report body, README and video subtitles are English
+         checked 11 user-visible artifacts plus the generated report: no CJK characters; the model-output validator rejects non-English rationales. (The only non-ASCII marker left in the normalization tables is the Japanese yen sign family for currency identification, not output copy.)
+[PASS] B5 The track label matches in all three places (deck cover, README top, video end)
+         README top: "Sustainability & Social Impact"; deck cover: "Sustainability & Social Impact"; video script credit: "Sustainability & Social Impact"
+[PASS] C1 The evaluation tool runs from the command line and emits a complete report
+         node eval/run.js -> single table with 11 metric rows, summary row passed=11 failed=0, verdict PASS; machine-readable + markdown written to eval/results/run-online/
+[PASS] C2 Every evaluation metric meets its PRD 10.1 target and the invalid-reference count is 0
+         verdict PASS; failed metrics: none; invalid references: 0
+[PASS] C3 No secrets are present in the repository
+         SECRET SCAN: PASSED (0 hits)
+[PASS] C4 Self-developed code is within the 7,000-line target and never touches the 10,000-line hard cap (NFR-504 waived for the T-052 frontend enrichment, recorded in progress/execution_log.md)
+         application + JS tooling: 9146 lines; including the offline Python dataset toolchain: 10948 lines. NFR-504 waived by maintainer decision for the T-052 frontend enrichment — deviation recorded in progress/execution_log.md. Method and full breakdown in scripts/count_lines.sh
+[PASS] C5 The README explains the architecture, deployment steps, environment variables and evaluation results
+         all required sections present (7); the environment-variable table documents every one of the 12 central configuration entries (missing: none)
+[PASS] N1 NFR-403 — the main flow is completable by keyboard alone
+         task form uses native controls with labels and submit; the drop zone is focusable (tabIndex=0) and opens the file picker on Enter; record rows are focusable and expand on Enter; the primary navigation is labelled and anchor-based
+[PASS] N2 NFR-404 — colour is never the only carrier of information
+         the shared Status and Level badges render an outline icon (aria-hidden, so it is decoration) next to the English text label: 2 icon lookups, 2 label lookups, 8 decorative icons marked aria-hidden
+
+functional 8/8, compliance 3/5, engineering 5/5
+manual pending items: 7
+OVERALL: FAIL

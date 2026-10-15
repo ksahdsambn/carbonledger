@@ -23,9 +23,16 @@ const FACTOR_FILE = process.env.FACTOR_FILE
 // every record dominated end-to-end latency on the managed store (T-044).
 // Keyed by store so several stores in one process (tests) stay independent.
 const cache = new WeakMap();
+// Bumped on every invalidation (D-108): a listFactors read that started
+// before a refresh and resolves after its final invalidation must not write
+// its stale snapshot back into the cache.
+const generation = new WeakMap();
 
 export function invalidateFactorCache(store) {
-  if (store) cache.delete(store);
+  if (store) {
+    cache.delete(store);
+    generation.set(store, (generation.get(store) ?? 0) + 1);
+  }
 }
 
 // Collection-internal bookkeeping document holding the loaded library's
@@ -36,9 +43,10 @@ const META_ID = '_library_meta';
 export async function listFactors(store) {
   let factors = cache.get(store);
   if (!factors) {
+    const g = generation.get(store) ?? 0;
     factors = (await store.list('emission_factors'))
       .filter((f) => typeof f.id !== 'string' || !f.id.startsWith('_'));
-    cache.set(store, factors);
+    if ((generation.get(store) ?? 0) === g) cache.set(store, factors);
   }
   return factors;
 }
@@ -82,6 +90,9 @@ export async function loadFactorLibrary(store, file = FACTOR_FILE) {
 }
 
 export async function getFactorById(store, factorId) {
+  // '_' ids are collection bookkeeping (the D-104 fingerprint doc), never
+  // factors — a lookup must not hand them out as selectable factors.
+  if (typeof factorId === 'string' && factorId.startsWith('_')) return null;
   return store.get('emission_factors', factorId);
 }
 

@@ -122,8 +122,15 @@ export async function editRecordFields({ store, taskId, recordId, patch, operato
 
 /** FR-1103: manual factor assignment outranks the automatic match. */
 export async function assignFactorManually({ store, taskId, recordId, factorId, operator = 'reviewer' }) {
+  // The caller controls this id: a bookkeeping doc (D-104 '_' prefix) or any
+  // non-factor row must never be written into the ledger as a factor.
+  if (typeof factorId !== 'string' || factorId.startsWith('_')) {
+    throw new AppError('ERR_TASK_NOT_FOUND', { factor_id: factorId });
+  }
   const factor = await store.get('emission_factors', factorId);
-  if (!factor) throw new AppError('ERR_TASK_NOT_FOUND', { factor_id: factorId });
+  if (!factor || typeof factor.value !== 'number' || !factor.activity_unit) {
+    throw new AppError('ERR_TASK_NOT_FOUND', { factor_id: factorId });
+  }
   const record = await getTaskRecord(store, taskId, recordId);
   const matchId = record.match_id ?? `match_${recordId}`;
   await store.put('matches', matchId, {
@@ -171,7 +178,9 @@ export async function recalculateTask({ store, taskId }) {
     const match = await store.get('matches', r.match_id ?? `match_${r.record_id}`);
     if (!match) continue;
     const factor = await store.get('emission_factors', match.selected_factor_id);
-    if (!factor || r.quantity == null) continue;
+    // Shape guard (D-111): a stale/poisoned match pointing at a non-factor row
+    // must skip the record, not 500 the whole dashboard.
+    if (!factor || typeof factor.value !== 'number' || !factor.activity_unit || r.quantity == null) continue;
     calcs.push(await computeEmission({ store, record: r, factor, taskGwpVersion: task?.gwp_version ?? 'AR6' }));
   }
   const calcsWithMeta = calcs.map((c) => ({ calc: c, meta: records.find((r) => r.record_id === c.activity_record_id) ?? {} }));

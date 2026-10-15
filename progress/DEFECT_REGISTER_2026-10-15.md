@@ -168,3 +168,78 @@
 - 对四个代码修复的反向审查与同类横向扫描（详见验收记录 7.4）：零新增、零悬空。
 - R-01 ~ R-33 全部疑点逐条核实并给出最终处置（见上表）：32 条修复完好/不成立结论维持，
   R-25 残余与 R-30/R-33 既定保留口径不变，其中本轮新增的 D-103 即 R-25 的残余修复。
+
+---
+
+## 合并前独立复审（code-reviewer，2026-10-15 第三轮）
+
+> 交付收口后、合并主分支前的独立复审，对本轮全部代码改动（含未提交守卫）复查，
+> 发现以下问题并全部按闭环处理（编号续 D-107 起）。
+
+## D-107
+
+- **来源**：合并前复审（code-reviewer 发现 #1/#3）
+- **严重度**：P2（D-103 修复对其主要失败形态无效）
+- **位置**：`backend/src/server.js`（GET /report 吞运行错误）、`frontend/src/pages/analysis.jsx`（P6）
+- **描述**：`POST /run` 立即返回 202，后台流水线失败被 `launchRun` 记日志吞掉；`GET /report`
+  对在飞运行的 rejection 执行 `running.catch(() => {})` 后返回**旧报告**且 HTTP 200。真实
+  AI 模式下，P6 滑块重算的后台失败两个 await 全部成功 → 不进 catch → 仍是静默旧值
+  （D-103 已修的只是"网络层失败"一种形态）。另：报告请求 60s 超时会把"仍在重算"误报为
+  "重算失败"。
+- **修复方案**：GET /report 捕获在飞运行错误并随响应返回 `last_run_error`；P6 重算后读取
+  该字段并显示；catch 区分超时（提示"仍在重算"）与真失败。
+- **验证方式**：本地 mock 服务实测（人为制造后台失败：上传损坏存储态触发 run 失败）+
+  `npm test` 不回归 + V-08/V-10 证据链复核。
+- **状态**：已修复（2026-10-15，taskRuns 增加 lastErrors（成功清除、上限1000）；GET /report 响应附 last_run_error；P6 显示该错误并区分"仍在重算"与真失败。回归用例 D-107（成功运行 null→失败运行错误随报告返回）通过；套件 51/51）
+
+## D-108
+
+- **来源**：合并前复审（code-reviewer 发现 #2）
+- **严重度**：P2（仅生产 Firestore 形态可触发）
+- **位置**：`backend/src/services/factorLibrary.js`（listFactors 检查后置缓存）
+- **描述**：`listFactors` 是 check-then-set 缓存：在刷新流程最后一次失效之后才 resolve 的
+  并发读，会把**刷新中途快照**写回缓存且再无人失效——实例级库列表保留幽灵行/旧值/
+  `embedding:null`（语义通道退化为 sim=-1）。本地 LocalFileStore 微任务即完成，实际仅
+  Firestore 网络延迟可触发；但 D-104 的修复语义在生产上会被此竞态绕过。
+- **修复方案**：代次计数（generation）：每次失效 +1；`listFactors` 仅当代次未跨失效时
+  写缓存。
+- **验证方式**：新增/扩展回归断言（失效后并发读不缓存旧快照）；`npm test` 不回归。
+- **状态**：已修复（2026-10-15，代次计数：失效 +1，listFactors 跨失效的读不写缓存。回归用例 D-108 通过；套件 51/51）
+
+## D-109
+
+- **来源**：合并前复审（code-reviewer 发现 #4）
+- **严重度**：P3（测试检出窗口缺陷）
+- **位置**：`backend/test/regression.test.js`（D-07/V-03 用例）
+- **描述**：`before` 快照在**第一个**恶意上传（`../../escape plan.pdf`）之后才拍，该载荷
+  的逃逸（若 safeFilename 回归）已在基线集合中，断言放行——第一载荷不在检出窗口内。
+- **修复方案**：预创建存储根目录后立即拍 before 快照，三个恶意上传全部纳入差分窗口
+  （存储根为沙箱三层之下，逃逸仍落在沙箱内且根外，可检出）。
+- **验证方式**：`npm test`（用例通过）+ 人为去掉 safeFilename 的临时验证（可选）。
+- **状态**：已修复（2026-10-15，预创建存储根后先拍快照，三个恶意载荷全部进入检出窗口；用例通过）
+
+## D-110
+
+- **来源**：合并前复审（code-reviewer 发现 #6，既有缺陷、本轮暴露）
+- **严重度**：P3（验收链路正确性）
+- **位置**：`scripts/verify_acceptance.js:273`（C4 execFileSync 无 try/catch）
+- **描述**：`count_lines.sh` 以退出码 1 结束（预算 FAIL），`execFileSync` 对非零退出抛异常
+  → 验收脚本在 C4 崩溃，其自带的豁免识别逻辑无法执行。T-052 预算豁免后（B>7,000）该
+  脚本在本仓库必然崩溃；第一轮引用的 C4 豁免证据产于预算未超限时代。
+- **修复方案**：C4 捕获非零退出并读取 stdout 判定（判定条件不变：达标或豁免标记二选一）。
+- **验证方式**：`PUBLIC_BASE=<本地服务> node scripts/verify_acceptance.js` 全量跑通且 C4
+  正常给出豁免结论。
+- **状态**：已修复（2026-10-15，C4 捕获非零退出读取 stdout，无输出时仍抛出。本地全量复跑 verify_acceptance：C4 以豁免结论 PASS，脚本完整跑到 OVERALL（仅 B1/B3 两个公网部署检查因本地 BASE 不可达而 FAIL，属预期；其余 functional 8/8 + compliance 3/5 + engineering 5/5，B4/N1/N2 全过）。输出归档 verify_acceptance_local.txt）
+
+## D-111
+
+- **来源**：合并前复审（code-reviewer 发现 #5b，纵深防御）
+- **严重度**：P3（当前存储无污染行，属潜在路径）
+- **位置**：`backend/src/services/reviewQueue.js`（recalculateTask）
+- **描述**：守卫修复之前被污染的 match 行（`selected_factor_id` 指向非因子文档）会使
+  `recalculateTask` 在 `computeEmission` 抛错 → dashboard/复核接口 500 且不可自愈。当前
+  `data/.local-store/matches.json` 60 行核查零可疑，属潜在路径。
+- **修复方案**：recalculateTask 对 factor 形状（数值 value + activity_unit）不合格时跳过
+  该记录（不入聚合），接口不再 500。
+- **验证方式**：回归断言（预置污染 match → dashboard 200、该记录无核算）。
+- **状态**：已修复（2026-10-15，recalculateTask 对非因子行（无数值 value 或无 activity_unit）跳过。回归断言（污染 match → 不抛错、calcs=0）通过；套件 51/51）

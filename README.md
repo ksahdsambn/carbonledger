@@ -85,7 +85,7 @@ PDF/CSV exports. No registration required.
 ```bash
 npm install          # workspace deps
 npm run build        # frontend build + backend syntax pass
-npm test             # 49 automated checks (48 unit/e2e cases + 1 upload suite)
+npm test             # 51 automated checks (50 unit/e2e cases + 1 upload suite)
 npm run smoke        # boot /healthz / graceful shutdown
 node backend/src/server.js   # start the API (http://localhost:8080)
 cd frontend && npm run dev   # dev UI on http://localhost:5173 (proxies /api)
@@ -214,9 +214,9 @@ Supporting measurements, each with its own evidence file:
 - **Final acceptance checklist** (`scripts/verify_acceptance.js`,
   `progress/evidence/T-050/acceptance.md`): PRD 10.3 functional 8/8, compliance 5/5,
   engineering 5/5, plus keyboard access and colour-independence NFRs.
-- **Code size** (`scripts/count_lines.sh`): application code 5,828 lines; with all
-  first-party JavaScript verification and build tooling 9,049 lines; including the offline
-  Python dataset toolchain 10,851 lines. The 2026-10 frontend enrichment (factor library
+- **Code size** (`scripts/count_lines.sh`): application code 5,870 lines; with all
+  first-party JavaScript verification and build tooling 9,149 lines; including the offline
+  Python dataset toolchain 10,951 lines. The 2026-10 frontend enrichment (factor library
   browser, task history, SVG charts, citation anchors, comparison views; `frontend/src`
   665 → 1,807 lines) was applied after final acceptance with the NFR-504 budget explicitly
   waived by the maintainer, so figures B and C now exceed the 7,000 target and figure C
