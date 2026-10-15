@@ -1,0 +1,25 @@
+{
+ "forged_xff_sequence": [
+  200,
+  200,
+  200
+ ],
+ "fourth_request": {
+  "status": 429,
+  "code": "ERR_RATE_LIMITED"
+ },
+ "forged_header_no_escape": true,
+ "healthz_exempt": {
+  "status": 200,
+  "body": {
+   "status": "ok"
+  }
+ },
+ "evil_origin_acao": null,
+ "local_origin_acao": "http://localhost:5173",
+ "malformed_origin": {
+  "status": 429,
+  "acao": null
+ },
+ "pass": true
+}

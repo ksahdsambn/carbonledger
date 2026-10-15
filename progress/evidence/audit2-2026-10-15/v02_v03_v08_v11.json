@@ -1,0 +1,459 @@
+{
+ "V-02": {
+  "matrix": [
+   {
+    "route": "GET /api/tasks/:id",
+    "who": "anon",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "GET /api/tasks/:id",
+    "who": "wrong-token",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "GET /api/tasks/:id",
+    "who": "owner",
+    "status": 200,
+    "code": null
+   },
+   {
+    "route": "GET /api/tasks/:id/documents",
+    "who": "anon",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "GET /api/tasks/:id/documents",
+    "who": "wrong-token",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "GET /api/tasks/:id/documents",
+    "who": "owner",
+    "status": 200,
+    "code": null
+   },
+   {
+    "route": "GET /api/tasks/:id/dashboard",
+    "who": "anon",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "GET /api/tasks/:id/dashboard",
+    "who": "wrong-token",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "GET /api/tasks/:id/dashboard",
+    "who": "owner",
+    "status": 200,
+    "code": null
+   },
+   {
+    "route": "GET /api/tasks/:id/report",
+    "who": "anon",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "GET /api/tasks/:id/report",
+    "who": "wrong-token",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "GET /api/tasks/:id/report",
+    "who": "owner",
+    "status": 404,
+    "code": "ERR_TASK_NOT_FOUND"
+   },
+   {
+    "route": "GET /api/tasks/:id/report/export",
+    "who": "anon",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "GET /api/tasks/:id/report/export",
+    "who": "wrong-token",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "GET /api/tasks/:id/report/export",
+    "who": "owner",
+    "status": 404,
+    "code": "ERR_TASK_NOT_FOUND"
+   },
+   {
+    "route": "GET /api/tasks/:id/review",
+    "who": "anon",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "GET /api/tasks/:id/review",
+    "who": "wrong-token",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "GET /api/tasks/:id/review",
+    "who": "owner",
+    "status": 200,
+    "code": null
+   },
+   {
+    "route": "GET /api/tasks/:id/traces",
+    "who": "anon",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "GET /api/tasks/:id/traces",
+    "who": "wrong-token",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "GET /api/tasks/:id/traces",
+    "who": "owner",
+    "status": 200,
+    "code": null
+   },
+   {
+    "route": "POST /api/tasks/:id/run",
+    "who": "anon",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "POST /api/tasks/:id/run",
+    "who": "wrong-token",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "POST /api/tasks/:id/run",
+    "who": "owner",
+    "status": 202,
+    "code": null
+   },
+   {
+    "route": "POST /api/tasks/:id/documents/x/duplicate",
+    "who": "anon",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "POST /api/tasks/:id/documents/x/duplicate",
+    "who": "wrong-token",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "POST /api/tasks/:id/documents/x/duplicate",
+    "who": "owner",
+    "status": 404,
+    "code": "ERR_TASK_NOT_FOUND"
+   },
+   {
+    "route": "POST /api/tasks/:id/documents/x/status",
+    "who": "anon",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "POST /api/tasks/:id/documents/x/status",
+    "who": "wrong-token",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "POST /api/tasks/:id/documents/x/status",
+    "who": "owner",
+    "status": 404,
+    "code": "ERR_TASK_NOT_FOUND"
+   },
+   {
+    "route": "GET /api/tasks/:id/documents/x/file",
+    "who": "anon",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "GET /api/tasks/:id/documents/x/file",
+    "who": "wrong-token",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "GET /api/tasks/:id/documents/x/file",
+    "who": "owner",
+    "status": 404,
+    "code": "ERR_TASK_NOT_FOUND"
+   },
+   {
+    "route": "GET /api/tasks/:id/documents/x/units",
+    "who": "anon",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "GET /api/tasks/:id/documents/x/units",
+    "who": "wrong-token",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "GET /api/tasks/:id/documents/x/units",
+    "who": "owner",
+    "status": 404,
+    "code": "ERR_TASK_NOT_FOUND"
+   },
+   {
+    "route": "POST /api/tasks/:id/review/x",
+    "who": "anon",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "POST /api/tasks/:id/review/x",
+    "who": "wrong-token",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "POST /api/tasks/:id/review/x",
+    "who": "owner",
+    "status": 422,
+    "code": "ERR_ENUM_INVALID"
+   },
+   {
+    "route": "GET /api/tasks/:id/records/x/candidates",
+    "who": "anon",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "GET /api/tasks/:id/records/x/candidates",
+    "who": "wrong-token",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "GET /api/tasks/:id/records/x/candidates",
+    "who": "owner",
+    "status": 404,
+    "code": "ERR_TASK_NOT_FOUND"
+   },
+   {
+    "route": "GET /api/tasks/:id/records/x/audit",
+    "who": "anon",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "GET /api/tasks/:id/records/x/audit",
+    "who": "wrong-token",
+    "status": 403,
+    "code": "ERR_FORBIDDEN"
+   },
+   {
+    "route": "GET /api/tasks/:id/records/x/audit",
+    "who": "owner",
+    "status": 404,
+    "code": "ERR_TASK_NOT_FOUND"
+   }
+  ],
+  "openRows": [
+   {
+    "who": "anon",
+    "path": "/api/tasks/:id",
+    "status": 200
+   },
+   {
+    "who": "anon",
+    "path": "/api/tasks/:id/documents",
+    "status": 200
+   },
+   {
+    "who": "anon",
+    "path": "/api/tasks/:id/dashboard",
+    "status": 200
+   },
+   {
+    "who": "anon",
+    "path": "/api/tasks/:id/traces",
+    "status": 200
+   },
+   {
+    "who": "wrong-token",
+    "path": "/api/tasks/:id",
+    "status": 200
+   },
+   {
+    "who": "wrong-token",
+    "path": "/api/tasks/:id/documents",
+    "status": 200
+   },
+   {
+    "who": "wrong-token",
+    "path": "/api/tasks/:id/dashboard",
+    "status": 200
+   },
+   {
+    "who": "wrong-token",
+    "path": "/api/tasks/:id/traces",
+    "status": 200
+   },
+   {
+    "who": "owner",
+    "path": "/api/tasks/:id",
+    "status": 200
+   },
+   {
+    "who": "owner",
+    "path": "/api/tasks/:id/documents",
+    "status": 200
+   },
+   {
+    "who": "owner",
+    "path": "/api/tasks/:id/dashboard",
+    "status": 200
+   },
+   {
+    "who": "owner",
+    "path": "/api/tasks/:id/traces",
+    "status": 200
+   }
+  ],
+  "ownerless_visible_to_mallory": true,
+  "pass": true
+ },
+ "V-03": {
+  "results": [
+   {
+    "name": "../../escape plan.png",
+    "status": 200,
+    "ok": true,
+    "stored_name": "escape plan.png"
+   },
+   {
+    "name": "..\\..\\win.png",
+    "status": 200,
+    "ok": true,
+    "stored_name": "win.png"
+   },
+   {
+    "name": "C:\\abs\\path.png",
+    "status": 200,
+    "ok": true,
+    "stored_name": "path.png"
+   },
+   {
+    "name": "/abs/posix.png",
+    "status": 200,
+    "ok": true,
+    "stored_name": "posix.png"
+   },
+   {
+    "name": "sub/../../nested.png",
+    "status": 200,
+    "ok": true,
+    "stored_name": "nested.png"
+   }
+  ],
+  "escaped": [],
+  "pass": true
+ },
+ "V-08": {
+  "task_id": "task_6a008d00",
+  "triggers": [
+   202,
+   202
+  ],
+  "poll_during_run": 200,
+  "report_id": "rep_task_6a008d00",
+  "generated_at": "2026-10-15T16:20:09.232Z",
+  "chapters": 10,
+  "doc_statuses": {
+   "needs_review": 16,
+   "completed": 4
+  },
+  "records": 20,
+  "calcs": 20,
+  "dashboard_total_kgco2e": 306892.9129976014,
+  "report_total_t": 306.893,
+  "anchor_total_t": 306.893,
+  "citations": {
+   "total": 27,
+   "covered": 27,
+   "coverage_pct": 100,
+   "invalid_count": 0,
+   "invalid": []
+  },
+  "pass": true
+ },
+ "V-11": {
+  "empty": {
+   "status": 200,
+   "code": null,
+   "first_result": {
+    "ok": false,
+    "filename": "empty.csv",
+    "code": "ERR_FILE_CORRUPT",
+    "message": "The file is corrupted and cannot be processed.",
+    "details": {
+     "reason": "empty file"
+    }
+   }
+  },
+  "fake_ext": {
+   "status": 200,
+   "code": null,
+   "first_result": {
+    "ok": false,
+    "filename": "payload.exe",
+    "code": "ERR_FILE_FORMAT_UNSUPPORTED",
+    "message": "Unsupported file format. Allowed formats are PDF, JPG, PNG, XLSX and CSV.",
+    "details": {
+     "extension": "exe"
+    }
+   }
+  },
+  "corrupt_pdf": {
+   "status": 200,
+   "code": null,
+   "first_result": {
+    "ok": false,
+    "filename": "broken.pdf",
+    "code": "ERR_FILE_CORRUPT",
+    "message": "The file is corrupted and cannot be processed.",
+    "details": {
+     "reason": "not a parseable PDF"
+    }
+   }
+  },
+  "oversized": {
+   "status": 413,
+   "code": "ERR_FILE_TOO_LARGE",
+   "first_result": null
+  },
+  "fifty_one_files": {
+   "status": 422,
+   "code": "ERR_ENUM_INVALID",
+   "first_result": null
+  },
+  "pass": true
+ },
+ "all_pass": true,
+ "v08_task_id": "task_6a008d00",
+ "base": "http://127.0.0.1:13021"
+}

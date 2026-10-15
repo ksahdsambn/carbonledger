@@ -1,0 +1,56 @@
+{"ts":"2026-10-15T15:53:31.176Z","level":"info","event":"factor_library_loaded","count":741,"removed_stale":0}
+{"ts":"2026-10-15T15:53:31.185Z","level":"info","event":"document_ingested","task_id":"task_f5c8c9fb","doc":"doc_c22155ea","format":"pdf","status":"queued"}
+{"ts":"2026-10-15T15:53:41.081Z","level":"info","event":"semantic_index_built","total":741,"newly_embedded":741,"adapter":"mock"}
+{"ts":"2026-10-15T15:53:41.177Z","level":"info","event":"recall_started","task_id":"task_f5c8c9fb","channel":"both","terms":["copper","wire","rod","electrolytic","grade"]}
+{"ts":"2026-10-15T15:53:41.186Z","level":"warn","event":"ai_call_failed","stage":"factor_selection","model":"gemini-3.5-flash-lite","attempt":1,"error":"validation failed: selected_factor_id 'EF-D26-MATERIALUSE-014' not in candidate list"}
+{"ts":"2026-10-15T15:53:41.189Z","level":"warn","event":"ai_call_failed","stage":"factor_selection","model":"gemini-3.5-flash-lite","attempt":2,"error":"validation failed: selected_factor_id 'EF-D26-MATERIALUSE-014' not in candidate list"}
+{"ts":"2026-10-15T15:53:41.191Z","level":"warn","event":"ai_call_failed","stage":"factor_selection","model":"gemini-3.5-flash-lite","attempt":3,"error":"validation failed: selected_factor_id 'EF-D26-MATERIALUSE-014' not in candidate list"}
+{"ts":"2026-10-15T15:53:41.200Z","level":"info","event":"recall_started","task_id":"task_f5c8c9fb","channel":"both","terms":["lcl","consolidated","ocean","freight","incl","terminal","handling","charge","long","beach","rotterdam","sea","transport","container"]}
+{"ts":"2026-10-15T15:53:41.212Z","level":"warn","event":"ai_call_failed","stage":"factor_selection","model":"gemini-3.5-flash-lite","attempt":1,"error":"validation failed: selected_factor_id 'EF-D26-SEAFREIGHT-039' not in candidate list"}
+{"ts":"2026-10-15T15:53:41.214Z","level":"warn","event":"ai_call_failed","stage":"factor_selection","model":"gemini-3.5-flash-lite","attempt":2,"error":"validation failed: selected_factor_id 'EF-D26-SEAFREIGHT-039' not in candidate list"}
+{"ts":"2026-10-15T15:53:41.217Z","level":"warn","event":"ai_call_failed","stage":"factor_selection","model":"gemini-3.5-flash-lite","attempt":3,"error":"validation failed: selected_factor_id 'EF-D26-SEAFREIGHT-039' not in candidate list"}
+{"ts":"2026-10-15T15:53:41.226Z","level":"info","event":"recall_started","task_id":"task_f5c8c9fb","channel":"both","terms":["municipal","water","consumption","april","2026"]}
+{"ts":"2026-10-15T15:53:41.232Z","level":"warn","event":"ai_call_failed","stage":"factor_selection","model":"gemini-3.5-flash-lite","attempt":1,"error":"validation failed: selected_factor_id 'EF-D26-WATERSUPPLY-001' not in candidate list"}
+{"ts":"2026-10-15T15:53:41.235Z","level":"warn","event":"ai_call_failed","stage":"factor_selection","model":"gemini-3.5-flash-lite","attempt":2,"error":"validation failed: selected_factor_id 'EF-D26-WATERSUPPLY-001' not in candidate list"}
+{"ts":"2026-10-15T15:53:41.237Z","level":"warn","event":"ai_call_failed","stage":"factor_selection","model":"gemini-3.5-flash-lite","attempt":3,"error":"validation failed: selected_factor_id 'EF-D26-WATERSUPPLY-001' not in candidate list"}
+{"ts":"2026-10-15T15:53:41.245Z","level":"info","event":"recall_started","task_id":"task_f5c8c9fb","channel":"both","terms":["heat","treated","wooden","pallets","ispm"]}
+{"ts":"2026-10-15T15:53:41.290Z","level":"info","event":"pipeline_completed","task_id":"task_f5c8c9fb","documents":1,"records":4,"calculated":1,"total_kgco2e":2.9782912,"scopes":[{"key":"Scope 3","value":2.9782912}],"index_ms":9897,"documents_ms":10082,"tail_ms":23,"total_ms":10105,"per_document_ms":[184]}
+{
+  "scenario": "V-01",
+  "task_id": "task_f5c8c9fb",
+  "document_id": "doc_c22155ea",
+  "page_count": 4,
+  "units": 4,
+  "unit_pages": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "unit_types": [
+    "supplier_invoice",
+    "supplier_invoice",
+    "supplier_invoice",
+    "supplier_invoice"
+  ],
+  "doc_status": "needs_review",
+  "records": 4,
+  "expected_records": 4,
+  "page_refs": [
+    "page=1",
+    "page=2",
+    "page=3",
+    "page=4"
+  ],
+  "distinct_pages": [
+    1,
+    2,
+    3,
+    4
+  ],
+  "summary_records": 4,
+  "total_kgco2e": 2.9782912,
+  "report_chapters": 10,
+  "report_anchors": 6,
+  "pass": true
+}

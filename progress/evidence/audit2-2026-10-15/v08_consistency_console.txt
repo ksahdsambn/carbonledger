@@ -1,0 +1,98 @@
+{"ts":"2026-10-15T16:33:13.698Z","level":"info","event":"factor_library_loaded","count":741,"removed_stale":0}
+{"ts":"2026-10-15T16:33:13.731Z","level":"info","event":"http_request","method":"POST","path":"/api/demo/load"}
+{"ts":"2026-10-15T16:33:13.740Z","level":"info","event":"document_ingested","task_id":"task_3cbfcfe3","doc":"doc_646bc46e","format":"pdf","status":"queued"}
+{"ts":"2026-10-15T16:33:13.742Z","level":"info","event":"document_ingested","task_id":"task_3cbfcfe3","doc":"doc_9a161d9c","format":"png","status":"queued"}
+{"ts":"2026-10-15T16:33:13.744Z","level":"info","event":"document_ingested","task_id":"task_3cbfcfe3","doc":"doc_2d692d29","format":"xlsx","status":"queued"}
+{"ts":"2026-10-15T16:33:13.746Z","level":"info","event":"document_ingested","task_id":"task_3cbfcfe3","doc":"doc_12ba3f75","format":"csv","status":"queued"}
+{"ts":"2026-10-15T16:33:13.748Z","level":"info","event":"document_ingested","task_id":"task_3cbfcfe3","doc":"doc_9bf41ddc","format":"pdf","status":"queued"}
+{"ts":"2026-10-15T16:33:13.750Z","level":"info","event":"document_ingested","task_id":"task_3cbfcfe3","doc":"doc_cacd61eb","format":"pdf","status":"queued"}
+{"ts":"2026-10-15T16:33:13.752Z","level":"info","event":"document_ingested","task_id":"task_3cbfcfe3","doc":"doc_91fab5e6","format":"jpg","status":"queued"}
+{"ts":"2026-10-15T16:33:13.754Z","level":"info","event":"document_ingested","task_id":"task_3cbfcfe3","doc":"doc_859a3ad3","format":"pdf","status":"queued"}
+{"ts":"2026-10-15T16:33:13.756Z","level":"info","event":"document_ingested","task_id":"task_3cbfcfe3","doc":"doc_121347cc","format":"xlsx","status":"queued"}
+{"ts":"2026-10-15T16:33:13.758Z","level":"info","event":"document_ingested","task_id":"task_3cbfcfe3","doc":"doc_1290a281","format":"pdf","status":"queued"}
+{"ts":"2026-10-15T16:33:13.760Z","level":"info","event":"document_ingested","task_id":"task_3cbfcfe3","doc":"doc_7746a652","format":"jpg","status":"queued"}
+{"ts":"2026-10-15T16:33:13.762Z","level":"info","event":"document_ingested","task_id":"task_3cbfcfe3","doc":"doc_ff0ed653","format":"pdf","status":"queued"}
+{"ts":"2026-10-15T16:33:13.763Z","level":"info","event":"document_ingested","task_id":"task_3cbfcfe3","doc":"doc_c00e9a0d","format":"jpg","status":"queued"}
+{"ts":"2026-10-15T16:33:13.765Z","level":"info","event":"document_ingested","task_id":"task_3cbfcfe3","doc":"doc_17f90f98","format":"pdf","status":"queued"}
+{"ts":"2026-10-15T16:33:13.767Z","level":"info","event":"document_ingested","task_id":"task_3cbfcfe3","doc":"doc_d30ad4d3","format":"pdf","status":"queued"}
+{"ts":"2026-10-15T16:33:13.769Z","level":"info","event":"document_ingested","task_id":"task_3cbfcfe3","doc":"doc_dcc238a5","format":"jpg","status":"queued"}
+{"ts":"2026-10-15T16:33:13.771Z","level":"info","event":"document_ingested","task_id":"task_3cbfcfe3","doc":"doc_fd3d060f","format":"csv","status":"queued"}
+{"ts":"2026-10-15T16:33:13.773Z","level":"info","event":"document_ingested","task_id":"task_3cbfcfe3","doc":"doc_1dd89118","format":"pdf","status":"queued"}
+{"ts":"2026-10-15T16:33:13.774Z","level":"info","event":"document_ingested","task_id":"task_3cbfcfe3","doc":"doc_b64b6506","format":"png","status":"queued"}
+{"ts":"2026-10-15T16:33:13.776Z","level":"info","event":"document_ingested","task_id":"task_3cbfcfe3","doc":"doc_04cc5d41","format":"xlsx","status":"queued"}
+{"ts":"2026-10-15T16:33:23.785Z","level":"info","event":"semantic_index_built","total":741,"newly_embedded":741,"adapter":"mock"}
+{"ts":"2026-10-15T16:33:23.872Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["refrigerant","hfc","top","plant","hvac"]}
+{"ts":"2026-10-15T16:33:23.880Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["factory","grid","electricity","2026"]}
+{"ts":"2026-10-15T16:33:23.886Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["district","heat","supply","office","campus","880","converted"]}
+{"ts":"2026-10-15T16:33:23.956Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["diesel","fuel","average","biofuel","blend","own","fleet","combustion"]}
+{"ts":"2026-10-15T16:33:24.025Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["layer","pcb","assemblies","lots"]}
+{"ts":"2026-10-15T16:33:24.087Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["aluminium","sheet","5052","chassis","panels"]}
+{"ts":"2026-10-15T16:33:24.093Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["pet","film","food","grade"]}
+{"ts":"2026-10-15T16:33:24.157Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["injection","pellets"]}
+{"ts":"2026-10-15T16:33:24.173Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["cnc","machining","centre","850","capital","equipment"]}
+{"ts":"2026-10-15T16:33:24.183Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["well","tank","upstream","emissions","fleet","diesel","matches","load"]}
+{"ts":"2026-10-15T16:33:24.226Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["ldpe","packaging","film"]}
+{"ts":"2026-10-15T16:33:24.309Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["inbound","road","freight","dallas","austin","ambient","rigid","truck"]}
+{"ts":"2026-10-15T16:33:24.316Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["fcl","ocean","freight","sensor","modules","houston","hamburg","sea","transport","container"]}
+{"ts":"2026-10-15T16:33:24.368Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["return","economy","flight","aus","haj","trade","fair","passenger","not","applicable","austin","hannover"]}
+{"ts":"2026-10-15T16:33:24.403Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["landfill","disposal","mixed","production","waste"]}
+{"ts":"2026-10-15T16:33:24.491Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["international","express","courier","austin","london"]}
+{"ts":"2026-10-15T16:33:24.531Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["heat","treated","wooden","export","pallets","ispm"]}
+{"ts":"2026-10-15T16:33:24.538Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["employee","commuting","rail","season","passes","aggregate","2026"]}
+{"ts":"2026-10-15T16:33:24.548Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["toughened","display","glass","panels"]}
+{"ts":"2026-10-15T16:33:24.653Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["copy","paper","toner","cartridges"]}
+{"ts":"2026-10-15T16:33:24.726Z","level":"info","event":"pipeline_completed","task_id":"task_3cbfcfe3","documents":20,"records":20,"calculated":20,"total_kgco2e":306892.9129976013,"scopes":[{"key":"Scope 1","value":12777.68998},{"key":"Scope 2","value":208784.3983372013},{"key":"Scope 3","value":85330.8246804}],"index_ms":10008,"documents_ms":10900,"tail_ms":48,"total_ms":10948,"per_document_ms":[160,160,160,211,125,206,237,166,319,145,227,145,194,149,215,216,164,58,117,83]}
+{"ts":"2026-10-15T16:33:24.726Z","level":"info","event":"pipeline_job_done","task_id":"task_3cbfcfe3","documents":20,"records":20,"calculated":20,"total_kgco2e":306892.9129976013,"scopes":[{"key":"Scope 1","value":12777.68998},{"key":"Scope 2","value":208784.3983372013},{"key":"Scope 3","value":85330.8246804}]}
+{"ts":"2026-10-15T16:33:24.738Z","level":"info","event":"http_request","method":"POST","path":"/api/tasks/task_3cbfcfe3/run"}
+{"ts":"2026-10-15T16:33:24.740Z","level":"info","event":"semantic_index_built","total":741,"newly_embedded":0,"adapter":"mock"}
+{"ts":"2026-10-15T16:33:24.791Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["diesel","fuel","average","biofuel","blend","own","fleet","combustion"]}
+{"ts":"2026-10-15T16:33:24.800Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["factory","grid","electricity","2026"]}
+{"ts":"2026-10-15T16:33:24.805Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["district","heat","supply","office","campus","880","converted"]}
+{"ts":"2026-10-15T16:33:24.813Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["aluminium","sheet","5052","chassis","panels"]}
+{"ts":"2026-10-15T16:33:24.951Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["pet","film","food","grade"]}
+{"ts":"2026-10-15T16:33:24.961Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["layer","pcb","assemblies","lots"]}
+{"ts":"2026-10-15T16:33:24.966Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["cnc","machining","centre","850","capital","equipment"]}
+{"ts":"2026-10-15T16:33:24.974Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["well","tank","upstream","emissions","fleet","diesel","matches","load"]}
+{"ts":"2026-10-15T16:33:25.042Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["injection","pellets"]}
+{"ts":"2026-10-15T16:33:25.101Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["ldpe","packaging","film"]}
+{"ts":"2026-10-15T16:33:25.120Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["fcl","ocean","freight","sensor","modules","houston","hamburg","sea","transport","container"]}
+{"ts":"2026-10-15T16:33:25.129Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["inbound","road","freight","dallas","austin","ambient","rigid","truck"]}
+{"ts":"2026-10-15T16:33:25.144Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["landfill","disposal","mixed","production","waste"]}
+{"ts":"2026-10-15T16:33:25.314Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["return","economy","flight","aus","haj","trade","fair","passenger","not","applicable","austin","hannover"]}
+{"ts":"2026-10-15T16:33:25.324Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["heat","treated","wooden","export","pallets","ispm"]}
+{"ts":"2026-10-15T16:33:25.336Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["international","express","courier","austin","london"]}
+{"ts":"2026-10-15T16:33:25.343Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["toughened","display","glass","panels"]}
+{"ts":"2026-10-15T16:33:25.450Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["copy","paper","toner","cartridges"]}
+{"ts":"2026-10-15T16:33:25.515Z","level":"info","event":"pipeline_completed","task_id":"task_3cbfcfe3","documents":20,"records":20,"calculated":20,"total_kgco2e":306892.9129976013,"scopes":[{"key":"Scope 1","value":12777.68998},{"key":"Scope 2","value":208784.3983372013},{"key":"Scope 3","value":85330.8246804}],"index_ms":0,"documents_ms":735,"tail_ms":40,"total_ms":775,"per_document_ms":[6,153,156,156,160,158,158,157,188,188,349,190,11,185,185,8,8,182,182,40]}
+{"ts":"2026-10-15T16:33:25.515Z","level":"info","event":"pipeline_job_done","task_id":"task_3cbfcfe3","documents":20,"records":20,"calculated":20,"total_kgco2e":306892.9129976013,"scopes":[{"key":"Scope 1","value":12777.68998},{"key":"Scope 2","value":208784.3983372013},{"key":"Scope 3","value":85330.8246804}]}
+{"ts":"2026-10-15T16:33:25.519Z","level":"info","event":"http_request","method":"POST","path":"/api/tasks/task_3cbfcfe3/run"}
+{"ts":"2026-10-15T16:33:25.520Z","level":"info","event":"semantic_index_built","total":741,"newly_embedded":0,"adapter":"mock"}
+{"ts":"2026-10-15T16:33:25.582Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["diesel","fuel","average","biofuel","blend","own","fleet","combustion"]}
+{"ts":"2026-10-15T16:33:25.592Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["factory","grid","electricity","2026"]}
+{"ts":"2026-10-15T16:33:25.598Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["district","heat","supply","office","campus","880","converted"]}
+{"ts":"2026-10-15T16:33:25.606Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["aluminium","sheet","5052","chassis","panels"]}
+{"ts":"2026-10-15T16:33:25.749Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["pet","film","food","grade"]}
+{"ts":"2026-10-15T16:33:25.758Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["layer","pcb","assemblies","lots"]}
+{"ts":"2026-10-15T16:33:25.764Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["cnc","machining","centre","850","capital","equipment"]}
+{"ts":"2026-10-15T16:33:25.772Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["well","tank","upstream","emissions","fleet","diesel","matches","load"]}
+{"ts":"2026-10-15T16:33:25.845Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["injection","pellets"]}
+{"ts":"2026-10-15T16:33:25.910Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["ldpe","packaging","film"]}
+{"ts":"2026-10-15T16:33:25.936Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["fcl","ocean","freight","sensor","modules","houston","hamburg","sea","transport","container"]}
+{"ts":"2026-10-15T16:33:25.945Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["inbound","road","freight","dallas","austin","ambient","rigid","truck"]}
+{"ts":"2026-10-15T16:33:25.961Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["landfill","disposal","mixed","production","waste"]}
+{"ts":"2026-10-15T16:33:26.115Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["return","economy","flight","aus","haj","trade","fair","passenger","not","applicable","austin","hannover"]}
+{"ts":"2026-10-15T16:33:26.124Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["heat","treated","wooden","export","pallets","ispm"]}
+{"ts":"2026-10-15T16:33:26.135Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["international","express","courier","austin","london"]}
+{"ts":"2026-10-15T16:33:26.145Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["toughened","display","glass","panels"]}
+{"ts":"2026-10-15T16:33:26.257Z","level":"info","event":"recall_started","task_id":"task_3cbfcfe3","channel":"both","terms":["copy","paper","toner","cartridges"]}
+{"ts":"2026-10-15T16:33:26.332Z","level":"info","event":"pipeline_completed","task_id":"task_3cbfcfe3","documents":20,"records":20,"calculated":20,"total_kgco2e":306892.9129976013,"scopes":[{"key":"Scope 1","value":12777.68998},{"key":"Scope 2","value":208784.3983372013},{"key":"Scope 3","value":85330.8246804}],"index_ms":1,"documents_ms":765,"tail_ms":47,"total_ms":812,"per_document_ms":[6,167,169,169,172,169,169,172,193,193,364,188,7,177,177,10,10,180,180,46]}
+{"ts":"2026-10-15T16:33:26.332Z","level":"info","event":"pipeline_job_done","task_id":"task_3cbfcfe3","documents":20,"records":20,"calculated":20,"total_kgco2e":306892.9129976013,"scopes":[{"key":"Scope 1","value":12777.68998},{"key":"Scope 2","value":208784.3983372013},{"key":"Scope 3","value":85330.8246804}]}
+{"ts":"2026-10-15T16:33:26.335Z","level":"info","event":"http_request","method":"GET","path":"/api/tasks/task_3cbfcfe3/documents"}
+{"ts":"2026-10-15T16:33:26.338Z","level":"info","event":"http_request","method":"GET","path":"/api/tasks/task_3cbfcfe3/report"}
+task=task_3cbfcfe3 chapters=10 records=n/a citations_invalid=0
+{"ts":"2026-10-15T16:33:26.418Z","level":"info","event":"http_request","method":"GET","path":"/api/tasks/task_3cbfcfe3/report"}
+{"ts":"2026-10-15T16:33:26.427Z","level":"info","event":"http_request","method":"GET","path":"/api/tasks/task_3cbfcfe3/dashboard"}
+task_3cbfcfe3: PASS (20 rows, 0 mismatch(es))
+
+Report/ledger consistency: 1/1 tasks consistent -> PASS
+V-08 CONSISTENCY PASS

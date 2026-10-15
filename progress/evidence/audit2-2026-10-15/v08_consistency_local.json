@@ -1,0 +1,27 @@
+{
+  "base_url": "https://myproject-dc19d.web.app",
+  "generated_at": "2026-10-13T19:25:38.208Z",
+  "tasks_checked": 3,
+  "tasks_failed": 0,
+  "results": [
+    {
+      "task_id": "task_89fe2f36",
+      "ok": true,
+      "rows": 20,
+      "mismatches": []
+    },
+    {
+      "task_id": "task_513c8e72",
+      "ok": true,
+      "rows": 20,
+      "mismatches": []
+    },
+    {
+      "task_id": "task_904e75ec",
+      "ok": true,
+      "rows": 20,
+      "mismatches": []
+    }
+  ],
+  "overall": "PASS"
+}
