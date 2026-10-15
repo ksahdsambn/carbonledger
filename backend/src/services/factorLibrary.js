@@ -5,6 +5,7 @@
 // filled by the semantic index build in T-021.
 
 import { readFileSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { resolve, dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { log } from '../logging.js';
@@ -27,11 +28,16 @@ export function invalidateFactorCache(store) {
   if (store) cache.delete(store);
 }
 
+// Collection-internal bookkeeping document holding the loaded library's
+// content fingerprint (D-104). '_' ids never surface as factors.
+const META_ID = '_library_meta';
+
 /** Returns the whole factor library, memoized for the store's lifetime. */
 export async function listFactors(store) {
   let factors = cache.get(store);
   if (!factors) {
-    factors = await store.list('emission_factors');
+    factors = (await store.list('emission_factors'))
+      .filter((f) => typeof f.id !== 'string' || !f.id.startsWith('_'));
     cache.set(store, factors);
   }
   return factors;
@@ -43,15 +49,35 @@ export async function saveFactors(store, rows) {
   invalidateFactorCache(store);
 }
 
-/** Loads every factor from the static file into the store. Idempotent. */
-export async function loadFactorLibrary(store) {
-  const raw = JSON.parse(readFileSync(FACTOR_FILE, 'utf8'));
-  const existing = await listFactors(store);
-  if (existing.length === raw.factors.length) {
-    return { loaded: 0, total: existing.length, skipped: true };
+/**
+ * Loads every factor from the static file into the store. Idempotent.
+ * The skip decision uses a content fingerprint of the file (D-104): a count
+ * comparison missed same-count value edits, and an upsert-only refresh left
+ * rows that had been removed from the file behind as ghost factors in
+ * long-lived stores (the 743 -> 741 data refresh shipped exactly such
+ * removals). On refresh, rows absent from the file are deleted.
+ * @param {object} store
+ * @param {string} [file] data file to load; defaults to the resolved FACTOR_FILE
+ */
+export async function loadFactorLibrary(store, file = FACTOR_FILE) {
+  const raw = JSON.parse(readFileSync(file, 'utf8'));
+  const fingerprint = createHash('sha256').update(JSON.stringify(raw.factors)).digest('hex');
+  if ((await store.get('emission_factors', META_ID))?.fingerprint === fingerprint) {
+    return { loaded: 0, total: (await listFactors(store)).length, skipped: true };
   }
+  const existing = await listFactors(store);
+  const freshIds = new Set(raw.factors.map((f) => f.factor_id));
   await saveFactors(store, raw.factors.map((f) => ({ ...f, embedding: null })));
-  log.info('factor_library_loaded', { count: raw.factors.length });
+  let removed = 0;
+  for (const f of existing) {
+    if (!freshIds.has(f.factor_id)) {
+      await store.delete('emission_factors', f.factor_id);
+      removed += 1;
+    }
+  }
+  await store.put('emission_factors', META_ID, { fingerprint, loaded_at: new Date().toISOString() });
+  invalidateFactorCache(store);
+  log.info('factor_library_loaded', { count: raw.factors.length, removed_stale: removed });
   return { loaded: raw.factors.length, total: raw.factors.length, skipped: false };
 }
 

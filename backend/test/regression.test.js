@@ -8,7 +8,7 @@
 // D-63 (strict numeric config) and D-65/D-66 (non-finite and embedding-shape).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync, mkdtempSync, rmSync, readdirSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdtempSync, rmSync, readdirSync, existsSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -399,6 +399,33 @@ test('D-26: a corrupt PDF is rejected, not mis-counted', async () => {
   const r = await ingestFile({ store, storage, taskId: task.task_id, filename: 'broken.pdf', buffer: Buffer.from('%PDF-1.7 garbage bytes that pdf-lib cannot parse') });
   assert.equal(r.ok, false);
   assert.equal(r.code, 'ERR_FILE_CORRUPT');
+});
+
+test('D-104: a library refresh deletes removed factors, updates changed values and hides its meta doc', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'reg-flfp-'));
+  const row = (id, value) => ({ factor_id: id, name: `test ${id}`, value, activity_unit: 'kg', emission_unit: 'kgCO2e', activity_type: 'test', gwp_version: 'AR6', data_year: 2026 });
+  const writeFile = (name, rows) => writeFileSync(join(dir, name), JSON.stringify({ meta: { total_factors: rows.length }, factors: rows }));
+  const fileA = join(dir, 'a.json'); const fileB = join(dir, 'b.json');
+  writeFile('a.json', [row('EF-T1', 1), row('EF-T2', 5)]);
+  writeFile('b.json', [row('EF-T1', 2)]); // value changed AND EF-T2 removed upstream
+  const store = new LocalFileStore(mkdtempSync(join(tmpdir(), 'reg-flm-')));
+  await loadFactorLibrary(store, fileA);
+  assert.equal((await listFactors(store)).length, 2);
+  const refresh = await loadFactorLibrary(store, fileB);
+  assert.equal(refresh.skipped, false, 'a content change refreshes even when the file shrinks');
+  const factors = await listFactors(store);
+  assert.equal(factors.length, 1, 'the removed factor is deleted from the store, not left as a ghost');
+  assert.equal(factors[0].factor_id, 'EF-T1');
+  assert.equal(factors[0].value, 2, 'the changed value is picked up');
+  // A same-count value-only change must also refresh (the old count check missed it).
+  writeFile('c.json', [row('EF-T1', 3), row('EF-T2', 5)]);
+  await loadFactorLibrary(store, join(dir, 'c.json'));
+  assert.equal((await listFactors(store)).find((f) => f.factor_id === 'EF-T1').value, 3);
+  assert.equal((await listFactors(store)).length, 2, 're-added factor is restored');
+  // The fingerprint doc is bookkeeping: never a factor, and an unchanged file skips.
+  assert.ok(!(await listFactors(store)).some((f) => String(f.id).startsWith('_')), 'meta doc hidden from the factor list');
+  assert.equal((await store.get('emission_factors', '_library_meta')).fingerprint.length, 64);
+  assert.equal((await loadFactorLibrary(store, join(dir, 'c.json'))).skipped, true, 'unchanged content skips the reload');
 });
 
 process.on('exit', () => { rmSync(STORE_DIR, { recursive: true, force: true }); rmSync(UP_DIR, { recursive: true, force: true }); });
