@@ -37,5 +37,8 @@ echo "target <= 7,000; hard cap 10,000"
 STATUS=PASS
 if [ "$TOOLING" -gt 7000 ]; then STATUS=FAIL; fi
 if [ "$EVERYTHING" -gt 10000 ]; then STATUS=FAIL; fi
-echo "NFR-504: $STATUS (figure B $TOOLING <= 7000; hard cap met under every figure)"
+# The summary text states the actual cap result instead of a fixed phrase, so
+# an over-cap figure C can never be reported as meeting the cap (D-106).
+if [ "$EVERYTHING" -le 10000 ]; then CAPTXT="figure C $EVERYTHING within the 10,000 hard cap"; else CAPTXT="figure C $EVERYTHING EXCEEDS the 10,000 hard cap"; fi
+echo "NFR-504: $STATUS (figure B $TOOLING vs 7,000 target; $CAPTXT)"
 [ "$STATUS" = PASS ]
