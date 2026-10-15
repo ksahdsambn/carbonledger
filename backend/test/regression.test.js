@@ -156,16 +156,23 @@ test('D-07/V-03: traversal filenames are sanitized and storage stays inside its 
   assert.equal(safeFilename('..\\..\\win.pdf'), 'win.pdf');
   assert.equal(safeFilename('/abs/path/x.png'), 'x.png');
   const store = new LocalFileStore(mkdtempSync(join(tmpdir(), 'reg-tv-')));
-  const storage = new LocalFileStorage(mkdtempSync(join(tmpdir(), 'reg-tvu-')));
+  // The escape check walks a private sandbox, not the whole OS temp dir: other
+  // processes on the machine also write there and a machine-wide diff made
+  // this test fail on unrelated Vite/SSR cache traffic (D-101). The storage
+  // root sits three levels deep inside the sandbox, so the ../../ payloads
+  // under test still land inside the sandbox and outside the root — an escape
+  // stays detectable.
+  const sandbox = mkdtempSync(join(tmpdir(), 'reg-tvs-'));
+  const storage = new LocalFileStorage(join(sandbox, 'L1', 'L2', 'up'));
   await loadFactorLibrary(store);
   const task = await createTask(store, { entity_name: 'Traversal Co', period_from: '2026-01-01', period_to: '2026-06-30', gwp_version: 'AR6' });
   const buf = await twoPagePdf();
   const r = await ingestFile({ store, storage, taskId: task.task_id, filename: '../../escape plan.pdf', buffer: buf });
   assert.ok(r.ok, `ingest should succeed with sanitized name: ${r.code}`);
-  const before = new Set((function walk(d, acc) { for (const e of readdirSync(d, { withFileTypes: true })) { acc.add(join(d, e.name)); if (e.isDirectory()) walk(join(d, e.name), acc); } return acc; }(dirname(storage.rootDir), new Set())));
+  const before = new Set((function walk(d, acc) { for (const e of readdirSync(d, { withFileTypes: true })) { acc.add(join(d, e.name)); if (e.isDirectory()) walk(join(d, e.name), acc); } return acc; }(sandbox, new Set())));
   await ingestFile({ store, storage, taskId: task.task_id, filename: '..\\..\\b.pdf', buffer: buf });
   await ingestFile({ store, storage, taskId: task.task_id, filename: '/abs/b.png', buffer: buf.subarray(0, 8) });
-  const after = (function walk(d, acc) { for (const e of readdirSync(d, { withFileTypes: true })) { acc.add(join(d, e.name)); if (e.isDirectory()) walk(join(d, e.name), acc); } return acc; }(dirname(storage.rootDir), new Set()));
+  const after = (function walk(d, acc) { for (const e of readdirSync(d, { withFileTypes: true })) { acc.add(join(d, e.name)); if (e.isDirectory()) walk(join(d, e.name), acc); } return acc; }(sandbox, new Set()));
   for (const p of after) assert.ok(before.has(p) || p.startsWith(storage.rootDir), `file escaped storage root: ${p}`);
   await assert.rejects(() => storage.get('../../outside'), (e) => e.code === 'ERR_STORAGE_ACCESS');
 });
