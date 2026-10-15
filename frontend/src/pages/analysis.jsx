@@ -156,6 +156,9 @@ export function P6Scenarios({ taskId }) {
   const [err, setErr] = useState(null);
   const [ratio, setRatio] = useState(1.0);
   const [busy, setBusy] = useState(false);
+  // Rerun errors surface here (D-103): a failed ratio recompute must be
+  // visible, not silently swallowed while the old numbers stay on screen.
+  const [runErr, setRunErr] = useState(null);
   const load = () => api.report(taskId).then((r) => { setRep(r.report); setErr(null); }).catch((e) => setErr(e));
   useEffect(() => { load(); /* eslint-disable-next-line react-hooks/exhaustive-deps */ }, [taskId]);
   if (err) {
@@ -184,11 +187,19 @@ export function P6Scenarios({ taskId }) {
             onChange={(e) => setRatio(Number(e.target.value) / 100)}
             onBlur={async () => {
               setBusy(true);
-              try { await api.runPipeline(taskId, ratio); const r = await api.report(taskId); setRep(r.report); } catch { /* report stays */ }
+              setRunErr(null);
+              try {
+                await api.runPipeline(taskId, ratio);
+                const r = await api.report(taskId);
+                setRep(r.report);
+              } catch (e) {
+                setRunErr(e.message ?? String(e)); // keep the old report, show why the rerun failed
+              }
               setBusy(false);
             }}
             aria-label="Replacement ratio percent" /></label>
         <p className="hint">{busy ? 'Recomputing scenarios at the selected ratio…' : 'Adjust the slider and release to recompute at the selected ratio.'}</p>
+        {runErr && <p className="error" role="alert">Recompute at the selected ratio failed: {runErr}. The numbers below are from the previous run.</p>}
       </section>
       <div className="scenario-grid">
         {scenarios.map((s, i) => (
