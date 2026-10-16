@@ -101,3 +101,43 @@ B-7 复核：本地启动 → `/healthz` 返回 `{"status":"ok"}` → SIGTERM �
 
 **结论**：任务书五阶段完成；最终 HEAD `a56d9bc` 上 A-1~A-7 全绿、核对单 12 项全勾、
 登记册（D-01~D-68 + D-101~D-111）零悬空。任务完成。
+
+---
+
+## 第四轮复验（收口后，HEAD `6809059`，2026-10-16）
+
+> 应任务书执行指令对最终收口 HEAD 做整体复验：重跑全部基线/验收电池、核对登记册与
+> R-01~R-33 处置闭环、抽验关键修复点在位。全程 mock 模式（未注入 `GEMINI_API_KEY`、
+> 未运行五个真实适配器验证脚本、无任何部署），**零 Gemini / Google Cloud API 调用，
+> 增量费用 $0**。环境 Node v24.12.0 / Git Bash (win32)。
+
+### 基线与自动验收电池重跑结果
+
+| 项 | 结果 | 关键记录 |
+|---|---|---|
+| B-1 `npm install` | ✅ | 0 vulnerabilities |
+| B-2/A-1 `npm run build` | ✅ | 前端 37 模块 + 后端语法检查 OK |
+| B-3/A-2 `npm test` | ✅ | **51/51**（backend 50 + upload 1），与第三轮收口一致 |
+| B-4/A-3 `npm run smoke` | ✅ | health `{"status":"ok"}`、SMOKE OK |
+| B-5/A-4 `npm run scan-secrets` | ✅ | 0 命中、退出码 0 |
+| B-6/A-5 `bash scripts/count_lines.sh` | ✅（豁免在案） | A=5,870 / B=9,149 / C=10,951，与第三轮逐字一致；T-052 豁免链不变 |
+| B-7 健康检查 | ✅ | `/healthz` 200 → SIGTERM 干净退出、无残留监听 |
+| B-8/A-6 `node eval/run.js` | ✅ | 11/11 PASS（仅汇总既有证据；run_at 时间戳漂移已还原） |
+| A-7 `git status` | ✅ | 干净；`git ls-files` 对 .env / frontend/.env / dist / 本地存储 / __pycache__ 零命中 |
+
+### 闭环与在位抽验
+
+- **登记册**：`DEFECT_REGISTER_2026-10-15.md` 附录 A 处置表 R-01~R-33 共 33 条全部
+  闭环（32 条修复完好/不成立结论维持，R-25 残余与 R-30/R-33 按既定口径保留并附理由），
+  无"待修复"无决策条目。
+- **回归用例在位**：V-01~V-07、V-09、V-12（对应 D-04~D-08/D-10/D-11/D-13~D-16/D-18/
+  D-19/D-21/D-24/D-34/D-37）均在套件内并随 51/51 通过；V-08/V-10/V-11/V-13/V-14 沿用
+  第二/三轮 HTTP 级与浏览器级证据（其代码路径自 a56d9bc 后未变更）。
+- **关键修复点抽查**：`requireTaskOwner` 路由守卫 18 处（server.js）；CSV 公式注入
+  中和（exportService 3 处）；`safeFilename` + 存储键净化（fileService.js:26,83）；
+  情景 `persist:false` 隔离（scenarios.js:16-17）。全部在位。
+
+### 结论
+
+第四轮复验 **A-1~A-7 全绿、零悬空、零新增缺陷**。第三轮收口结论维持：
+任务书第九章核对单 12 项全勾，五项交付物齐备，任务完成状态确认。
