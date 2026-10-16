@@ -141,3 +141,71 @@ B-7 复核：本地启动 → `/healthz` 返回 `{"status":"ok"}` → SIGTERM �
 
 第四轮复验 **A-1~A-7 全绿、零悬空、零新增缺陷**。第三轮收口结论维持：
 任务书第九章核对单 12 项全勾，五项交付物齐备，任务完成状态确认。
+
+---
+
+## 第五轮独立复审（收口后，HEAD `1253890`，2026-10-16）
+
+> 不引用既有记录、以源码与 HTTP 实测为唯一依据的独立复审：
+> (1) R-01~R-33 逐条在源码层面重新定位修复实证；(2) 对 V-02/V-03/V-09/V-11
+> 四个安全关键场景在本地 HTTP 服务上以可注入令牌校验器（`buildApp({verifyToken})`）
+> 重跑全矩阵。全程 mock 模式、零外部 API 调用、零部署，**增量费用 $0**。
+> 验证脚本运行于系统临时沙箱（`%TEMP%/r5-audit-*`），不进入仓库、不计行数预算。
+
+### R-01 ~ R-33 源码级逐条核实（全部与登记册处置一致）
+
+| 疑点 | 本轮独立核实到的代码实证 |
+|---|---|
+| R-01 | `fileService.js:128-129` 转换表含自环/重试边；`pipeline.js:89-92` extracting 状态在单元循环**外**、每文档仅设一次 |
+| R-02 | `scenarios.js:16-17` `persist:false`，情景只算不落库 |
+| R-03 | `server.js` 全部 16 条任务级路由（详情/文档×4/units/duplicate/status/run/dashboard/report×2/review×2/candidates/audit/traces）均挂 `requireTaskOwner`；`/api/tasks` 列表过滤他人属主（194-204） |
+| R-04 | `server.js` 令牌校验器可注入（58）；`storage/index.js:16-18` 键包含性校验（resolve 后必须位于根内） |
+| R-05 | `ai/client.js:72` redactParts 两处调用；上游错误体不入异常（188-190 注释 + 实现） |
+| R-06 | `pages/core.jsx:317-321` P3 取 `api.dashboard().records`；`pages/analysis.jsx:14-18` P4 取 `api.candidates()`（T-052 拆分后的新结构下修复仍成立） |
+| R-07 | `reportService.js:90-97` anchor() 单次 kg→t 换算，范围分解/逐条/总量/情景四类锚点同一路径 |
+| R-08 | `exportService.js` csvEscape 前缀中和（3 处引用） |
+| R-09 | `server.js:27` multer `fileSize:10MB, files:50` 流式拒绝；442-443 LIMIT_* → 结构化错误码 |
+| R-10/R-32 | `server.js:77-91` CORS 精确串比较白名单（畸形 Origin 不崩溃）；102-105 限流 socket 键 + TRUST_PROXY 显式 + 桶上限 10000 + 非法阈值回退 60 |
+| R-11 | `reviewQueue.js:13` getTaskRecord 全动作（edit/assign/exclude/close）双重校验；127 `_` 前缀守卫（D-111） |
+| R-12 | `reviewQueue.js:81-82` 补丁数值有限性+正数校验；`pipelineModelCalls.js:52-58` 抽取校验 finite；`calculation.js` 核算守卫（测试覆盖） |
+| R-13 | `config.js:85-122` coerce + RANGES 越界回退；`pipeline.js:259` 并发数 NaN/0 守卫；`ai/client.js` 重试分类（fatal 不重试） |
+| R-14 | `reportService.js:258-269` 情景锚点按任务内情景集合存在性校验 |
+| R-15 | `store/index.js:41` 损坏文件告警；52-57 write-then-rename 原子写 |
+| R-16 | `recall.js:34-47` 关键词真实分数流入（priority 加成 0.02），无硬编码置信度 |
+| R-17 | `backend/src/queue` 目录不存在，全库无引用 |
+| R-18 | `ai/client.js:224-252` 超时 + 向量数量校验 + 元素形状校验 + 一次重试后显式失败 |
+| R-19 | `normalization.js:109-114` 词边界代码表识别，不支持币种诚实 null |
+| R-20 | 处置"不成立"复核：服务端不解压 XLSX（仅子串校验 + 10MB 上限），维持原结论 |
+| R-21 | `fileService.js:61` pdf-lib 解析计数，损坏即拒 |
+| R-22 | `exportService.js:39-44` error→reject 不悬挂；122-123 60 行截断披露 |
+| R-23 | 五个 `*_real.js` 脚本均含 GEMINI_API_KEY 前置检查 + exit 2 守卫 |
+| R-24 | `Dockerfile:20` HEALTHCHECK；`firebase.json:12-16` nosniff/DENY/HSTS/CSP 齐备 |
+| R-25 | `server.js:286-287` ratio 0..1 校验入 /run |
+| R-26 | `vite.config.js:9-10` 代理含 /factors；api.js encodeURIComponent 2 处 |
+| R-27 | `pipelineModelCalls.js:198`、`documentUnits.js:30` 记录/单元标识 randomUUID |
+| R-28 | `server.js:372-375` 复核动作同步 recalculate + generateReportForTask 重建 |
+| R-29 | `taskService.js:12-16` 类型/长度/ISO 日期/先后顺序/枚举校验 |
+| R-30/R-33(4)(5) | 有意保留口径不变（差异表与 README 记录在案） |
+| R-31 | 空循环/死分支已移除，本轮全库扫描无死导出 |
+
+### HTTP 级安全场景独立复跑（本地服务，mock 模式）
+
+| 项 | 结果 | 实测记录 |
+|---|---|---|
+| V-02 越权矩阵 | ✅ | 16 路由 × 3 身份 × {有属主, 无属主}：有属主对匿名/错 token 全部 403 ERR_FORBIDDEN、属主放行（业务 4xx 属通过）；无属主三身份全部放行 |
+| V-03 路径穿越 | ✅ | 5 个恶意名（`../` 链、`..\..\`、`C:\abs\`、`/abs/`、`sub/../../`，均带合法 .pdf 后缀 + 真实 PDF 字节）全部净化为 basename 落盘（escape1..5.pdf），5 文件全部位于存储根内，沙箱与 %TEMP% 零逃逸工件 |
+| V-09 限流/CORS | ✅ | RATE_LIMIT=3 实例：第 4 次 429 ERR_RATE_LIMITED；伪造 X-Forwarded-For=9.9.9.9 不分桶仍 429；evil Origin 无 ACAO 头；localhost:5173 精确回显；畸形 Origin `http://[::invalid` 返回 200 无 5xx |
+| V-11 上传防御 | ✅ | 空文件/伪装扩展(.txt 装 PDF 字节)/损坏 PDF → 200 + 逐文件 ok:false；11MB → 413 ERR_FILE_TOO_LARGE（流式拒绝）；51 文件 → 422 ERR_ENUM_INVALID |
+
+### 附带观察（无需修复）
+
+- 恶意文件名带**非法扩展名**（如 `../evil.txt`）时在扩展名校验层即被拒（ok:false
+  ERR_FILE_FORMAT_UNSUPPORTED，不落盘）——同样满足 V-03"拒绝或规范化"口径；带合法
+  扩展名时走存储路径并被 basename 净化，两条路径均已覆盖。
+- 验证脚本进程退出时的 libuv 断言（`UV_HANDLE_CLOSING`）为 D-68 已登记的
+  Windows 环境语义，与业务行为无关。
+
+### 结论
+
+第五轮独立复审：**R-01~R-33 源码实证 33/33 一致、HTTP 级安全场景 4/4 通过、
+零新增缺陷、零悬空**。第三/四轮结论维持，任务书完成状态最终确认。
