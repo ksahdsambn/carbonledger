@@ -93,3 +93,32 @@
   越权矩阵精确、5 恶意文件名净化为零逃逸、限流/伪造头/CORS/畸形 Origin 全符合、
   上传五路径错误码语义正确）。零新增缺陷、零悬空，增量费用 $0。任务完成状态
   最终确认（见 ACCEPTANCE_RECORD_2026-10-15.md 第五轮独立复审节）。
+
+---
+
+## 多语言 SEO 素材补全（2026-10-18）
+
+- 为生产站补全全套 SEO 面：根页面完整 head（标题/描述/canonical/robots/OG+Twitter/
+  JSON-LD/favicon/manifest/theme-color），新增 9 个语言落地页（zh/ja/ko/de/fr/es/pt/ru/ar，
+  ar 为 RTL）构成 10 语言 + x-default 的互惠 hreflang 簇，每语言一张 1200×630 本地化 OG 卡，
+  favicon 全套（SVG/ICO 16+32+48/PNG/apple-touch/192/512/maskable），robots.txt 与含
+  hreflang 的 sitemap.xml。
+- 全部素材由 `scripts/seo/generate.js` 从 `scripts/seo/locales.json`（translator 子代理
+  产出的 9 语译文）可复现生成；`scripts/seo/verify.js` 对构建产物做 150 项断言全绿
+  （含 hreflang 双向互惠、JSON-LD、图片尺寸、链接完整性），并已接入 `npm run build`。
+- 验证链：verify 150/150；本地 HTTP 全路由 200；`npm test` 回归 51/51；vision 子代理核验
+  10 张 OG 卡 + 图标 + zh/ar 落地页截图全通过（并据其发现修复 ar 卡 bidi 重排：纯拉丁
+  片段显式 `dir="ltr"`）。
+- 行数对账：A 5,870 不变；B 9,909 / C 11,711（+760 工具行，沿用 NFR-504 豁免，README
+  已同步）。零 API 费用。未部署（发布命令见 execution_log 当日条目）。
+
+### 三轮审查闭环（2026-10-18 同日追加）
+
+- 第 1 轮自查修复 4 处（转义/sizes/探针通道判定等）；第 2、3 轮均为 code-reviewer
+  独立复审（第 2 轮结论"无功能性缺陷"，第 3 轮"无 P0/P1，可提交"）。累计再修复
+  P1×1（行数对账）+ P2×4（public 文件计数、内联脚本上线叙述、verify 接入构建门禁、
+  README "ships" 时态）+ P3×7（JSON-LD `<` 转义、域名派生自 SITE、临时目录清理加固、
+  verify 防真空/防畸形崩溃、落地页标题层级与 aria-hidden、落地页 manifest 链接）。
+- 终态验证：`npm run build` 内置 SEO 验收 **150/150**；`npm test` **51/51**；行数
+  A 5,870 / B 9,909 / C 11,711（+760）。并行 deck 工作文件（deliverables/** 与
+  acceptance.md 改动）未纳入本轮提交。

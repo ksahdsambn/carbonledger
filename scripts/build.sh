@@ -15,4 +15,8 @@ for f in backend/src/*.js backend/src/*/*.js; do
 done
 
 npm run build --workspace carbonledger-frontend
+
+# Assert the SEO surface over the fresh dist (fails the build on regression).
+node scripts/seo/verify.js
+
 echo "BUILD OK"

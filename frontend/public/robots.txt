@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /api/
+Disallow: /factors/
+Disallow: /__/
+
+Sitemap: https://myproject-dc19d.web.app/sitemap.xml

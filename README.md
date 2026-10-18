@@ -80,6 +80,28 @@ sources; tasks selecting AR6 exercise the cross-version disclosure rule.
 (one click)" on P2, and watch the 20-document pipeline run to a ten-chapter report with
 PDF/CSV exports. No registration required.
 
+## SEO assets
+
+A complete, multilingual SEO surface is built and verified from source with every
+`npm run build`, and goes live on the next `firebase deploy --only hosting`:
+
+- **Canonical English page** (`frontend/index.html`): title, meta description, robots,
+  canonical URL, Open Graph + Twitter cards, JSON-LD `WebApplication` structured data,
+  favicon set and web manifest.
+- **Nine localized landing pages** (`/zh/ /ja/ /ko/ /de/ /fr/ /es/ /pt/ /ru/ /ar/`,
+  Arabic in RTL): crawler-friendly static pages with fully translated titles,
+  descriptions, feature cards and language switcher; each carries the reciprocal
+  `hreflang` cluster (10 languages + `x-default`) and its own `og:locale` alternates.
+- **Assets**: 1200×630 Open Graph card per language, favicon (SVG + ICO with 16/32/48
+  PNG entries), apple-touch-icon, 192/512/maskable install icons, `robots.txt`,
+  `sitemap.xml` with the hreflang cluster, and `site.webmanifest`.
+- **Tooling**: `node scripts/seo/generate.js` regenerates everything (translations live
+  in `scripts/seo/locales.json`; rasterization needs a Chromium executable — headless
+  Microsoft Edge is auto-detected on Windows, set `EDGE_PATH` elsewhere). `npm run build`
+  always re-checks the fresh `frontend/dist` with `scripts/seo/verify.js` (150
+  assertions: head correctness, hreflang reciprocity, JSON-LD, image dimensions, link
+  integrity).
+
 ## Build and run locally
 
 ```bash
@@ -215,14 +237,17 @@ Supporting measurements, each with its own evidence file:
   `progress/evidence/T-050/acceptance.md`): PRD 10.3 functional 8/8, compliance 5/5,
   engineering 5/5, plus keyboard access and colour-independence NFRs.
 - **Code size** (`scripts/count_lines.sh`): application code 5,870 lines; with all
-  first-party JavaScript verification and build tooling 9,149 lines; including the offline
-  Python dataset toolchain 10,951 lines. The 2026-10 frontend enrichment (factor library
+  first-party JavaScript verification and build tooling 9,909 lines; including the offline
+  Python dataset toolchain 11,711 lines. The 2026-10 frontend enrichment (factor library
   browser, task history, SVG charts, citation anchors, comparison views; `frontend/src`
   665 → 1,807 lines) was applied after final acceptance with the NFR-504 budget explicitly
   waived by the maintainer, so figures B and C now exceed the 7,000 target and figure C
   exceeds the former 10,000 hard cap; the historical overage and its origin remain recorded
   in the defect register (`progress/DEFECT_REGISTER_2026-10-14.md`, D-02, and the second
   audit round `progress/DEFECT_REGISTER_2026-10-15.md`, D-102, for the current figures).
+  The 2026-10-18 multilingual SEO surface added 760 tooling lines under `scripts/seo/`
+  (generator, PNG reader, verifier; the generated assets under `frontend/public/` and
+  `scripts/seo/locales.json` are data, not counted), covered by the same waiver.
 
 Video acceptance (4 items), the real-person 5-second usability check, and the deck PDF /
 video production steps remain manual; they are listed with instructions in

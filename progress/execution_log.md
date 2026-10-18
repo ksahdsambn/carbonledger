@@ -1001,3 +1001,82 @@ deck 文稿 13 页（10-14 区间）、视频脚本 180 秒 9 镜头且 PRD 四�
   专用实例、上传五路径错误码、V-10 浏览器九页走查 12 截图 vision 12/12）；二次复查零悬空。
 - 阶段五：README 对账（49 / 5,828/9,049/10,851）、登记册/修复报告/验收记录/证据归档。
 - 费用：全程 mock 与本地服务，Gemini/Google Cloud 增量费用 $0。
+
+## 多语言 SEO 素材补全（2026-10-18）
+
+- **背景**：生产站 https://myproject-dc19d.web.app 此前 head 仅有标题，无描述/OG/favicon/
+  sitemap 等任何 SEO 素材。用户指令：为项目补全全部 SEO 素材（OG 图、标题、描述、favicon
+  等），按语言分别补齐，并更新操作记录。
+- **范围**：纯增量 SEO 面，不改应用逻辑（`frontend/src` 零改动，A 口径 5,870 行不变）。
+
+### 交付内容
+
+| 类别 | 文件 | 说明 |
+|---|---|---|
+| 源头 | `scripts/seo/locales.json` | 10 语言（en/zh/ja/ko/de/fr/es/pt/ru/ar）全部文案与元数据；9 种非英语译文由 translator 子代理并行产出（全局规则：翻译必须委派） |
+| 生成器 | `scripts/seo/generate.js`（444 行） | 生成 favicon（SVG/ICO/PNG×2）、apple-touch-icon、192/512/maskable 图标、10 张 1200×630 OG 卡（Edge 无头渲染）、9 个语言落地页、robots.txt、sitemap.xml、site.webmanifest；全部可复现（`node scripts/seo/generate.js`） |
+| PNG 读取器 | `scripts/seo/png.js`（85 行） | 零依赖 PNG 解码（尺寸/透明角探测） |
+| 验收器 | `scripts/seo/verify.js`（231 行） | 对 dist 的 150 项断言 |
+| 产物 | `frontend/public/**`（30 个文件） | Vite 原样拷贝进 dist；favicon.svg 圆角矢量，光栅图标因 Edge 无头渲染输出为无 alpha 通道的 RGB 而回退为满 bleed 方形（预案内，探针显式判定通道数） |
+| 页面 | `frontend/index.html` 重写 head | title/description/robots/canonical/hreflang×11/OG+og:locale×10/Twitter/JSON-LD(WebApplication)/favicon/manifest/theme-color/noscript；移除遗留内联 gstatic 认证脚本——该段曾随 Vite 主 bundle 上线，但运行时被生产 CSP `script-src 'self'` 拦截并由 try/catch 吞掉（真实认证路径在 auth.js REST 实现），删除后每次加载少一次无效的 `/__/firebase/init.json` 请求与一次 CSP 违规 |
+| 配置 | `firebase.json` | /og/**、/icons/** 与各 favicon 文件加 7 天缓存头 |
+
+### SEO 设计要点
+
+- hreflang 互惠簇：en(/) + 9 个 /{lang}/ 页面 + x-default(/)，每个页面与 sitemap.xml 内
+  xhtml:link 簇完全一致（verify 断言双向互惠）。
+- 语言落地页为真实静态内容（译文标题/描述/6 张功能卡/语言切换器/CTA），非桥页；页面明示
+  应用内界面为英文。ar 页 `dir="rtl"`。
+- OG 图 10 张本地化标语；纯拉丁片段（品牌名/胶囊/域名）显式 `dir="ltr"` 隔离——修复 vision
+  核验发现的 ar 卡 bidi 重排（"741 emission factors" 被排为 "emission factors 741"）。
+- robots.txt 放行静态面、禁 /api/ /factors/ /__/；sitemap 10 URL。
+
+### 验证（全绿）
+
+- `node scripts/seo/verify.js`（构建后 dist，已接入 `npm run build`）：**150/150**——逐页 lang/dir/title/description/
+  canonical/hreflang 簇/og:locale 及 alternates/og:image 绝对地址与尺寸/Twitter/JSON-LD 解析
+  与 inLanguage/本地引用完整性；sitemap 10 URL 互惠簇；robots；manifest 图标实测；OG 全部
+  1200×630；ICO 3 条目(16/32/48, PNG 内嵌)。
+- 本地 HTTP（vite preview + curl 全矩阵）：`/`、`/zh/`、`/ar/`、og 图、favicon 全套、
+  robots/sitemap/manifest 均 200 且 Content-Type 正确。
+- 回归：`npm test` **51/51**（50 单元/e2e + upload 套件），B4 英文约束不受影响（B4 扫描
+  清单不含 frontend/public 与 scripts/seo）。
+- vision 子代理核验：10 张 OG 卡逐张转录标语与源文案一致、无豆腐块/裁切；图标 4 项与
+  zh/ar 落地页截图 2 项共 6/6 通过（ar RTL 版式、logo 居右、卡片右起排列均正确）。
+- 行数对账：`git add -N scripts/seo frontend/public` 后实测 A 5,870 / B **9,909** / C
+  **11,711**（+760 工具行，沿用 T-052 的 NFR-504 豁免，README 已同步新数并注明来源）。
+
+### 备注
+
+- 未执行 `firebase deploy`（用户未指令部署）；发布命令：
+  `npm run build --workspace carbonledger-frontend && firebase deploy --only hosting`。
+- 会话期间工作区出现的 `deliverables/`（deck 相关）与
+  `progress/evidence/T-050/acceptance.md` 改动非本次操作产生，未触碰、未纳入本次记录。
+- 费用：零 Gemini/Google Cloud 调用，增量 $0。
+
+### 三轮审查与修复（2026-10-18 同日追加）
+
+- **第一轮（自查）**：修复 4 处——根页 og/twitter image:alt 裸 `&` 转义、favicon.ico
+  link `sizes="any"`、生成器 CSS 模板换行、透明度探针显式判定 PNG 通道数（Edge 截图为
+  8-bit RGB 无 alpha，方形回退为正确路径并改写入注释）。深检全绿：og-en 整图反过滤解码
+  （2,268,000 字节）、favicon.ico 偏移连续性与 3 个内嵌 PNG 逐条目解码、10 页属性转义
+  零裸 &、零模板泄漏、README 无 CJK 且 C5 章节齐全、落地页仅 ld+json 脚本、hreflang
+  尾斜杠一致。`npm test` 51/51。
+- **第二轮（code-reviewer 独立复审）**：结论"无功能性缺陷，可提交"，修复其全部 P1/P2：
+  P1 行数对账偏差（修复引入的 +4 行）→ 统一以 count_lines 实测为准；P2 public 文件计数
+  29→30；P2 "内联认证脚本从未上线"叙述失实（实测线上 bundle 曾包含该段、运行时被 CSP
+  拦截）→ 改写为如实表述；P2 verify 未接入自动入口 → `npm run build` 尾部追加
+  `node scripts/seo/verify.js`（set -euo pipefail 下构成构建门禁）；P2 README 补
+  EDGE_PATH 说明；P3 全采纳：JSON-LD `<`→`\u003c` 转义、卡面/页脚域名改由
+  `new URL(SITE).host` 派生、临时目录 mkdtempSync+try/finally、verify.js 缺失文件
+  FAIL 不崩溃、本地引用检查覆盖 `href="/"` 且要求 isFile。回归 51/51，verify 150/150。
+- **第三轮（code-reviewer 最终复审）**：结论"无 P0/P1，代码可提交"，修复其 P2/P3：
+  P2 README "production site ships" 时态失实（线上 curl 实测 SEO 面尚未部署）→ 改为
+  "build 时生成并验证、随下次 firebase deploy 上线"；P2 提交卫生 → 删除临时审计脚本
+  `scripts/seo/.round1-audit.mjs`，改用显式路径 git add（排除并行 deck 工作文件）；
+  P3 verify /assets 引用防空真空通过、ICO/manifest 畸形时不崩溃（长度前置与
+  Array.isArray）、`process.on('exit')` 兜底清理临时目录、落地页卡片 h3→h2（标题
+  层级 1×h1+6×h2）、globe 装饰 SVG 补 aria-hidden、落地页补 `<link rel="manifest">`。
+- **终态**：`npm run build` 门禁内 verify **150/150**；`npm test` **51/51**；
+  scan-secrets 0 命中；行数终值 A 5,870 / B 9,909 / C 11,711（+760 工具行）；
+  README/两份 progress 文档数字与实测逐项一致。

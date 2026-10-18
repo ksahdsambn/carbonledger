@@ -1,30 +1,90 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" dir="ltr">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>CarbonLedger — Scope 3 Carbon Accounting Agent</title>
+    <title>CarbonLedger — Scope 3 Carbon Accounting &amp; Disclosure Agent</title>
+    <meta name="description" content="Turn invoices into audit-ready Scope 3 reports: AI extraction, 741 public emission factors, GHG Protocol Scope 1/2/3 totals and full traceability." />
+    <meta name="robots" content="index, follow" />
+    <meta name="author" content="CarbonLedger Team" />
+    <meta name="theme-color" content="#1d6f54" />
+    <link rel="canonical" href="https://myproject-dc19d.web.app/" />
+    <link rel="alternate" hreflang="en" href="https://myproject-dc19d.web.app/" />
+    <link rel="alternate" hreflang="zh" href="https://myproject-dc19d.web.app/zh/" />
+    <link rel="alternate" hreflang="ja" href="https://myproject-dc19d.web.app/ja/" />
+    <link rel="alternate" hreflang="ko" href="https://myproject-dc19d.web.app/ko/" />
+    <link rel="alternate" hreflang="de" href="https://myproject-dc19d.web.app/de/" />
+    <link rel="alternate" hreflang="fr" href="https://myproject-dc19d.web.app/fr/" />
+    <link rel="alternate" hreflang="es" href="https://myproject-dc19d.web.app/es/" />
+    <link rel="alternate" hreflang="pt" href="https://myproject-dc19d.web.app/pt/" />
+    <link rel="alternate" hreflang="ru" href="https://myproject-dc19d.web.app/ru/" />
+    <link rel="alternate" hreflang="ar" href="https://myproject-dc19d.web.app/ar/" />
+    <link rel="alternate" hreflang="x-default" href="https://myproject-dc19d.web.app/" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <meta name="apple-mobile-web-app-title" content="CarbonLedger" />
+    <meta name="msapplication-TileColor" content="#1d6f54" />
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content="CarbonLedger" />
+    <meta property="og:url" content="https://myproject-dc19d.web.app/" />
+    <meta property="og:title" content="CarbonLedger — Scope 3 Carbon Accounting &amp; Disclosure Agent" />
+    <meta property="og:description" content="Turn invoices into audit-ready Scope 3 reports: AI extraction, 741 public emission factors, GHG Protocol Scope 1/2/3 totals and full traceability." />
+    <meta property="og:image" content="https://myproject-dc19d.web.app/og/og-en.png" />
+    <meta property="og:image:type" content="image/png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="CarbonLedger logo with the tagline: Scope 3 Carbon Accounting &amp; Disclosure Agent" />
+    <meta property="og:locale" content="en_US" />
+    <meta property="og:locale:alternate" content="zh_CN" />
+    <meta property="og:locale:alternate" content="ja_JP" />
+    <meta property="og:locale:alternate" content="ko_KR" />
+    <meta property="og:locale:alternate" content="de_DE" />
+    <meta property="og:locale:alternate" content="fr_FR" />
+    <meta property="og:locale:alternate" content="es_ES" />
+    <meta property="og:locale:alternate" content="pt_BR" />
+    <meta property="og:locale:alternate" content="ru_RU" />
+    <meta property="og:locale:alternate" content="ar_AR" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="CarbonLedger — Scope 3 Carbon Accounting &amp; Disclosure Agent" />
+    <meta name="twitter:description" content="Turn invoices into audit-ready Scope 3 reports: AI extraction, 741 public emission factors, GHG Protocol Scope 1/2/3 totals and full traceability." />
+    <meta name="twitter:image" content="https://myproject-dc19d.web.app/og/og-en.png" />
+    <meta name="twitter:image:alt" content="CarbonLedger logo with the tagline: Scope 3 Carbon Accounting &amp; Disclosure Agent" />
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebApplication",
+        "name": "CarbonLedger",
+        "alternateName": "CarbonLedger — Scope 3 Carbon Accounting & Disclosure Agent",
+        "url": "https://myproject-dc19d.web.app/",
+        "description": "Turn invoices into audit-ready Scope 3 reports: AI extraction, 741 public emission factors, GHG Protocol Scope 1/2/3 totals and full traceability.",
+        "applicationCategory": "BusinessApplication",
+        "operatingSystem": "Any (web browser)",
+        "browserRequirements": "Requires JavaScript",
+        "inLanguage": "en",
+        "isAccessibleForFree": true,
+        "featureList": [
+          "Multi-format ingestion",
+          "AI extraction & normalization",
+          "Traceable factor matching",
+          "GHG Protocol computation",
+          "Scenarios & dashboards",
+          "Audit-ready reporting"
+        ],
+        "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" },
+        "publisher": { "@type": "Organization", "name": "CarbonLedger", "url": "https://myproject-dc19d.web.app/" }
+      }
+    </script>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module">
-      // Anonymous sign-in on load (PRD 10.3: judges enter without any
-      // registration). Uses the runtime config Firebase Hosting injects.
-      (async () => {
-      try {
-        const cfg = await (await fetch('/__/firebase/init.json')).json();
-        const [{ initializeApp }, { getAuth, signInAnonymously }] = await Promise.all([
-          import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js'),
-          import('https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js'),
-        ]);
-        const app = initializeApp(cfg);
-        const cred = await signInAnonymously(getAuth(app));
-        window.__userUid = cred.user.uid;
-      } catch (e) {
-        console.info('Anonymous auth unavailable (local dev); continuing without it.');
-      }
-      })();
-    </script>
+    <noscript>
+      CarbonLedger is a JavaScript application that turns invoices into audit-ready
+      Scope 3 reports. Please enable JavaScript to use it.
+    </noscript>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

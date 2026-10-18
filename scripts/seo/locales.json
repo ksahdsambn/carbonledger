@@ -1,0 +1,236 @@
+{
+  "site": "https://myproject-dc19d.web.app",
+  "chips": ["GHG Protocol", "741 emission factors", "Scope 1 · 2 · 3"],
+  "locales": [
+    {
+      "lang": "en",
+      "path": "",
+      "ogLocale": "en_US",
+      "native": "English",
+      "dir": "ltr",
+      "font": "'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif",
+      "strings": {
+        "tagline": "Scope 3 Carbon Accounting & Disclosure Agent",
+        "description": "Turn invoices into audit-ready Scope 3 reports: AI extraction, 741 public emission factors, GHG Protocol Scope 1/2/3 totals and full traceability.",
+        "cta": "Open CarbonLedger",
+        "note": "The in-app interface is in English.",
+        "og_alt": "CarbonLedger logo with the tagline: Scope 3 Carbon Accounting & Disclosure Agent",
+        "features": [
+          { "title": "Multi-format ingestion", "desc": "Upload PDFs including scans, photos, XLSX and CSV; every page is classified automatically." },
+          { "title": "AI extraction & normalization", "desc": "Activity data, units and locations are extracted and normalized for each document page." },
+          { "title": "Traceable factor matching", "desc": "Dual-channel recall over 741 curated public emission factors, with a stored comparative rationale." },
+          { "title": "GHG Protocol computation", "desc": "Scope 1/2/3 boundary decisions, uncertainty grading and GWP handling — reproducible by design." },
+          { "title": "Scenarios & dashboards", "desc": "Interactive charts plus three reduction what-if scenarios with instant recalculation." },
+          { "title": "Audit-ready reporting", "desc": "A ten-chapter report with PDF and CSV exports, citation anchors and a full audit trail." }
+        ]
+      }
+    },
+    {
+      "lang": "zh",
+      "path": "zh",
+      "ogLocale": "zh_CN",
+      "native": "中文（简体）",
+      "dir": "ltr",
+      "font": "'Segoe UI', 'Microsoft YaHei', 'PingFang SC', 'Noto Sans SC', sans-serif",
+      "strings": {
+        "tagline": "范围三碳核算与披露智能体",
+        "description": "将发票转化为可审计的范围三报告：AI 自动提取，741 条公开排放因子，温室气体核算体系（GHG Protocol）范围一/二/三汇总，全程可追溯。",
+        "cta": "打开 CarbonLedger",
+        "note": "应用内界面为英文。",
+        "og_alt": "CarbonLedger 标志，标语为：范围三碳核算与披露智能体",
+        "features": [
+          { "title": "多格式文件导入", "desc": "上传 PDF、扫描件、照片、XLSX 与 CSV，每页自动分类。" },
+          { "title": "AI 提取与标准化", "desc": "逐页提取并标准化活动数据、单位与地点。" },
+          { "title": "可追溯因子匹配", "desc": "741 条精选公开排放因子双通道召回，并留存对比依据。" },
+          { "title": "温室气体核算体系计算", "desc": "范围一/二/三边界判定、不确定性分级与 GWP 处理，结果可复现。" },
+          { "title": "情景与仪表盘", "desc": "交互图表与三种减排情景假设，即时重算。" },
+          { "title": "审计就绪报告", "desc": "十章报告，支持 PDF 与 CSV 导出，附引文锚点与完整审计轨迹。" }
+        ]
+      }
+    },
+    {
+      "lang": "ja",
+      "path": "ja",
+      "ogLocale": "ja_JP",
+      "native": "日本語",
+      "dir": "ltr",
+      "font": "'Segoe UI', 'Yu Gothic UI', 'Yu Gothic', Meiryo, 'Hiragino Kaku Gothic ProN', sans-serif",
+      "strings": {
+        "tagline": "スコープ3 排出量算定・開示エージェント",
+        "description": "請求書を監査対応のスコープ3レポートに変換。AI抽出、741件の公開排出係数、GHGプロトコル準拠のスコープ1/2/3集計、完全なトレーサビリティ。",
+        "cta": "CarbonLedgerを開く",
+        "note": "アプリ内インターフェースは英語です。",
+        "og_alt": "「スコープ3 排出量算定・開示エージェント」というタグラインを添えたCarbonLedgerのロゴ。",
+        "features": [
+          { "title": "複数形式の取り込み", "desc": "PDF（スキャン・写真対応）、XLSX、CSVに対応し、全ページを自動分類。" },
+          { "title": "AI抽出と正規化", "desc": "活動データ、単位、地域をページごとに抽出・正規化します。" },
+          { "title": "追跡可能な係数照合", "desc": "741件の厳選公開排出係数を二経路で検索し、比較根拠を記録します。" },
+          { "title": "GHGプロトコル算定", "desc": "スコープ1/2/3の境界判断、不確実性評価、GWP処理を設計段階から再現可能に。" },
+          { "title": "シナリオとダッシュボード", "desc": "インタラクティブなチャートと、即時再計算される3つの削減シナリオ。" },
+          { "title": "監査対応レポート", "desc": "10章構成のレポートをPDF・CSV出力でき、引用アンカーと監査証跡も完備。" }
+        ]
+      }
+    },
+    {
+      "lang": "ko",
+      "path": "ko",
+      "ogLocale": "ko_KR",
+      "native": "한국어",
+      "dir": "ltr",
+      "font": "'Segoe UI', 'Malgun Gothic', 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif",
+      "strings": {
+        "tagline": "범위 3 탄소 회계·공개 에이전트",
+        "description": "인보이스를 감사 대응 가능한 범위 3 보고서로 전환합니다. AI 추출, 741개 공개 배출계수, GHG 프로토콜 범위 1/2/3 합계, 완전한 추적성을 제공합니다.",
+        "cta": "CarbonLedger 열기",
+        "note": "앱 내 인터페이스는 영어로 제공됩니다.",
+        "og_alt": "범위 3 탄소 회계·공개 에이전트라는 문구와 함께 표시된 CarbonLedger 로고",
+        "features": [
+          { "title": "다중 형식 수집", "desc": "스캔, 사진이 포함된 PDF와 XLSX, CSV를 업로드하면 모든 페이지가 자동 분류됩니다." },
+          { "title": "AI 추출 및 정규화", "desc": "활동 데이터, 단위, 위치를 문서 페이지별로 추출하고 정규화합니다." },
+          { "title": "추적 가능한 계수 매칭", "desc": "엄선된 741개 공개 배출계수를 이중 채널로 검색하고 비교 근거를 저장합니다." },
+          { "title": "GHG 프로토콜 산정", "desc": "범위 1/2/3 경계 결정, 불확실성 등급, GWP 처리를 설계상 재현 가능합니다." },
+          { "title": "시나리오 및 대시보드", "desc": "인터랙티브 차트와 즉시 재계산되는 세 가지 감축 가정 시나리오를 제공합니다." },
+          { "title": "감사 대응 보고", "desc": "10개 장으로 구성된 보고서를 PDF와 CSV로 내보내며 인용 위치와 전체 감사 기록을 포함합니다." }
+        ]
+      }
+    },
+    {
+      "lang": "de",
+      "path": "de",
+      "ogLocale": "de_DE",
+      "native": "Deutsch",
+      "dir": "ltr",
+      "font": "'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif",
+      "strings": {
+        "tagline": "Agent für Scope-3-CO2-Bilanzierung & Offenlegung",
+        "description": "Prüfungsfertige Scope-3-Berichte aus Rechnungen: KI-Extraktion, 741 öffentliche Emissionsfaktoren, GHG-Protokoll Scope 1/2/3, lückenlose Nachvollziehbarkeit.",
+        "cta": "CarbonLedger öffnen",
+        "note": "Die In-App-Oberfläche ist auf Englisch.",
+        "og_alt": "CarbonLedger-Logo mit dem Slogan: Agent für Scope-3-CO2-Bilanzierung & Offenlegung",
+        "features": [
+          { "title": "Multi-Format-Import", "desc": "PDF, Scans, Fotos, XLSX und CSV hochladen; jede Seite wird automatisch klassifiziert." },
+          { "title": "KI-Extraktion & Normierung", "desc": "Aktivitätsdaten, Einheiten und Orte werden für jede Dokumentseite extrahiert und normiert." },
+          { "title": "Belegbares Faktor-Matching", "desc": "Zweikanalige Suche in 741 kuratierten öffentlichen Emissionsfaktoren, mit gespeicherter Begründung." },
+          { "title": "GHG-Protokoll-Berechnung", "desc": "Scope-1/2/3-Grenzen, Unsicherheitsbewertung und GWP-Behandlung – reproduzierbar angelegt." },
+          { "title": "Szenarien & Dashboards", "desc": "Interaktive Diagramme plus drei Reduktionsszenarien mit sofortiger Neuberechnung." },
+          { "title": "Prüfungsfertige Berichte", "desc": "Ein Bericht mit zehn Kapiteln sowie PDF- und CSV-Export, Quellenanker und vollständigem Prüfpfad." }
+        ]
+      }
+    },
+    {
+      "lang": "fr",
+      "path": "fr",
+      "ogLocale": "fr_FR",
+      "native": "Français",
+      "dir": "ltr",
+      "font": "'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif",
+      "strings": {
+        "tagline": "Agent de comptabilité carbone Scope 3",
+        "description": "Transformez vos factures en rapports Scope 3 prêts pour l'audit : extraction IA, 741 facteurs d'émission publics, totaux Scope 1/2/3, traçabilité totale.",
+        "cta": "Ouvrir CarbonLedger",
+        "note": "L'interface de l'application est en anglais.",
+        "og_alt": "Logo CarbonLedger accompagné de son slogan : Agent de comptabilité carbone Scope 3",
+        "features": [
+          { "title": "Ingestion multi-formats", "desc": "Importez des PDF, scans, photos, XLSX et CSV ; chaque page est classée automatiquement." },
+          { "title": "Extraction et normalisation IA", "desc": "Les données d'activité, unités et lieux sont extraites et normalisées pour chaque page." },
+          { "title": "Appariement traçable de facteurs", "desc": "Rappel bicanal de 741 facteurs d'émission publics, avec justification comparative conservée." },
+          { "title": "Calcul selon le protocole GHG", "desc": "Périmètre Scope 1/2/3, incertitudes graduées et gestion des PRG — reproductible par conception." },
+          { "title": "Scénarios & tableaux de bord", "desc": "Graphiques interactifs et trois scénarios de réduction what-if avec recalcul instantané." },
+          { "title": "Rapports prêts pour l'audit", "desc": "Rapport en dix chapitres, exports PDF et CSV, ancres de citation et piste d'audit complète." }
+        ]
+      }
+    },
+    {
+      "lang": "es",
+      "path": "es",
+      "ogLocale": "es_ES",
+      "native": "Español",
+      "dir": "ltr",
+      "font": "'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif",
+      "strings": {
+        "tagline": "Agente de contabilidad y divulgación Scope 3",
+        "description": "De facturas a informes Scope 3 auditables: extracción con IA, 741 factores de emisión públicos, totales Scope 1/2/3 del protocolo GHG y trazabilidad total.",
+        "cta": "Abrir CarbonLedger",
+        "note": "La interfaz de la aplicación está en inglés.",
+        "og_alt": "Logotipo de CarbonLedger con el lema: Agente de contabilidad y divulgación Scope 3",
+        "features": [
+          { "title": "Ingesta multiformato", "desc": "Sube PDF, incluidos escaneos y fotos, XLSX y CSV; cada página se clasifica automáticamente." },
+          { "title": "Extracción y normalización", "desc": "La IA extrae y normaliza datos de actividad, unidades y ubicaciones de cada página." },
+          { "title": "Factores con trazabilidad", "desc": "Búsqueda de doble canal en 741 factores de emisión públicos, con justificación comparativa." },
+          { "title": "Cálculo del protocolo GHG", "desc": "Decisiones de límite Scope 1/2/3, incertidumbre y tratamiento del GWP: reproducible por diseño." },
+          { "title": "Escenarios y paneles", "desc": "Gráficos interactivos y tres escenarios hipotéticos de reducción con recálculo instantáneo." },
+          { "title": "Informes listos para auditar", "desc": "Informe de diez capítulos con exportación a PDF y CSV, anclas de citas y rastro de auditoría." }
+        ]
+      }
+    },
+    {
+      "lang": "pt",
+      "path": "pt",
+      "ogLocale": "pt_BR",
+      "native": "Português (Brasil)",
+      "dir": "ltr",
+      "font": "'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif",
+      "strings": {
+        "tagline": "Agente de Contabilidade de Carbono do Escopo 3",
+        "description": "Converta faturas em relatórios do Escopo 3 auditáveis: extração por IA, 741 fatores de emissão, totais do Protocolo GHG (Escopos 1/2/3) e rastreabilidade total",
+        "cta": "Abrir o CarbonLedger",
+        "note": "A interface do aplicativo está em inglês.",
+        "og_alt": "Logotipo do CarbonLedger com o slogan: Agente de Contabilidade de Carbono do Escopo 3",
+        "features": [
+          { "title": "Ingestão em vários formatos", "desc": "Envie PDFs escaneados e fotos, XLSX e CSV; cada página é classificada automaticamente." },
+          { "title": "IA: extração e normalização", "desc": "Dados de atividade, unidades e locais extraídos e normalizados por IA em cada página." },
+          { "title": "Match rastreável de fatores", "desc": "Recall de dois canais em 741 fatores de emissão públicos, com justificativa comparativa salva." },
+          { "title": "Cálculo pelo Protocolo GHG", "desc": "Decisões de limite dos Escopos 1/2/3, grau de incerteza e uso de GWP — reproduzível por design." },
+          { "title": "Cenários e dashboards", "desc": "Gráficos interativos e três cenários what-if de redução com recálculo instantâneo." },
+          { "title": "Relatórios auditáveis", "desc": "Dez capítulos, exportação em PDF e CSV, âncoras de citação e trilha de auditoria completa." }
+        ]
+      }
+    },
+    {
+      "lang": "ru",
+      "path": "ru",
+      "ogLocale": "ru_RU",
+      "native": "Русский",
+      "dir": "ltr",
+      "font": "'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', Arial, sans-serif",
+      "strings": {
+        "tagline": "Агент учёта и раскрытия Scope 3",
+        "description": "Превращайте счета в готовые к аудиту отчёты Scope 3: ИИ-извлечение данных, 741 открытый фактор выбросов, итоги Scope 1/2/3 по Протоколу GHG и полная прослеживаемость.",
+        "cta": "Открыть CarbonLedger",
+        "note": "Интерфейс приложения — на английском языке.",
+        "og_alt": "Логотип CarbonLedger с подписью: агент учёта и раскрытия Scope 3",
+        "features": [
+          { "title": "Приём любых форматов", "desc": "Загружайте PDF, включая сканы и фото, XLSX и CSV — каждая страница классифицируется автоматически." },
+          { "title": "ИИ-извлечение и нормализация", "desc": "Данные о деятельности, единицы измерения и локации извлекаются и нормализуются по каждой странице документа." },
+          { "title": "Прослеживаемый подбор факторов", "desc": "Двухканальный поиск по 741 открытому фактору выбросов с сохранением обоснования сравнения." },
+          { "title": "Расчёт по Протоколу GHG", "desc": "Границы Scope 1/2/3, оценка неопределённости и учёт ПГП — воспроизводимость по замыслу." },
+          { "title": "Сценарии и дашборды", "desc": "Интерактивные графики и три сценария сокращения выбросов с мгновенным пересчётом." },
+          { "title": "Отчётность для аудита", "desc": "Отчёт из десяти глав с экспортом в PDF и CSV, ссылками на источники и полным аудиторским следом." }
+        ]
+      }
+    },
+    {
+      "lang": "ar",
+      "path": "ar",
+      "ogLocale": "ar_AR",
+      "native": "العربية",
+      "dir": "rtl",
+      "font": "'Segoe UI', Tahoma, 'Geeza Pro', 'Noto Naskh Arabic', sans-serif",
+      "strings": {
+        "tagline": "وكيل محاسبة النطاق 3 الكربونية والإفصاح عنها",
+        "description": "حوّل الفواتير إلى تقارير جاهزة للتدقيق عن النطاق 3: استخراج AI، 741 معامل انبعاث عام، مجاميع النطاق 1/2/3 وفق بروتوكول الغازات الدفيئة (GHG)، وتتبّع كامل.",
+        "cta": "افتح CarbonLedger",
+        "note": "واجهة التطبيق الداخلية باللغة الإنجليزية.",
+        "og_alt": "شعار CarbonLedger مع السطر التعريفي: وكيل محاسبة النطاق 3 الكربونية والإفصاح عنها",
+        "features": [
+          { "title": "استيراد بصيغ متعددة", "desc": "ارفع ملفات PDF بما في ذلك الممسوحة ضوئياً والصور، وXLSX وCSV؛ وتُصنَّف كل صفحة تلقائياً." },
+          { "title": "استخراج وتوحيد بمساعدة AI", "desc": "تُستخرج بيانات النشاط والوحدات والمواقع وتُوحَّد لكل صفحة من المستندات." },
+          { "title": "مطابقة عوامل قابلة للتتبّع", "desc": "استرجاع بقناتين من 741 معامل انبعاث عام مُنتقى، مع حفظ أساس المقارنة." },
+          { "title": "احتساب وفق بروتوكول الغازات الدفيئة (GHG)", "desc": "قرارات حدود النطاق 1/2/3، وتصنيف عدم التيقّن، ومعالجة GWP — قابلة للتكرار بالتصميم." },
+          { "title": "السيناريوهات ولوحات المؤشرات", "desc": "مخططات تفاعلية مع ثلاثة سيناريوهات افتراضية للتقليل وإعادة احتساب فورية." },
+          { "title": "تقارير جاهزة للتدقيق", "desc": "تقرير من عشرة فصول مع تصدير PDF وCSV، ومراسي استشهاد، وسجل تدقيق كامل." }
+        ]
+      }
+    }
+  ]
+}
