@@ -1114,3 +1114,30 @@ Application code 4,544 → **5,765** lines; including JS toolchain 7,708 → **8
   `npm run build` with the SEO gate 150/150; `npm test` 51/51; count_lines
   A 5,870 / B 9,909 / C 12,365 (unchanged by this round, README-consistent);
   scan-secrets 0 hits; C4 waiver detectable against the English log.
+
+### Post-internationalization review closeout (2026-10-19)
+
+- Round 1 (self-review, structural): for all 16 translated documents, heading
+  counts, table-row counts and the full ID sets (D/T/R/FR/NFR/AI/V/A/B) match
+  the pre-translation originals exactly (the +1 heading in execution_log and
+  PROGRESS_SUMMARY is the appended round record). Found and fixed **4 Markdown
+  table defects faithfully carried over from the Chinese originals**: unescaped
+  in-cell pipes in V-06 (`+1\|@ping\|-2`), R-14 (`\|\|`), R-32 (`\|`), and a
+  column-overflow 5th cell in the V-10 row (evidence merged into the description
+  cell). After the fix, a GFM-aware pipe scanner reports all tables across the
+  16 files consistent.
+- Round 2 (deep diff): numeric multiset comparison orig→translated — every
+  difference traced to (a) small ordinals spelled as English words by the
+  translator (style, not data), or (b) the appended round-record sections; a
+  targeted critical-figure check (61.3s / 76ms / 51/51 / 150/150 / 741 /
+  $0.00058 / line-count figures / error codes / code identifiers) shows zero
+  drift beyond those two causes (one benign +1 "GWP" acronym normalization in
+  IMPLEMENTATION_PLAN). No mojibake, no HTML entities, no CJK punctuation.
+  B5 Track label, C5 sections, B4 README-CJK-free and the C4 dual-language
+  waiver marker all re-verified in place. The independent code-reviewer agent
+  was unavailable (provider rejected the model request twice), so round 2 was
+  executed as an expanded manual deep-diff instead.
+- Round 3 (final gates): build with the SEO gate 150/150; npm test 51/51;
+  count_lines A 5,870 / B 9,909 / C 12,365 (unchanged); scan-secrets 0 hits;
+  working tree limited to the two table-fixed documents; temp verification
+  script deleted before commit.

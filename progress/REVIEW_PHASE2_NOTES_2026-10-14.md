@@ -20,7 +20,7 @@
 | R-11 | **Substantiated (P1)** | D-14 | In reviewQueue.js, assignFactorManually (:81) / excludeRecord (:102) have no record.task_id validation; editRecordFields patch values have no type/range validation |
 | R-12 | **Substantiated (P1)** | D-15 | pipelineModelCalls validateExtraction: for quantity, `NaN<=0` is false and Infinity is a number, so both pass; amount only checks `<0`; gross_weight_kg/distance_km only check zero; convertUnit/activityBasis have no finiteness defense; review editing is the same |
 | R-13 | **Substantiated (P1)** | D-16/D-17 | config.js coerce has no validation (NaN/negative values take effect); at pipeline.js:209, Math.max(1,Number(...)) yields NaN for NaN → the worker array is empty → silently runs empty; ai/client attempts=NaN+1 → the loop never executes → throw null; callModel still retries for kind:'fatal' |
-| R-14 | **Substantiated (P2)** | D-19 | In reportService.js:270, `scenarios.has(ref) || String(ref).includes('_S-')` — the second clause bypasses the existence check |
+| R-14 | **Substantiated (P2)** | D-19 | In reportService.js:270, `scenarios.has(ref) \|\| String(ref).includes('_S-')` — the second clause bypasses the existence check |
 | R-15 | **Substantiated (P2)** | D-20 | At store/index.js:40, a parse failure silently sets an empty Map; #persist writeFileSync is non-atomic |
 | R-16 | **Substantiated (P2)** | D-21 | The candidate confidence at pipeline.js:137 is hardcoded to 0.5 (threshold 0.65) → no_high_confidence_factor is always true (when candidates exist); the uncertainty levelDistribution produces an `undefined:NaN` key for missing levels |
 | R-17 | **Substantiated (P2)** | D-22 | queue/index.js is referenced only by backend/test/queue.test.js, with zero references on the server side; the runtime setImmediate dispatch in enqueue does not remove items from pending → repeated start causes double dispatch. Decision: remove under the authorization in section 5.4.3 of the audit brief (reclaiming lines) |
@@ -38,7 +38,7 @@
 | R-29 | **Substantiated (P3)** | D-34 | taskService only checks truthiness; entity_name can be any structure; dates have no type/order validation |
 | R-30 | **Difference confirmed (P3)** | D-35 | Undefined-value queries: local returns [], firestore where==undefined throws (there is currently no such call site); document order: local uses insertion order, firestore does not guarantee it; list returns everything with no pagination. A difference table was produced, **intentionally retained** and documented |
 | R-31 | **Substantiated (P3)** | D-36 | reportService.js:95-97 empty loop (slice(0,0)); the inner if at traceability.js:57-60 is a tautological dead branch; loadRecords at pages.jsx:156 is a dead function. Remove to reclaim lines |
-| R-32 | **Substantiated (P3)** | D-37 | At server.js:87, `\.web\.app$|\.firebaseapp\.com$` allows any Firebase project domain |
+| R-32 | **Substantiated (P3)** | D-37 | At server.js:87, `\.web\.app$\|\.firebaseapp\.com$` allows any Firebase project domain |
 | R-33 | **Substantiated (P3)** | D-38 | uploadFiles in api.js does not check res.ok; the json() opts spread after headers can override the headers; there is no timeout anywhere; auth.js stores the refresh token in localStorage and silently switches identity on failure (session misalignment) |
 
 ## New Phase 2 Findings (defect register from D-39 onward)

@@ -136,3 +136,14 @@ See `progress/evidence/T-050/acceptance.md`: 4 video acceptance items, the NFR-4
 - Remaining Chinese is functional only (currency aliases, CJK-detection regexes,
   fixtures, zh landing page/locale data, one verbatim evidence snapshot).
 - Gates: build+SEO 150/150, tests 51/51, line counts unchanged, secrets 0.
+
+### Post-internationalization review (2026-10-19)
+
+- Three-round review of the internationalization commit: structural integrity
+  (headings/rows/ID sets) exact across all 16 documents; 4 Markdown table
+  defects inherited from the Chinese originals fixed (escaped pipes ×3, column
+  overflow ×1); numeric deep-diff accounted to the last token (translator
+  ordinal spelling + appended sections only); B4/B5/C4/C5 gates re-verified.
+  Independent code-reviewer agent was down (provider-side), rounds executed
+  manually. Final gates: build+SEO 150/150, tests 51/51, lines 5,870/9,909/
+  12,365, secrets 0.
