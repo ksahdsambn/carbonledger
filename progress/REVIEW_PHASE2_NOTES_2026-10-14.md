@@ -1,67 +1,67 @@
-# 阶段二分域审查记录(2026-10-14)
+# Phase 2 Domain-by-Domain Review Record (2026-10-14)
 
-> 方法:按任务书第五章八域顺序,逐文件通读 + 检查点核对 + 附录 A 疑点逐条核实(代码推理 + 可执行复现)。全部结论进入 `DEFECT_REGISTER_2026-10-14.md`。
-> 本文件保留审查过程的关键证据与疑点核实结论汇总,便于追溯。
+> Method: following the eight-domain order in Chapter 5 of the audit brief — read every file in full + checkpoint verification + one-by-one verification of each review finding in Appendix A (code reasoning + executable reproduction). All conclusions are entered into `DEFECT_REGISTER_2026-10-14.md`.
+> This file preserves key evidence from the review process and a summary of the review finding verification conclusions, for traceability.
 
-## 疑点核实结论速览(R-01 至 R-33)
+## Quick Overview of Review Finding Verifications (R-01 to R-33)
 
-| 疑点 | 结论 | 登记为 | 关键证据 |
+| Finding | Verdict | Registered as | Key evidence |
 |---|---|---|---|
-| R-01 | **成立(P0)** | D-04 | pipeline.js:85 在 `for (const unit of units)` 循环内 `setDocumentStatus(...,'extracting')`;fileService TRANSITIONS.extracting 无自环;第二单元必抛 ERR_ENUM_INVALID→withStatus 置 failed |
-| R-02 | **成立(P0)** | D-05 | scenarios.js rerunWithFactor→computeEmission(calculation.js:79 store.put('calculations', calc_<record_id>)) 同主键覆盖基线;exportService 路由与 generateReportForTask 均读落库核算 |
-| R-03 | **成立(P0)** | D-06 | server.js 除文件下载(165 行有属主判断)外全部任务级路由无属主校验;getTask 仅 404 判断 |
-| R-04 | **成立(P0)** | D-07 | fileService.js:76 存储键直接拼 filename;storage/index.js #path 仅 join 无包含性校验 |
-| R-05 | **成立(P1)** | D-08 | ai/client.js input_summary=summarize(parts)(含 inline_data base64);err.message 含上游 body(dispatch:167);叠加 R-03 公开 |
-| R-06 | **成立(P1)** | D-09 | pages.jsx P3:168/P4:222 读 `t.records`,任务详情接口仅返回 `{...task, documents}`;pages.jsx:156 loadRecords 为从未调用的死代码 |
-| R-07 | **成立(P1)** | D-10 | reportService.js:94 `anchor(s.value * 1000)`,s.value 已是 kg,anchor 内部再 /1000 → 锚点吨值=千克原值,放大千倍 |
-| R-08 | **成立(P1)** | D-11 | exportService.js csvEscape 仅处理 `",\n`;`=SUM(...)`、`@cmd`、`+1`、`-1` 原样输出 |
-| R-09 | **成立(P1)** | D-12 | server.js:25 multer 无 limits;大小校验在 ingestFile(全量入内存后);与 verify_upload.js 11MB 用例的交互见登记册 D-12 决策 |
-| R-10 | **成立(P1)** | D-13 | server.js:102 限流键取 x-forwarded-for;rateBuckets Map 无上限;:87 `new URL(origin)` 畸形值抛 TypeError→500 |
-| R-11 | **成立(P1)** | D-14 | reviewQueue.js assignFactorManually(:81)/excludeRecord(:102) 无 record.task_id 校验;editRecordFields 补丁值无类型/范围校验 |
-| R-12 | **成立(P1)** | D-15 | pipelineModelCalls validateExtraction:quantity `NaN<=0`为 false、Infinity 为 number 均通过;amount 仅 `<0`;gross_weight_kg/distance_km 零校验;convertUnit/activityBasis 无有限性防御;复核编辑同 |
-| R-13 | **成立(P1)** | D-16/D-17 | config.js coerce 无校验(NaN/负数生效);pipeline.js:209 Math.max(1,Number(...)) 对 NaN 得 NaN→worker 数组空→静默空跑;ai/client attempts=NaN+1→循环不执行→throw null;callModel 对 kind:'fatal' 仍重试 |
-| R-14 | **成立(P2)** | D-19 | reportService.js:270 `scenarios.has(ref) || String(ref).includes('_S-')` 后半句免存在性校验 |
-| R-15 | **成立(P2)** | D-20 | store/index.js:40 解析失败静默置空 Map;#persist writeFileSync 非原子 |
-| R-16 | **成立(P2)** | D-21 | pipeline.js:137 候选置信度硬编码 0.5(阈值 0.65)→no_high_confidence_factor 恒真(有候选时);uncertainty levelDistribution 对缺失等级产生 `undefined:NaN` 键 |
-| R-17 | **成立(P2)** | D-22 | queue/index.js 仅被 backend/test/queue.test.js 引用,服务端零引用;enqueue 运行期 setImmediate 派发不移出 pending→重复 start 双派发。决策:按任务书 5.4.3 授权移除(回收行数) |
-| R-18 | **成立(P2)** | D-18 | embedTexts 真实模式无 AbortController/重试;`for (const e of data.embeddings ?? [])` 向量数不足时静默错位写入索引 |
-| R-19 | **成立(P2)** | D-24 | normalization identifyCurrency:CNY 行 `¥` 在 JPY 行之前,`¥jp` 永不可达,裸 `¥` 恒判 CNY |
-| R-20 | **部分不成立(P2)** | D-25 | 全库无解压路径:xlsx 以 inline_data 原样发给模型,本地不解压;10MB 上限约束压缩体。登记"有意保留+攻击面文档化" |
-| R-21 | **风险成立(P2)** | D-26 | 实测 golden 9 份 PDF 正则计数与 manifest 0 偏差;但对压缩对象流(ObjStm)PDF 会欠计→页单元缺失。处置:改用 pdf-lib 精确计数(既有依赖) |
-| R-22 | **成立(P2)** | D-27 | reportPdf 无 doc.on('error')→生成异常请求悬挂;renderTable header 空→495/0=NaN;categorySummaryCsv `b.header[0].startsWith` 空表头 TypeError。"截断无披露"子点**不成立**(:117 已有 `… N more rows` 披露) |
-| R-23 | **成立(P2)** | D-28 | 实测仅 verify_classification_real.js 有密钥守卫(:20),extraction/boundary/selection/report 四个无;collectors.js:27 盲信 data.pass |
-| R-24 | **成立(P2)** | D-29 | Dockerfile 无 HEALTHCHECK;firebase.json headers 仅缓存,无 CSP/HSTS/X-Frame-Options/X-Content-Type-Options |
-| R-25 | **成立(P3)** | D-30 | pages.jsx P6 ratio 仅入 state,onBlur 只调 runPipeline(taskId) 未传 ratio |
-| R-26 | **成立(P3)** | D-31 | vite.config.js 代理仅 /api;P4 挂载即调 api.factors('')→/factors?q= 缺失→400(且 dev 404) |
-| R-27 | **部分成立(P3)** | D-32 | 审计 ID 毫秒时间戳可碰撞(aud_rev_<rec>_<ms>)成立→加随机后缀;"查重在归一化前"子点**不成立**(设计即字节级 sha256 查重,语义重复由记录级 markSuspectedDuplicates 兜底);平方复杂度线性查找 n 小,**有意保留** |
-| R-28 | **成立(P3→P1 影响验收)** | D-33 | pipeline.js:60 completed 文档跳过返回空累积→重跑报告缺该文档记录;taskRuns 不排队→并发双跑第二跑报告不完整(V-08 必挂);generateReportForTask 已按 excluded 过滤(该子点无恙) |
-| R-29 | **成立(P3)** | D-34 | taskService 仅真值判断;entity_name 可为任意结构;日期无类型/顺序校验 |
-| R-30 | **差异确认(P3)** | D-35 | 未定义值查询:local 返回 [],firestore where==undefined 抛错(当前无此调用点);文档顺序:local 插入序,firestore 不保证;list 全量无分页。产出差异表,**有意保留**并文档化 |
-| R-31 | **成立(P3)** | D-36 | reportService.js:95-97 空循环(slice(0,0));traceability.js:57-60 内层 if 恒真死分支;pages.jsx:156 loadRecords 死函数。移除回收行数 |
-| R-32 | **成立(P3)** | D-37 | server.js:87 `\.web\.app$\|\.firebaseapp\.com$` 任意 Firebase 项目域名放行 |
-| R-33 | **成立(P3)** | D-38 | api.js uploadFiles 不查 res.ok;json() opts 在 headers 之后展开可覆盖头;全程无超时;auth.js 刷新令牌 localStorage+失败静默换身份(会话错位) |
+| R-01 | **Substantiated (P0)** | D-04 | pipeline.js:85 calls `setDocumentStatus(...,'extracting')` inside the `for (const unit of units)` loop; fileService TRANSITIONS.extracting has no self-loop; the second unit necessarily throws ERR_ENUM_INVALID → withStatus sets failed |
+| R-02 | **Substantiated (P0)** | D-05 | scenarios.js rerunWithFactor→computeEmission (calculation.js:79 `store.put('calculations', calc_<record_id>)`) overwrites the baseline under the same primary key; both the exportService route and generateReportForTask read the persisted calculation |
+| R-03 | **Substantiated (P0)** | D-06 | In server.js, except for file download (line 165 has an ownership check), all task-level routes lack ownership validation; getTask only performs a 404 check |
+| R-04 | **Substantiated (P0)** | D-07 | fileService.js:76 concatenates filename directly into the storage key; #path in storage/index.js only joins without containment validation |
+| R-05 | **Substantiated (P1)** | D-08 | ai/client.js input_summary=summarize(parts) (contains inline_data base64); err.message contains the upstream body (dispatch:167); compounded by the R-03 exposure |
+| R-06 | **Substantiated (P1)** | D-09 | pages.jsx P3:168/P4:222 read `t.records`, but the task detail interface only returns `{...task, documents}`; loadRecords at pages.jsx:156 is dead code that is never called |
+| R-07 | **Substantiated (P1)** | D-10 | reportService.js:94 `anchor(s.value * 1000)`; s.value is already in kg, and anchor divides by 1000 again internally → the anchor tonnage equals the original kilogram value, amplified a thousandfold |
+| R-08 | **Substantiated (P1)** | D-11 | In exportService.js, csvEscape only handles `",\n;`; `=SUM(...)`, `@cmd`, `+1`, `-1` are output verbatim |
+| R-09 | **Substantiated (P1)** | D-12 | multer at server.js:25 has no limits; size validation happens in ingestFile (after the full load into memory); for the interaction with the 11MB test case in verify_upload.js, see the D-12 decision in the defect register |
+| R-10 | **Substantiated (P1)** | D-13 | The rate-limit key at server.js:102 uses x-forwarded-for; the rateBuckets Map has no upper bound; at :87, a malformed value in `new URL(origin)` throws TypeError → 500 |
+| R-11 | **Substantiated (P1)** | D-14 | In reviewQueue.js, assignFactorManually (:81) / excludeRecord (:102) have no record.task_id validation; editRecordFields patch values have no type/range validation |
+| R-12 | **Substantiated (P1)** | D-15 | pipelineModelCalls validateExtraction: for quantity, `NaN<=0` is false and Infinity is a number, so both pass; amount only checks `<0`; gross_weight_kg/distance_km only check zero; convertUnit/activityBasis have no finiteness defense; review editing is the same |
+| R-13 | **Substantiated (P1)** | D-16/D-17 | config.js coerce has no validation (NaN/negative values take effect); at pipeline.js:209, Math.max(1,Number(...)) yields NaN for NaN → the worker array is empty → silently runs empty; ai/client attempts=NaN+1 → the loop never executes → throw null; callModel still retries for kind:'fatal' |
+| R-14 | **Substantiated (P2)** | D-19 | In reportService.js:270, `scenarios.has(ref) || String(ref).includes('_S-')` — the second clause bypasses the existence check |
+| R-15 | **Substantiated (P2)** | D-20 | At store/index.js:40, a parse failure silently sets an empty Map; #persist writeFileSync is non-atomic |
+| R-16 | **Substantiated (P2)** | D-21 | The candidate confidence at pipeline.js:137 is hardcoded to 0.5 (threshold 0.65) → no_high_confidence_factor is always true (when candidates exist); the uncertainty levelDistribution produces an `undefined:NaN` key for missing levels |
+| R-17 | **Substantiated (P2)** | D-22 | queue/index.js is referenced only by backend/test/queue.test.js, with zero references on the server side; the runtime setImmediate dispatch in enqueue does not remove items from pending → repeated start causes double dispatch. Decision: remove under the authorization in section 5.4.3 of the audit brief (reclaiming lines) |
+| R-18 | **Substantiated (P2)** | D-18 | embedTexts in real mode has no AbortController/retry; `for (const e of data.embeddings ?? [])` silently writes to a misaligned index when there are too few vectors |
+| R-19 | **Substantiated (P2)** | D-24 | In normalization identifyCurrency, the CNY branch's `¥` comes before the JPY branch, so `¥jp` is unreachable and a bare `¥` is always judged as CNY |
+| R-20 | **Partially not substantiated (P2)** | D-25 | There is no decompression path in the entire codebase: xlsx is sent to the model as inline_data as-is, with no local decompression; the 10MB upper bound constrains the compressed payload. Registered as "intentionally retained + attack surface documented" |
+| R-21 | **Risk substantiated (P2)** | D-26 | Measured: the regex counts of the 9 golden PDFs have zero deviation from the manifest; but for compressed object stream (ObjStm) PDFs it under-counts → missing page units. Action: switch to pdf-lib precise counting (an existing dependency) |
+| R-22 | **Substantiated (P2)** | D-27 | reportPdf has no doc.on('error') → the request hangs on generation errors; renderTable with an empty header → 495/0=NaN; categorySummaryCsv `b.header[0].startsWith` with an empty header → TypeError. The "truncation without disclosure" sub-point is **not substantiated** (line :117 already has the `… N more rows` disclosure) |
+| R-23 | **Substantiated (P2)** | D-28 | Measured: only verify_classification_real.js has a secret guard (:20); the four extraction/boundary/selection/report scripts do not; collectors.js:27 blindly trusts data.pass |
+| R-24 | **Substantiated (P2)** | D-29 | The Dockerfile has no HEALTHCHECK; firebase.json headers only set cache, with no CSP/HSTS/X-Frame-Options/X-Content-Type-Options |
+| R-25 | **Substantiated (P3)** | D-30 | In pages.jsx P6, ratio only enters state; onBlur only calls runPipeline(taskId) without passing ratio |
+| R-26 | **Substantiated (P3)** | D-31 | The vite.config.js proxy only covers /api; P4 calls api.factors('') on mount → /factors?q= is missing → 400 (and 404 in dev) |
+| R-27 | **Partially substantiated (P3)** | D-32 | The audit ID millisecond timestamp can collide (aud_rev_<rec>_<ms>) — substantiated → add a random suffix; the "deduplication before normalization" sub-point is **not substantiated** (the design is byte-level sha256 deduplication, with semantic duplicates caught by the record-level markSuspectedDuplicates); the linear lookup with quadratic complexity has small n, **intentionally retained** |
+| R-28 | **Substantiated (P3→P1, affects acceptance)** | D-33 | At pipeline.js:60, skipping completed documents returns an empty accumulation → a rerun report lacks that document's records; taskRuns are not queued → a concurrent double run leaves the second run's report incomplete (V-08 will certainly fail); generateReportForTask already filters by excluded (this sub-point is fine) |
+| R-29 | **Substantiated (P3)** | D-34 | taskService only checks truthiness; entity_name can be any structure; dates have no type/order validation |
+| R-30 | **Difference confirmed (P3)** | D-35 | Undefined-value queries: local returns [], firestore where==undefined throws (there is currently no such call site); document order: local uses insertion order, firestore does not guarantee it; list returns everything with no pagination. A difference table was produced, **intentionally retained** and documented |
+| R-31 | **Substantiated (P3)** | D-36 | reportService.js:95-97 empty loop (slice(0,0)); the inner if at traceability.js:57-60 is a tautological dead branch; loadRecords at pages.jsx:156 is a dead function. Remove to reclaim lines |
+| R-32 | **Substantiated (P3)** | D-37 | At server.js:87, `\.web\.app$|\.firebaseapp\.com$` allows any Firebase project domain |
+| R-33 | **Substantiated (P3)** | D-38 | uploadFiles in api.js does not check res.ok; the json() opts spread after headers can override the headers; there is no timeout anywhere; auth.js stores the refresh token in localStorage and silently switches identity on failure (session misalignment) |
 
-## 阶段二新发现(登记册 D-39 起)
+## New Phase 2 Findings (defect register from D-39 onward)
 
-- **D-39**:pages.jsx AuditView(:137)裸 fetch 无认证头→D-06 收口后有属主任务审计查看 403。
-- **D-40**:P7 导出三链接与 P3 源文档链接为裸 `<a>` 无认证头→D-06 后有属主任务导出失效;需 fetch+blob 下载助手。
-- **D-41**:pipeline.js:49 仅过滤 discarded,pending_duplicate 文档进流水线→首状态转换即抛(转换表无该态)→每次运行必产生 document_pipeline_failed 噪音日志。
-- **D-42**:pipeline.js:203 needsReview 取自 perDocRecords(归一化前原始对象,永无 uncertainty_level)→文档级 needs_review 状态不可达;应基于归一化后 recordsOut 判定。
-- **D-43**:pages.jsx P2 refresh 轮询无 catch→任务被清后每 2.5s 一次未处理 Promise 拒绝,UI 永久 Documents(0)。
-- **D-44**:server.js /factors 空 q 返回 400+ERR_INTERNAL(语义错位),前端修复后无调用方;**有意保留**(改码属契约变更,收益低)。
-- **D-45**:errors.js 注册表缺 ERR_RATE_LIMITED(server 手写内联)与授权拒绝码;D-06 需新增 ERR_FORBIDDEN(登记为独立契约新增决策)。
-- **D-46**:README 陈旧:行数(4,132/6,976/8,771 vs 实测 4,335/7,110/8,905)、"cross-identity rejected"声称与 R-03 现状不符、队列抽象描述(R-17 移除后需改)、错误码清单缺 ERR_RATE_LIMITED/ERR_FORBIDDEN。
-- **D-47**:仓库卫生:`scripts/golden/__pycache__/*.pyc` 3 个编译缓存被 git 跟踪(任务书 5.6.5 点名)。
-- **D-48**:PROGRESS_SUMMARY 的行数/测试数表述将随修复更新(交付阶段同步)。
-- 提示词注入面(任务书 5.5.5,要求识别+文档化):品名/地点/供应商名等用户与模型可控文本直接拼入 extraction/boundary/selection 提示词(pipelineModelCalls.js:211/234);document 分类输入为文件字节。攻击面与缓解建议记录于登记册 D-49,**有意保留**(代码缓解需保持抽取准确率不回归,最小改动原则下本轮不实施)。
+- **D-39**: The bare fetch in pages.jsx AuditView (:137) has no auth header → after D-06 is closed off, audit viewing of owned tasks returns 403.
+- **D-40**: The three P7 export links and the P3 source document links are bare `<a>` elements with no auth header → after D-06, export of owned tasks fails; a fetch+blob download helper is needed.
+- **D-41**: pipeline.js:49 only filters discarded; pending_duplicate documents enter the pipeline → the first state transition throws (the transition table has no such state) → every run necessarily produces document_pipeline_failed noise logs.
+- **D-42**: needsReview at pipeline.js:203 is taken from perDocRecords (pre-normalization raw objects, which never have uncertainty_level) → the document-level needs_review state is unreachable; it should be determined based on the post-normalization recordsOut.
+- **D-43**: The pages.jsx P2 refresh polling has no catch → after a task is cleared, an unhandled Promise rejection occurs every 2.5s, and the UI is permanently stuck at Documents(0).
+- **D-44**: In server.js, /factors with an empty q returns 400+ERR_INTERNAL (a semantic mismatch), and there is no caller after the frontend fix; **intentionally retained** (changing the code constitutes a contract change with low benefit).
+- **D-45**: The errors.js registry lacks ERR_RATE_LIMITED (handwritten inline in server) and the authorization-denied code; D-06 requires adding ERR_FORBIDDEN (registered as a standalone contract-addition decision).
+- **D-46**: The README is stale: line counts (4,132/6,976/8,771 vs. measured 4,335/7,110/8,905), the "cross-identity rejected" claim does not match the state found in R-03, the queue abstraction description needs to change after the R-17 removal, and the error code list is missing ERR_RATE_LIMITED/ERR_FORBIDDEN.
+- **D-47**: Repository hygiene: 3 compiled caches under `scripts/golden/__pycache__/*.pyc` are tracked by git (called out by section 5.6.5 of the audit brief).
+- **D-48**: The line count/test count statements in PROGRESS_SUMMARY will be updated along with the fixes (synchronized at the delivery stage).
+- Prompt injection surface (section 5.5.5 of the audit brief, requires identification + documentation): user- and model-controlled text such as product names/locations/supplier names is directly concatenated into the extraction/boundary/selection prompts (pipelineModelCalls.js:211/234); the document classification input is file bytes. The attack surface and mitigation suggestions are recorded in the defect register's D-49, **intentionally retained** (code mitigation must not regress extraction accuracy, so it is not implemented this round under the minimal-change principle).
 
-## 各域检查点完成情况
+## Checkpoint Completion Status by Domain
 
-- 域 A(安全):9 检查点全过 → D-05/D-06/D-07/D-08/D-11/D-12/D-13/D-14/D-37/D-39/D-40/D-44/D-45;`/config` 仅回非密配置确认未被破坏;无动态求值/命令执行;前端无直接注入 DOM 路径(全部经 React 文本节点)。
-- 域 B(业务):12 检查点全过 → D-04/D-05/D-10/D-15/D-19/D-21/D-24/D-26/D-27/D-28/D-33/D-34/D-36/D-41/D-42;聚合舍入 displayConsistent 边界(空集/单元素/负值)推演无缺陷。
-- 域 C(前端):6 检查点全过 → D-09/D-30/D-31/D-38/D-39/D-40/D-43;本地存储键 cl_task/cl_anon_session 生命周期确认。
-- 域 D(存储):4 检查点全过 → D-20/D-22/D-35;存储键合法字符集与包含性校验并入 D-07。
-- 域 E(并发容错 AI):6 检查点全过 → D-16/D-17/D-18/D-15/D-33/D-49;后台失败落盘可读状态(withStatus 置 failed)现状成立。
-- 域 F(配置部署):6 检查点全过 → D-16/D-25/D-29/D-47;镜像内 data/golden 运行时零引用(可移除),data/demo 为一键演示运行时必需(保留);.gcloudignore/.gitignore 覆盖核对无漏洞(除 __pycache__ 未忽略→D-47);deploy/README 占位与实际部署方式一致(仅说明,不执行)。
-- 域 G(测试验证):5 检查点全过 → D-22/D-28/D-01/D-12(verify_upload 交互);密钥扫描对"误入暂存区"无防线→D-50(守卫式改进:预提交钩子或扫描增强,保守取扫描脚本增强+文档);回归测试缺口清单(多页/情景隔离/属主/遍历/公式注入/锚点/非有限数值/嵌入短响应)随各修复补齐。
-- 域 H(文档卫生):3 检查点全过 → D-03(README 34 与实测一致,任务书预判的差异不存在,保留对账记录)/D-46/D-47/D-48;DEFECT_REPORT_T050 的修复(确定性报告 ID+单飞)在 R-02/D-05 修复后仍成立且被加强。
+- Domain A (Security): all 9 checkpoints passed → D-05/D-06/D-07/D-08/D-11/D-12/D-13/D-14/D-37/D-39/D-40/D-44/D-45; confirmed that `/config` returns only non-secret configuration and is not broken; no dynamic evaluation/command execution; the frontend has no direct DOM injection path (all through React text nodes).
+- Domain B (Business): all 12 checkpoints passed → D-04/D-05/D-10/D-15/D-19/D-21/D-24/D-26/D-27/D-28/D-33/D-34/D-36/D-41/D-42; the aggregate rounding displayConsistent boundary (empty set/single element/negative value) reasoning revealed no defects.
+- Domain C (Frontend): all 6 checkpoints passed → D-09/D-30/D-31/D-38/D-39/D-40/D-43; confirmed the lifecycle of the local storage keys cl_task/cl_anon_session.
+- Domain D (Storage): all 4 checkpoints passed → D-20/D-22/D-35; the storage key legal character set and containment validation were folded into D-07.
+- Domain E (Concurrency, Fault Tolerance, AI): all 6 checkpoints passed → D-16/D-17/D-18/D-15/D-33/D-49; the current state where background failures persist a readable status (withStatus sets failed) holds.
+- Domain F (Configuration and Deployment): all 6 checkpoints passed → D-16/D-25/D-29/D-47; data/golden in the image is never referenced at runtime (removable), while data/demo is required at runtime for the one-click demo (retained); the .gcloudignore/.gitignore coverage check found no gaps (except __pycache__ not ignored → D-47); the deploy/README placeholders are consistent with the actual deployment approach (documentation only, not executed).
+- Domain G (Testing and Verification): all 5 checkpoints passed → D-22/D-28/D-01/D-12 (verify_upload interaction); secret scanning has no defense against content accidentally entering the staging area → D-50 (guard-style improvement: pre-commit hook or scan enhancement; conservatively take scan script enhancement + documentation); the regression test gap list (multi-page/scenario isolation/ownership/traversal/formula injection/anchor/non-finite values/embedded short responses) will be filled in along with each fix.
+- Domain H (Documentation Hygiene): all 3 checkpoints passed → D-03 (README 34 matches the measured value; the discrepancy anticipated by the audit brief does not exist; the reconciliation record is retained) / D-46/D-47/D-48; the DEFECT_REPORT_T050 fixes (deterministic report ID + single-flight) still hold and are strengthened after the R-02/D-05 fixes.

@@ -1,5 +1,9 @@
 # CarbonLedger — Scope 3 Carbon Accounting and Disclosure Agent
 
+<p align="center">
+  <img src="frontend/public/og/og-en.png" alt="CarbonLedger — Scope 3 Carbon Accounting & Disclosure Agent" width="720">
+</p>
+
 **Track: Sustainability & Social Impact** (AI Builder Cup 2026 — Google Cloud JAPAC Hackathon)
 
 CarbonLedger compresses the cost of producing a Scope 3 report from "$30,000 + 3 weeks"
@@ -238,7 +242,7 @@ Supporting measurements, each with its own evidence file:
   engineering 5/5, plus keyboard access and colour-independence NFRs.
 - **Code size** (`scripts/count_lines.sh`): application code 5,870 lines; with all
   first-party JavaScript verification and build tooling 9,909 lines; including the offline
-  Python dataset toolchain 11,711 lines. The 2026-10 frontend enrichment (factor library
+  Python dataset toolchain 12,365 lines. The 2026-10 frontend enrichment (factor library
   browser, task history, SVG charts, citation anchors, comparison views; `frontend/src`
   665 → 1,807 lines) was applied after final acceptance with the NFR-504 budget explicitly
   waived by the maintainer, so figures B and C now exceed the 7,000 target and figure C
@@ -271,4 +275,8 @@ address can be honoured.
 `backend/` API + engines · `frontend/` SPA · `data/factors` factor library ·
 `data/golden` Golden dataset (30 docs + answers + 40 matching cases) · `data/demo`
 one-click dataset · `eval/` evaluation tool · `scripts/` build/verify scripts ·
-`progress/` execution log and evidence (working language: Chinese).
+`progress/` execution log and evidence. (Historical note: working records were kept in
+Chinese through 2026-10-16 and translated to English on 2026-10-18; the only Chinese
+remaining in the repository is functional — the currency-alias tables and fixtures that
+parse Chinese-language source invoices — plus the intentional zh landing page and locale
+data of the multilingual SEO surface.)

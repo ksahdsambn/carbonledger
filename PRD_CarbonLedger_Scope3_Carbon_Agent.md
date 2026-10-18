@@ -1,816 +1,813 @@
-# 需求规格说明书：CarbonLedger — Scope 3 碳核算与披露智能体
+# Requirements Specification: CarbonLedger — Scope 3 Carbon Accounting and Disclosure Agent
 
-| 项目元信息 | 内容 |
+| Item Metadata | Content |
 |---|---|
-| 文档版本 | v1.2（2026-10-12） |
-| 项目名称 | CarbonLedger · Scope 3 碳核算与披露智能体 |
-| 参赛赛道 | Sustainability & Social Impact |
-| 目标赛事 | AI Builder Cup 2026（Google Cloud JAPAC Hackathon） |
-| 交付截止 | 2026-10-18 23:59（赛事官网规定时区） |
-| 参赛资格 | 2 至 4 人组队；21 周岁及以上；JAPAC 区域；仅限在职人士，学生不得参赛 |
-| 建议团队规模 | 2 至 4 人 |
-| 自研代码规模约束 | 4,000 至 7,000 行，硬上限 10,000 行 |
-| 阅读对象 | 执行开发任务的 AI 开发者或工程团队 |
-| 文档性质 | 唯一权威需求来源；与任何技术决策冲突时以本文件为准 |
+| Document Version | v1.2 (2026-10-12) |
+| Project Name | CarbonLedger · Scope 3 Carbon Accounting and Disclosure Agent |
+| Competition Track | Sustainability & Social Impact |
+| Target Event | AI Builder Cup 2026 (Google Cloud JAPAC Hackathon) |
+| Delivery Deadline | 2026-10-18 23:59 (time zone specified on the official event website) |
+| Eligibility | Teams of 2 to 4 people; aged 21 or above; JAPAC region; working professionals only, students may not enter |
+| Recommended Team Size | 2 to 4 people |
+| In-House Code Size Constraint | 4,000 to 7,000 lines, with a hard upper limit of 10,000 lines |
+| Intended Audience | AI developers or engineering teams executing the development tasks |
+| Document Status | Sole authoritative source of requirements; in the event of conflict with any technical decision, this document prevails |
 
 ---
 
-## 0. 阅读须知
+## 0. Reading Instructions
 
-### 0.1 本文档的使用方式
+### 0.1 How to Use This Document
 
-本文档是给执行开发一方使用的完整任务说明书。开发者应当能够在不询问任何补充问题的前提下，依据本文档独立完成全部开发、部署、评测与交付工作。
+This document is a complete task specification for the party executing the development. Developers should be able to independently complete all development, deployment, evaluation, and delivery work based on this document without asking any supplementary questions.
 
-本文件全文不包含任何代码实现。所有技术约定均以自然语言描述、参数表格、字段表、流程步骤表达。开发者在实现层面拥有自由裁量权，但必须满足本文规定的全部约束条件与验收门槛，并必须通过本文第 10 章定义的所有验收关卡。
+This document contains no code implementation whatsoever. All technical conventions are expressed in natural language, parameter tables, field tables, and process steps. Developers have discretion at the implementation level, but must satisfy all constraints and acceptance thresholds specified herein, and must pass all acceptance gates defined in Chapter 10 of this document.
 
-若在执行过程中发现本文档存在内部矛盾或不可执行之处，应立即停止推进并向需求方报告，不得自行猜测处理。
+If internal contradictions or non-executable provisions are discovered in this document during execution, progress must be stopped immediately and the matter reported to the requirements owner; developers must not guess at a resolution on their own.
 
-### 0.2 术语表
+### 0.2 Glossary
 
-| 术语 | 在本项目中的确切含义 |
+| Term | Exact Meaning in This Project |
 |---|---|
-| GHG Protocol | 温室气体核算体系，本项目核算与报告结构的唯一遵循标准 |
-| Scope 1 | 报告主体自有或受其控制的排放源产生的直接排放 |
-| Scope 2 | 报告主体消耗的外购电力、蒸汽、供热或制冷产生的间接排放 |
-| Scope 3 | 价值链中发生的所有其他间接排放，共 15 个类别 |
-| 活动数据 | 从单据中抽取的、用于乘以排放因子的量化数据 |
-| 排放因子 | 单位活动数据对应的温室气体排放量 |
-| 因子匹配 | 将一条活动数据映射到最合适排放因子的过程，本项目核心 AI 能力 |
-| cradle-to-gate | 因子边界类型，指从原材料开采到出厂为止 |
-| well-to-tank / tank-to-wheel | 燃料类因子边界，前者含上游生产运输，后者仅含燃烧 |
-| GWP | 全球增温潜势，将非二氧化碳温室气体折算为二氧化碳当量的系数 |
-| AR5 / AR6 | IPCC 第五次或第六次评估报告发布的 GWP 数值版本，创建任务时二选一并对全任务生效；个别记录仅能跨版本匹配因子时，按 4.5 节规则显式标注与披露 |
-| 不确定性等级 | 本项目自定义的高、中、低三级评价体系 |
-| Review Queue | 低置信度或异常记录的人工复核队列 |
-| Golden Case | 预先构建且已知正确答案的测试用例集合 |
-| 引用锚点 | 报告中数值型结论所附的、可点击跳转到来源单据或因子条目的引用标记 |
-| 审计轨迹 | 系统对每次关键动作（换算、匹配、计算、复核等）留下的可查证操作记录 |
+| GHG Protocol | Greenhouse Gas Protocol, the sole standard followed for this project's accounting and reporting structure |
+| Scope 1 | Direct emissions from emission sources owned or controlled by the reporting entity |
+| Scope 2 | Indirect emissions from purchased electricity, steam, heating, or cooling consumed by the reporting entity |
+| Scope 3 | All other indirect emissions occurring in the value chain, 15 categories in total |
+| Activity data | Quantified data extracted from documents that is used to multiply emission factors |
+| Emission factor | Greenhouse gas emissions corresponding to one unit of activity data |
+| Factor matching | The process of mapping one activity data record to the most suitable emission factor; this project's core AI capability |
+| cradle-to-gate | Factor boundary type, from raw material extraction to factory gate |
+| well-to-tank / tank-to-wheel | Fuel factor boundaries; the former includes upstream production and transport, the latter covers combustion only |
+| GWP | Global Warming Potential, the coefficient used to convert non-carbon-dioxide greenhouse gases into carbon dioxide equivalent |
+| AR5 / AR6 | GWP value versions published in the IPCC Fifth or Sixth Assessment Report; one of the two is selected when a task is created and applies to the entire task; where an individual record can only be matched with a factor across versions, it is explicitly annotated and disclosed in accordance with Section 4.5 |
+| Uncertainty level | A custom three-tier evaluation system defined by this project: high, medium, low |
+| Review Queue | Manual review queue for low-confidence or anomalous records |
+| Golden Case | A test case set constructed in advance with known correct answers |
+| Citation anchor | A citation marker attached to numerical conclusions in reports that can be clicked to jump to the source document or factor entry |
+| Audit trail | Verifiable operation records left by the system for each key action (conversion, matching, calculation, review, etc.) |
 
-### 0.3 范围边界
+### 0.3 Scope Boundaries
 
-**在范围内**
+**In Scope**
 
-1. 多格式单据的上传、解析、分类与结构化抽取
-2. 活动数据的归一化、单位换算与缺口识别
-3. 基于公开排放因子库的语义化因子匹配
-4. Scope 1、Scope 2、Scope 3 的排放量计算与聚合
-5. 至少三种减排情景的自动构建与对比测算
-6. 符合 GHG Protocol 结构的英文排放报告生成与 PDF、CSV 导出
-7. 不确定性说明的生成与披露
-8. 每条计算结果到原始单据的全链路溯源
-9. 人工复核队列与复核闭环
-10. 自动化评测套件与验收执行
+1. Upload, parsing, classification, and structured extraction of multi-format documents
+2. Normalization, unit conversion, and gap identification of activity data
+3. Semantic factor matching based on public emission factor libraries
+4. Emission calculation and aggregation for Scope 1, Scope 2, and Scope 3
+5. Automatic construction and comparative calculation of at least three emission reduction scenarios
+6. Generation of English emission reports conforming to the GHG Protocol structure, with PDF and CSV export
+7. Generation and disclosure of uncertainty statements
+8. Full-chain traceability of each calculation result back to the original documents
+9. Manual review queue and review closure loop
+10. Automated evaluation suite and acceptance execution
 
-**明确在范围外，严禁投入时间**
+**Explicitly Out of Scope; Investing Time Is Strictly Prohibited**
 
-1. 付费、订阅、多租户计费体系（使用 Firebase Auth 匿名或邮箱登录即可）
-2. 碳信用交易、碳中和认证、碳资产金融化
-3. 实时数据流或 IoT 设备直连
-4. 移动端原生应用（仅交付响应式 Web 应用）
-5. 英文以外的其他语言界面（产品界面、报告、文档一律为英文）
-6. 自建排放因子的第三方审核流程
-7. 区块链、NFT、积分激励模块
-
----
-
-## 1. 项目背景与目标
-
-### 1.1 问题陈述
-
-中小企业在编制 Scope 3 排放报告时面临三重障碍。
-
-第一，数据分散且非结构化。排放证据散落在纸质发票、扫描照片、供应商表格、物流运单、水电账单中，格式互不兼容，人工整理一份中型企业报告需 2 至 3 周。
-
-第二，因子选择需要专业知识。同样一笔运输活动，"空运 1,200 公斤温控货物从长滩到东京"应套用哪一个因子，取决于运输方式细分、货物温控状态、航段距离口径、因子边界约定。这不是字符串匹配问题，而是语义推理问题，规则引擎永远无法覆盖完整。
-
-第三，外部咨询成本高昂。一份合规的 Scope 3 报告外包报价通常在 20,000 至 50,000 美元之间，且次年更新时重复付费。
-
-### 1.2 目标用户
-
-| 角色 | 描述 | 核心诉求 |
-|---|---|---|
-| 主要用户：中小企业 ESG 专员 | 制造业或贸易企业内负责可持续发展报告的专员，通常身兼数职，无专业碳核算背景 | 数小时内从零产出可信、可披露、可追溯的报告 |
-| 次要用户：可持续发展咨询顾问 | 服务多家客户的外部顾问 | 快速完成初步核算，精力集中于高价值减排策略 |
-| 评审场景用户：赛事评委 | Google Cloud 与行业专家 | 3 分钟内理解产品、验证真实性、评估 Gen AI 深度 |
-
-### 1.3 价值主张
-
-对外表述必须在 deck 首页与视频开头原样使用：
-
-> CarbonLedger 将一份 Scope 3 报告的编制成本从「30,000 美元 + 3 周」压缩到「1 小时 + 近乎零边际成本」，同时让每一个数字都可以点开溯源到原始单据。
-
-### 1.4 北极星指标
-
-| 指标 | 目标值 | 度量方式 |
-|---|---|---|
-| 端到端处理时长 | 20 张混合格式单据不超过 3 分钟 | 10 次运行的 P90 |
-| 单张单据 AI 处理成本 | 不高于 0.03 美元 | Token 用量按公开单价累加 |
-| 因子匹配 Top-1 准确率 | 不低于 85% | Golden Case 自动比对 |
-| 关键字段抽取准确率 | 数量、单位、金额、日期、币种平均不低于 95%，其中数量与单位不低于 98% | Golden Case 自动比对 |
-| 报告引用覆盖率 | 100% | 解析器扫描引用锚点 |
-| 溯源幻觉率 | 引用指向不存在对象的次数为 0 | 评测套件校验引用有效性 |
+1. Payment, subscription, or multi-tenant billing systems (anonymous or email login via Firebase Auth is sufficient)
+2. Carbon credit trading, carbon neutrality certification, carbon asset financialization
+3. Real-time data streams or direct IoT device connectivity
+4. Native mobile applications (responsive Web application only)
+5. Interfaces in languages other than English (product UI, reports, and documentation must all be in English)
+6. Third-party review processes for self-built emission factors
+7. Blockchain, NFT, or points incentive modules
 
 ---
 
-## 2. 赛事合规要求（强制，逐条核对）
+## 1. Project Background and Objectives
 
-以下条款直接来源于赛事官方 Themes 页面与主页规则，全部为硬性要求。
+### 1.1 Problem Statement
 
-### 2.1 技术栈合规
+SMEs face three obstacles when preparing Scope 3 emission reports.
 
-| 编号 | 要求 | 本项目的落实方式 | 验收方式 |
+First, data is scattered and unstructured. Emission evidence is scattered across paper invoices, scanned photographs, supplier spreadsheets, logistics waybills, and utility bills in mutually incompatible formats; manually compiling one mid-sized enterprise report takes 2 to 3 weeks.
+
+Second, factor selection requires professional expertise. For the same transport activity — "air freight of 1,200 kg of temperature-controlled cargo from Long Beach to Tokyo" — which factor should be applied depends on transport mode granularity, cargo temperature-control status, leg distance conventions, and factor boundary definitions. This is not a string matching problem but a semantic reasoning problem; rule engines can never achieve complete coverage.
+
+Third, external consulting costs are high. A compliant Scope 3 report outsourcing quote typically ranges from US$20,000 to US$50,000, and the fee is paid again the following year when the report is updated.
+
+### 1.2 Target Users
+
+| Role | Description | Core Need |
+|---|---|---|
+| Primary user: SME ESG specialist | A specialist responsible for sustainability reporting within a manufacturing or trading company, usually holding multiple roles with no professional carbon accounting background | Produce a credible, disclosable, and traceable report from scratch within hours |
+| Secondary user: sustainability consultant | An external consultant serving multiple clients | Rapidly complete preliminary accounting and concentrate effort on high-value emission reduction strategies |
+| Evaluation-scenario user: event judges | Google Cloud and industry experts | Understand the product, verify authenticity, and assess the depth of Gen AI within 3 minutes |
+
+### 1.3 Value Proposition
+
+The external statement must be used verbatim on the first slide of the deck and at the beginning of the video:
+
+> CarbonLedger compresses the cost of preparing one Scope 3 report from "US$30,000 + 3 weeks" to "1 hour + near-zero marginal cost", while making every number clickable and traceable back to the original documents.
+
+### 1.4 North Star Metrics
+
+| Metric | Target Value | Measurement Method |
+|---|---|---|
+| End-to-end processing time | No more than 3 minutes for 20 mixed-format documents | P90 of 10 runs |
+| AI processing cost per document | Not higher than US$0.03 | Token usage accumulated at public unit prices |
+| Factor matching Top-1 accuracy | Not lower than 85% | Golden Case automatic comparison |
+| Key field extraction accuracy | Average of quantity, unit, amount, date, and currency not lower than 95%, with quantity and unit not lower than 98% | Golden Case automatic comparison |
+| Report citation coverage | 100% | Parser scans citation anchors |
+| Traceability hallucination rate | 0 occurrences of citations pointing to non-existent objects | Evaluation suite verifies citation validity |
+
+---
+
+## 2. Event Compliance Requirements (Mandatory, Item-by-Item Verification)
+
+The following clauses are taken directly from the official Themes page and homepage rules of the event; all are hard requirements.
+
+### 2.1 Technology Stack Compliance
+
+| No. | Requirement | Implementation Approach in This Project | Acceptance Method |
 |---|---|---|---|
-| M-1 | 必须使用 Gemini 或 Gemma 系列模型 | 全部生成式 AI 能力由 Gemini 系列模型提供；语义向量召回使用 Google Cloud 官方嵌入模型 | 全局搜索确认无第三方模型依赖 |
-| M-2 | 或使用 Agent Platform、Antigravity、AI Studio 等代理平台 | 备用合规路径，若采用需在文档明示 | README 说明 |
-| M-3 | 必须部署于 Google Cloud，使用 Cloud Run 或 Firebase | 后端部署 Cloud Run，前端托管 Firebase Hosting，数据与文件分别存于 Firestore 与 Firebase Storage | 提供可公开访问网址 |
-| M-4 | 展示 Google Cloud AI 工具链的深度使用 | 使用模型结构化输出能力、批量推理通道、Cloud Run 自动扩缩 | README 与 deck 中说明 |
-| M-5 | 原型必须是能实际运行的功能实现，赛事明确不接受仅有演示文稿或静态原型 | 交付可公开访问、评委可自行上传单据并跑通全流程的 Web 应用 | 评委账号匿名状态下可独立完成一次完整核算 |
+| M-1 | Must use Gemini or Gemma series models | All generative AI capabilities are provided by Gemini series models; semantic vector recall uses the official Google Cloud embedding model | Global search confirms no third-party model dependencies |
+| M-2 | Or use an agent platform such as Agent Platform, Antigravity, or AI Studio | Alternate compliance path; if adopted, it must be stated explicitly in the documentation | README explanation |
+| M-3 | Must be deployed on Google Cloud, using Cloud Run or Firebase | Backend deployed on Cloud Run, frontend hosted on Firebase Hosting, data and files stored in Firestore and Firebase Storage respectively | Provide a publicly accessible URL |
+| M-4 | Demonstrate deep use of the Google Cloud AI toolchain | Use model structured output capabilities, batch inference channels, and Cloud Run automatic scaling | Explanation in README and deck |
+| M-5 | The prototype must be an actually runnable functional implementation; the event explicitly does not accept presentations-only or static prototypes | Deliver a publicly accessible Web application where judges can upload documents themselves and run the full workflow | A judge account can independently complete one full accounting cycle in an anonymous state |
 
-### 2.2 交付物合规
+### 2.2 Deliverable Compliance
 
-| 编号 | 要求 | 本项目产出 |
+| No. | Requirement | This Project's Output |
 |---|---|---|
-| D-1 | 英文版提案 PDF | 10 至 14 页英文 deck 导出 PDF |
-| D-2 | 可运行的功能原型 | 公开可访问的 Web 应用，评委可自行上传单据测试 |
-| D-3 | 3 分钟演示视频，公开 YouTube、Vimeo 链接或公开 Google Drive 链接 | 英文配音与英文字幕 |
-| D-4 | 完整的工程文档 | 英文 README，含架构说明、部署步骤、评测结果 |
-| D-5 | 明确标注所属赛道，赛事要求提交时申明所响应的问题陈述 | deck 首页、README 首屏、视频片尾三处统一标注英文全称：Sustainability & Social Impact |
+| D-1 | English proposal PDF | 10- to 14-page English deck exported to PDF |
+| D-2 | Runnable functional prototype | Publicly accessible Web application where judges can upload documents for testing |
+| D-3 | 3-minute demo video with a public YouTube, Vimeo, or public Google Drive link | English voiceover and English subtitles |
+| D-4 | Complete engineering documentation | English README, including architecture description, deployment steps, and evaluation results |
+| D-5 | Clearly indicate the track entered; the event requires the problem statement being addressed to be declared upon submission | Unified English full name marked in three places — deck first slide, README hero section, and video end card: Sustainability & Social Impact |
 
-### 2.3 语言合规
+### 2.3 Language Compliance
 
-| 编号 | 要求 |
+| No. | Requirement |
 |---|---|
-| L-1 | 所有提交材料必须为英文，包括代码注释、README、deck、视频配音与字幕、产品 UI 文案。本文档为中文版内部工作文档 |
-| L-2 | 产品界面文案为英文，本文档中的描述仅为说明用途 |
-| L-3 | 系统生成的用户可见报告正文为英文 |
+| L-1 | All submission materials must be in English, including code comments, README, deck, video voiceover and subtitles, and product UI copy. This document is a Chinese-language internal working document |
+| L-2 | Product UI copy is in English; descriptions in this document serve illustrative purposes only |
+| L-3 | The user-visible report body generated by the system is in English |
 
-### 2.4 评审权重对应
+### 2.4 Mapping to Judging Weights
 
-赛事评审按四个维度加权计分，每个维度下含具体评分子项。开发者须针对每一个子项准备可直接被检视的证明物，不得只准备整体演示。
+The event judging is weighted across four dimensions, each containing specific scoring sub-items. Developers must prepare directly inspectable evidence for every sub-item, rather than only preparing an overall demo.
 
-| 评审维度与子项 | 权重 | 本项目对应证明物 |
+| Judging Dimension and Sub-item | Weight | Corresponding Evidence in This Project |
 |---|---|---|
-| 技术：Gen AI 使用的意义性 | 40% 内主项 | 语义因子匹配引擎，其输出直接影响核算结果正确性；移除模型则系统退化为无法运行的空壳 |
-| 技术：技术实现的完善度 | 40% 内主项 | 三阶段流水线、双通道召回、单位口径自检、失败重试与降级、完整审计轨迹 |
-| 技术：可扩展性与可持续性 | 40% 内主项 | 因子库与代码解耦、模型集中配置、新增因子零改码、评测套件可重复执行 |
-| 契合：问题对齐度 | 25% 内主项 | 直接解决问卷都无法覆盖的中小企业 Scope 3 编制难题，严格遵循 GHG Protocol 结构 |
-| 契合：潜在影响力 | 25% 内主项 | 成本与工时的量化对比；产出物可被外部企业直接使用而非演示用 |
-| 创新：原创与差异化 | 25% 内主项 | 以语义推理替代规则映射的因子匹配范式；自动不确定性分级与披露 |
-| 创新：Gen AI 应用的创新性 | 25% 内主项 | 让模型解释为何不选次优候选；把不确定的地方显式降级而非硬算 |
-| 体验：易用性与无障碍 | 10% 内主项 | 5 秒理解主交互、纯键盘可完成主流程、等级不以颜色为唯一载体 |
-| 体验：整体体验与集成度 | 10% 内主项 | 抽取、匹配、计算、情景、报告、复核六个组件数据与状态完全同步 |
+| Technology: meaningfulness of Gen AI use | Main item within 40% | Semantic factor matching engine whose output directly affects the correctness of accounting results; removing the model degrades the system into an inoperable empty shell |
+| Technology: completeness of technical implementation | Main item within 40% | Three-stage pipeline, dual-channel recall, unit convention self-check, failure retry and degradation, complete audit trail |
+| Technology: scalability and sustainability | Main item within 40% | Decoupling of factor library and code, centralized model configuration, zero code changes to add new factors, repeatable evaluation suite |
+| Fit: problem alignment | Main item within 25% | Directly solves the SME Scope 3 preparation problem that surveys cannot even cover, strictly following the GHG Protocol structure |
+| Fit: potential impact | Main item within 25% | Quantified comparison of cost and time; outputs can be used directly by external enterprises rather than for demo purposes |
+| Innovation: originality and differentiation | Main item within 25% | Factor matching paradigm that replaces rule mapping with semantic reasoning; automatic uncertainty grading and disclosure |
+| Innovation: innovativeness of Gen AI application | Main item within 25% | Having the model explain why the runner-up candidate was not chosen; explicitly degrading uncertain areas instead of forcing a calculation |
+| Experience: usability and accessibility | Main item within 10% | Main interaction understood in 5 seconds, main workflow completable with keyboard only, levels not conveyed by color alone |
+| Experience: overall experience and integration | Main item within 10% | Extraction, matching, calculation, scenario, report, and review — six components with fully synchronized data and state |
 
-权重合计校验：技术维度 40%，契合维度 25%，创新维度 25%，体验维度 10%，合计 100%。表中「40% 内主项」等写法表示该行是相应维度下的主要评分子项，子项具体分值由赛事评审掌握。
+Weight total verification: Technology dimension 40%, Fit dimension 25%, Innovation dimension 25%, Experience dimension 10%, totaling 100%. Notations such as "main item within 40%" indicate that the row is a main scoring sub-item under the corresponding dimension; specific sub-item scores are determined by the event judging.
 
 ---
 
-## 3. 核心用户旅程
+## 3. Core User Journey
 
-### 3.1 主流程步骤
+### 3.1 Main Workflow Steps
 
-**步骤一，创建核算任务。** 用户填写三项信息：报告主体名称、覆盖的时间区间、核算所采用的 GWP 版本（AR5 或 AR6 二选一）。系统生成唯一任务标识。
+**Step 1, create an accounting task.** The user fills in three pieces of information: the name of the reporting entity, the time period covered, and the GWP version used for accounting (AR5 or AR6, choose one). The system generates a unique task identifier.
 
-**步骤二，上传单据。** 用户拖拽或选择文件，一次性上传任意数量单据。支持 PDF（含影像型扫描 PDF）、JPG、PNG、XLSX、CSV。单次建议 5 至 20 份。系统对每个文件执行格式校验、页数统计与内容哈希去重。
+**Step 2, upload documents.** The user drags or selects files to upload any number of documents at once. Supported formats: PDF (including image-only scanned PDF), JPG, PNG, XLSX, CSV. Recommended 5 to 20 files per batch. The system performs format validation, page count statistics, and content hash deduplication for each file.
 
-**步骤三，批量解析与分类。** 每个文件先判定单据类型，类型取值限定为七类之一：供应商发票、采购订单、物流运单、公用事业账单、差旅报销凭证、装箱单、其他。多页 PDF 按页判定，允许同一文件包含多种类型。分类置信度低于 0.7 者进入人工确认。
+**Step 3, batch parsing and classification.** Each file first has its document type determined; the type value is restricted to one of seven categories: supplier invoice, purchase order, logistics waybill, utility bill, travel reimbursement voucher, packing list, other. Multi-page PDFs are judged page by page, and one file may contain multiple types. Records with classification confidence below 0.7 go to manual confirmation.
 
-**步骤四，活动数据抽取。** 每张单据可产出零条、一条或多条活动记录，每条记录伴随逐字段置信度。
+**Step 4, activity data extraction.** Each document can produce zero, one, or multiple activity records, each accompanied by per-field confidence.
 
-**步骤五，归一化与缺口识别。** 执行单位换算、币种识别、日期统一、运输起讫地行政区归一。对计算必需且缺失的字段显式列出缺口并提示用户补充。
+**Step 5, normalization and gap identification.** Perform unit conversion, currency identification, date standardization, and administrative-region normalization of transport origins and destinations. For fields required for calculation that are missing, explicitly list the gaps and prompt the user to supply them.
 
-**步骤六，边界判定。** 判定每条记录属于 Scope 1、Scope 2 或 Scope 3；若属 Scope 3 须细化到 15 个类别之一，界面同时展示编号与名称。
+**Step 6, boundary determination.** Determine whether each record belongs to Scope 1, Scope 2, or Scope 3; if it belongs to Scope 3, it must be refined to one of the 15 categories, and the interface displays both the number and the name.
 
-**步骤七，排放因子语义匹配。** 系统为每条记录检索候选因子，再由推理模型择优并给出理由、置信度与关键语义特征。
+**Step 7, semantic matching of emission factors.** The system retrieves candidate factors for each record, after which the reasoning model selects the best one and provides a rationale, confidence, and key semantic features.
 
-**步骤八，计算与聚合。** 按统一公式计算，并按 Scope、类别、供应商、月份四个维度聚合。
+**Step 8, calculation and aggregation.** Calculate using a unified formula, and aggregate across four dimensions: Scope, category, supplier, and month.
 
-**步骤九，情景分析。** 自动构建三种减排情景，支持用户调整参数。
+**Step 9, scenario analysis.** Automatically construct three emission reduction scenarios, with user-adjustable parameters.
 
-**步骤十，报告生成与导出。** 生成英文报告，导出 PDF 与 CSV。
+**Step 10, report generation and export.** Generate the English report and export PDF and CSV.
 
-**步骤十一，复核闭环。** 用户在复核队列中修正字段或重指定因子，修正后必须立即重算并同步刷新报告与全部图表。
+**Step 11, review closure loop.** The user corrects fields or re-specifies factors in the review queue; after correction, recalculation must occur immediately and the report and all charts must be refreshed synchronously.
 
-### 3.2 异常分支
+### 3.2 Exception Branches
 
-| 分支场景 | 系统必须具备的行为 |
+| Branch Scenario | Behavior the System Must Have |
 |---|---|
-| 上传不支持的格式 | 拒绝该文件并给出英文提示，不影响其他文件 |
-| 单据模糊或扫描质量低 | 置信度自然下降，记录进入复核队列，严禁静默丢弃 |
-| 缺失计算必需字段 | 标记缺失项，报告中以「未纳入核算」统计并说明原因 |
-| 候选因子置信度全部低于因配置信度阈值（默认 0.65，可通过环境变量调整） | 标记为「无高置信因子」，界面可建议候选中数值最高的因子作为保守参考，但必须经人工确认后方可采用，并强制进入复核队列 |
-| 同一单据重复上传 | 自动识别并提示，由用户决定是否保留 |
+| Unsupported format uploaded | Reject the file with an English message, without affecting other files |
+| Blurry document or low scan quality | Confidence naturally decreases; the record enters the review queue; silent discarding is strictly prohibited |
+| Required calculation field missing | Flag the missing item; count it as "excluded from accounting" in the report and explain the reason |
+| All candidate factor confidences below the configured confidence threshold (default 0.65, adjustable via environment variable) | Flag as "no high-confidence factor"; the interface may suggest the highest-valued candidate as a conservative reference, but it must be manually confirmed before adoption, and the record is forced into the review queue |
+| Same document uploaded twice | Automatically identify and prompt; the user decides whether to keep it |
 
 ---
 
-## 4. 功能需求规格
+## 4. Functional Requirements Specification
 
-本章全部功能需求均为必做项：不做 MVP、不分期、不设优先级裁剪，交付时须全部实现并通过各自的验收标准，任何一条未实现或未通过验收即视为交付失败。
+All functional requirements in this chapter are mandatory: no MVP, no phasing, and no priority-based trimming. All must be implemented and pass their respective acceptance criteria at delivery; failure to implement or pass acceptance for any single item constitutes delivery failure.
 
-### 4.1 文件接入模块
+### 4.1 File Intake Module
 
-| 编号 | 需求 | 验收标准 |
+| No. | Requirement | Acceptance Criterion |
 |---|---|---|
-| FR-101 | 支持 PDF、JPG、PNG、XLSX、CSV 五种格式上传 | 五种格式样例各一份全部成功解析入库 |
-| FR-102 | 支持一次拖拽多文件上传，实时展示每个文件状态（排队中、解析中、抽取中、匹配中、已完成、需复核、失败） | 同时上传 20 个文件，状态全部正确演进，无卡死 |
-| FR-103 | 多页 PDF 按页拆分并按页判定类型 | 含 3 类单据的 4 页 PDF 被正确拆分且类型全部正确 |
-| FR-104 | 基于文件内容哈希的去重检测 | 同一文件上传两次触发去重提示 |
-| FR-105 | 单文件上限 10 MB，超限给出明确英文提示 | 11 MB 文件被拒绝且有提示 |
-| FR-106 | 原始文件持久化存储，全流程可随时打开查看 | 任意计算结果可跳转查看原始文件对应区域 |
+| FR-101 | Support upload of five formats: PDF, JPG, PNG, XLSX, CSV | One sample of each of the five formats is all successfully parsed and stored |
+| FR-102 | Support drag-and-drop multi-file upload in one action, displaying each file's status in real time (queued, parsing, extracting, matching, completed, needs review, failed) | Upload 20 files simultaneously; all statuses advance correctly with no freezing |
+| FR-103 | Split multi-page PDFs page by page and determine type per page | A 4-page PDF containing 3 document types is correctly split with all types correct |
+| FR-104 | Deduplication detection based on file content hash | Uploading the same file twice triggers a deduplication prompt |
+| FR-105 | Single file limit of 10 MB; give a clear English message when exceeded | An 11 MB file is rejected with a message |
+| FR-106 | Original files persistently stored and openable for viewing at any time throughout the workflow | Any calculation result can jump to view the corresponding region of the original file |
 
-### 4.2 单据分类模块
+### 4.2 Document Classification Module
 
-| 编号 | 需求 | 验收标准 |
+| No. | Requirement | Acceptance Criterion |
 |---|---|---|
-| FR-201 | 判定每个页面单元为七类单据之一并输出置信度 | 30 张 Golden 单据分类准确率不低于 93%（至少 28 张正确） |
-| FR-202 | 类型必须为封闭枚举集合，禁止模型自由生成类别名 | 对 Golden 集反复调用累计不少于 200 次，无集合外取值 |
-| FR-203 | 分类置信度低于 0.7 自动进入人工确认 | 构造 3 张模糊单据全部进入确认环节 |
+| FR-201 | Determine each page unit as one of seven document types and output confidence | Classification accuracy of 30 Golden documents not lower than 93% (at least 28 correct) |
+| FR-202 | Type must be a closed enumeration set; models are prohibited from freely generating category names | Repeated calls on the Golden set totaling at least 200 times, with no values outside the set |
+| FR-203 | Classification confidence below 0.7 automatically goes to manual confirmation | 3 constructed blurry documents all enter the confirmation step |
 
-### 4.3 活动数据抽取模块
+### 4.3 Activity Data Extraction Module
 
-抽取结果的结构由下表严格定义，每条活动记录必须包含且仅包含这些字段。
+The structure of extraction results is strictly defined by the table below; each activity record must contain these fields and only these fields.
 
-**活动记录字段表**
+**Activity Record Field Table**
 
-| 字段名 | 类型 | 必填 | 取值或约束 | 说明 |
+| Field Name | Type | Required | Values or Constraints | Description |
 |---|---|---|---|---|
-| record_id | 字符串 | 是 | 系统生成唯一标识 | 全链路溯源主键 |
-| source_ref | 字符串 | 是 | 指向来源单元的外键 | 必须可解析到真实存在的文件及其内部定位（页面、工作表或数据行） |
-| doc_type | 枚举 | 是 | 七类之一 | 继承分类结果 |
-| supplier_name | 字符串 | 否 | 自由文本 | 供应商名称 |
-| item_description | 字符串 | 是 | 自由文本 | 采购标的自然语言描述，因子匹配的主要依据 |
-| quantity | 数值 | 条件必填 | 大于 0 | 参与计算的记录必填，与 unit 成对出现 |
-| unit | 枚举 | 条件必填 | 见单位基准表 | 参与计算的记录必填，与 quantity 成对出现 |
-| amount | 数值 | 否 | 大于等于 0 | 金额 |
-| currency | 枚举 | 否 | 美元、欧元、英镑、加元、日元之一 | 币种 |
-| activity_date | 日期 | 是 | ISO 8601 格式 | 活动发生日期 |
-| origin_location | 字符串 | 条件必填 | 自由文本 | 运输类活动必填 |
-| destination_location | 字符串 | 条件必填 | 自由文本 | 运输类活动必填 |
-| transport_mode | 枚举 | 条件必填 | 见运输方式表 | 运输方式，运输类活动必填 |
-| gross_weight_kg | 数值 | 否 | 大于 0 | 毛重，统一为千克 |
-| distance_km | 数值 | 否 | 大于等于 0 | 距离，统一为千米 |
-| field_confidence | 字段与置信度的映射 | 是 | 每项均介于 0 与 1 | 逐字段置信度 |
-| extraction_notes | 字符串 | 否 | 自由文本 | 抽取异常说明 |
+| record_id | string | Yes | System-generated unique identifier | Primary key for full-chain traceability |
+| source_ref | string | Yes | Foreign key pointing to the source unit | Must be resolvable to a file that actually exists and its internal location (page, worksheet, or data row) |
+| doc_type | enum | Yes | One of the seven types | Inherits the classification result |
+| supplier_name | string | No | Free text | Supplier name |
+| item_description | string | Yes | Free text | Natural language description of the purchased item; the primary basis for factor matching |
+| quantity | number | Conditionally required | Greater than 0 | Required for records participating in calculation; appears in pair with unit |
+| unit | enum | Conditionally required | See unit reference table | Required for records participating in calculation; appears in pair with quantity |
+| amount | number | No | Greater than or equal to 0 | Amount |
+| currency | enum | No | One of USD, EUR, GBP, CAD, JPY | Currency |
+| activity_date | date | Yes | ISO 8601 format | Date the activity occurred |
+| origin_location | string | Conditionally required | Free text | Required for transport activities |
+| destination_location | string | Conditionally required | Free text | Required for transport activities |
+| transport_mode | enum | Conditionally required | See transport mode table | Transport mode; required for transport activities |
+| gross_weight_kg | number | No | Greater than 0 | Gross weight, unified to kilograms |
+| distance_km | number | No | Greater than or equal to 0 | Distance, unified to kilometers |
+| field_confidence | map of field to confidence | Yes | Each value between 0 and 1 | Per-field confidence |
+| extraction_notes | string | No | Free text | Extraction anomaly notes |
 
-| 编号 | 需求 | 验收标准 |
+| No. | Requirement | Acceptance Criterion |
 |---|---|---|
-| FR-301 | 按字段表抽取，缺失字段显式留空而非猜测填充 | 构造 5 张缺字段单据，系统不得臆造数值 |
-| FR-302 | 所有单位换算到基准单位 | 换算基准表中全部 10 组换算关系均正确 |
-| FR-303 | 每个已抽取字段附带 0 至 1 的置信度 | 抽检 20 条记录置信度完整 |
-| FR-304 | 单张单据可产出多条活动记录 | 三行明细的发票产出 3 条记录 |
-| FR-305 | 抽取结果可追溯到源文件区域并在查看时高亮 | 点击后源文件视图出现高亮框 |
-| FR-306 | 手写或低质扫描件仍须尝试抽取，不得直接判失败 | 3 张手写标注单据至少 2 张产出有效记录（有效指至少含数量与单位在内的必填字段非空） |
+| FR-301 | Extract per the field table; leave missing fields explicitly empty rather than guessing to fill them | Construct 5 documents with missing fields; the system must not fabricate values |
+| FR-302 | Convert all units to reference units | All 10 conversion relations in the conversion reference table are correct |
+| FR-303 | Each extracted field is accompanied by confidence between 0 and 1 | Spot-check 20 records with complete confidence values |
+| FR-304 | A single document can produce multiple activity records | An invoice with three line items produces 3 records |
+| FR-305 | Extraction results are traceable to the source file region and highlighted when viewed | A highlight box appears in the source file view after clicking |
+| FR-306 | Handwritten or low-quality scans must still be attempted for extraction; they must not be directly judged as failure | At least 2 of 3 handwritten annotated documents produce valid records (valid means required fields, at minimum quantity and unit, are non-empty) |
 
-### 4.4 单位与归一化规范
+### 4.4 Unit and Normalization Specification
 
-**单位基准换算表（全部必须实现）**
+**Unit Reference Conversion Table (all must be implemented)**
 
-| 类别 | 支持原始单位 | 目标基准单位 | 换算关系 |
+| Category | Supported Original Units | Target Reference Unit | Conversion Relation |
 |---|---|---|---|
-| 质量 | 千克、吨、磅、克 | 千克 | 1 吨 = 1000 千克；1 磅 ≈ 0.4536 千克；1 克 = 0.001 千克 |
-| 能源 | 千瓦时、兆瓦时、吉焦、英热单位 | 千瓦时 | 1 兆瓦时 = 1000 千瓦时；1 吉焦 ≈ 277.78 千瓦时；1 英热单位 ≈ 0.000293 千瓦时 |
-| 体积 | 升、立方米、美制加仑 | 升 | 1 立方米 = 1000 升；1 美制加仑 ≈ 3.785 升 |
-| 距离 | 千米、英里、海里 | 千米 | 1 英里 ≈ 1.609 千米；1 海里 ≈ 1.852 千米 |
-| 货币 | 美元、欧元、英镑、加元、日元 | 原币种并标注 | 本项目不做汇率折算，仅须正确识别与标注 |
+| Mass | kilogram, ton, pound, gram | kilogram | 1 ton = 1000 kilograms; 1 pound ≈ 0.4536 kilograms; 1 gram = 0.001 kilograms |
+| Energy | kilowatt-hour, megawatt-hour, gigajoule, British thermal unit | kilowatt-hour | 1 megawatt-hour = 1000 kilowatt-hours; 1 gigajoule ≈ 277.78 kilowatt-hours; 1 British thermal unit ≈ 0.000293 kilowatt-hours |
+| Volume | liter, cubic meter, US gallon | liter | 1 cubic meter = 1000 liters; 1 US gallon ≈ 3.785 liters |
+| Distance | kilometer, mile, nautical mile | kilometer | 1 mile ≈ 1.609 kilometers; 1 nautical mile ≈ 1.852 kilometers |
+| Currency | USD, EUR, GBP, CAD, JPY | Original currency with annotation | This project performs no exchange rate conversion; correct identification and annotation only |
 
-**运输方式枚举表（封闭集合）**
+**Transport Mode Enumeration Table (closed set)**
 
-公路货运、铁路运输、海运（集装箱）、海运（散货）、空运（普货）、空运（冷链）、国际快递、内河航运、管道运输、不适用。
+Road freight, rail transport, sea freight (containerized), sea freight (bulk), air freight (general cargo), air freight (cold chain), international express, inland waterway shipping, pipeline transport, not applicable.
 
-| 编号 | 需求 | 验收标准 |
+| No. | Requirement | Acceptance Criterion |
 |---|---|---|
-| FR-401 | 实现全部换算，换算过程写入审计轨迹 | 换算基准表中全部 10 组换算均通过 |
-| FR-402 | 起讫地归一化到国家地区加城市两级结构 | 「new york city」与「New York」归一化结果一致 |
-| FR-403 | 运输方式必须落入封闭枚举 | 对含运输信息的记录反复调用累计不少于 100 次，无集合外取值 |
+| FR-401 | Implement all conversions; write the conversion process to the audit trail | All 10 conversions in the conversion reference table pass |
+| FR-402 | Normalize origins and destinations to a two-level structure of country/region plus city | "new york city" and "New York" normalize to the same result |
+| FR-403 | Transport mode must fall within the closed enumeration | Repeated calls on records containing transport information totaling at least 100 times, with no values outside the set |
 
-### 4.5 边界判定模块
+### 4.5 Boundary Determination Module
 
-**Scope 3 的 15 个类别清单（封闭枚举，必须完整列出并实现）**
+**List of the 15 Scope 3 Categories (closed enumeration; must be listed in full and implemented)**
 
-| 类别编号 | 英文名称 | 中文名称 |
+| Category No. | English Name | Chinese Name |
 |---|---|---|
-| Cat-1 | Purchased goods and services | 购买的商品与服务 |
-| Cat-2 | Capital goods | 资本货物 |
-| Cat-3 | Fuel- and energy-related activities | 燃料与能源相关活动 |
-| Cat-4 | Upstream transportation and distribution | 上游运输与配送 |
-| Cat-5 | Waste generated in operations | 运营产生的废弃物 |
-| Cat-6 | Business travel | 商务差旅 |
-| Cat-7 | Employee commuting | 员工通勤 |
-| Cat-8 | Upstream leased assets | 上游租赁资产 |
-| Cat-9 | Downstream transportation and distribution | 下游运输与配送 |
-| Cat-10 | Processing of sold products | 售出产品的加工 |
-| Cat-11 | Use of sold products | 售出产品的使用 |
-| Cat-12 | End-of-life treatment of sold products | 售出产品的报废处理 |
-| Cat-13 | Downstream leased assets | 下游租赁资产 |
-| Cat-14 | Franchises | 特许经营 |
-| Cat-15 | Investments | 投资 |
+| Cat-1 | Purchased goods and services | Purchased goods and services |
+| Cat-2 | Capital goods | Capital goods |
+| Cat-3 | Fuel- and energy-related activities | Fuel- and energy-related activities |
+| Cat-4 | Upstream transportation and distribution | Upstream transportation and distribution |
+| Cat-5 | Waste generated in operations | Waste generated in operations |
+| Cat-6 | Business travel | Business travel |
+| Cat-7 | Employee commuting | Employee commuting |
+| Cat-8 | Upstream leased assets | Upstream leased assets |
+| Cat-9 | Downstream transportation and distribution | Downstream transportation and distribution |
+| Cat-10 | Processing of sold products | Processing of sold products |
+| Cat-11 | Use of sold products | Use of sold products |
+| Cat-12 | End-of-life treatment of sold products | End-of-life treatment of sold products |
+| Cat-13 | Downstream leased assets | Downstream leased assets |
+| Cat-14 | Franchises | Franchises |
+| Cat-15 | Investments | Investments |
 
-界面须同时展示类别编号与英文名称。判定输出时不得使用上述 15 类之外的取值。
+The interface must display both the category number and the English name. Determination output must not use values outside the 15 categories above.
 
-**GWP 版本处理规则（必须实现）**
+**GWP Version Handling Rules (must be implemented)**
 
-用户在创建任务时选定 GWP 版本（AR5 或 AR6），该选择对全流程生效。因子匹配时优先召回 GWP 版本与任务设置一致的因子；若某条活动记录在因子库中仅有另一版本的对应因子，则必须同时满足三项要求：在界面上显式标注版本不一致、将该记录的不确定性等级至少下调至中级（不得保留低级）、并在报告的方法学章节统计披露此类记录的数量与占比。严禁在报告与界面均未说明的情况下跨版本混用因子。
+The user selects the GWP version (AR5 or AR6) when creating a task, and that selection applies to the entire workflow. During factor matching, factors whose GWP version matches the task setting are recalled preferentially; if an activity record has only a corresponding factor of the other version in the factor library, three requirements must be met simultaneously: explicitly annotate the version mismatch on the interface, downgrade the record's uncertainty level to at least Medium (Low may not be retained), and statistically disclose the count and proportion of such records in the methodology section of the report. Mixing factors across versions without explanation in both the report and the interface is strictly prohibited.
 
-| 编号 | 需求 | 验收标准 |
+| No. | Requirement | Acceptance Criterion |
 |---|---|---|
-| FR-501 | 判定每条记录属于 Scope 1、Scope 2 或 Scope 3 | 10 条 Golden 记录 Scope 层级判定正确率不低于 90%（至少 9 条正确），与 10.1 节指标同口径 |
-| FR-502 | Scope 3 须细化到 15 个类别之一，输出编号与名称 | 12 条 Scope 3 Golden 记录准确率不低于 90%（至少 11 条正确） |
-| FR-503 | 判定须输出英文理由 | 每条判定均有非空英文理由 |
-| FR-504 | 同一文件内高度重复的记录标记为疑似重复 | 构造重复记录被正确标记 |
+| FR-501 | Determine whether each record belongs to Scope 1, Scope 2, or Scope 3 | Scope-level determination accuracy of 10 Golden records not lower than 90% (at least 9 correct), on the same basis as the metrics in Section 10.1 |
+| FR-502 | Scope 3 must be refined to one of the 15 categories, outputting both number and name | Accuracy of 12 Scope 3 Golden records not lower than 90% (at least 11 correct) |
+| FR-503 | Determination must output a rationale in English | Every determination has a non-empty English rationale |
+| FR-504 | Highly duplicate records within the same file are marked as suspected duplicates | Constructed duplicate records are correctly marked |
 
-### 4.6 排放因子库
+### 4.6 Emission Factor Library
 
-| 编号 | 需求 | 验收标准 |
+| No. | Requirement | Acceptance Criterion |
 |---|---|---|
-| FR-601 | 从公开来源构建本地因子库。推荐来源：英国政府温室气体换算因子年度报告、美国环保署排放因子中心、公开版本行业平均因子集 | README 明确列出实际使用的数据源名称、版本年份与公开链接 |
-| FR-602 | 覆盖 5 个行业：电子制造、服装纺织、食品加工、物流运输、通用办公服务 | 每行业至少 40 条，总数不超过 1,200 条 |
-| FR-603 | 每条因子须含属性：因子编号、因子名称、自然语言描述、适用活动类型、排放单位、活动数据单位、数值、覆盖温室气体范围、系统边界类型、GWP 版本、数据年份、来源名称、原始出处定位 | 抽检 50 条属性完整率 100% |
-| FR-604 | 因子库同时支持关键词检索与语义向量检索两条召回通道 | 两条通道可独立关闭以做对照实验 |
-| FR-605 | 因子库以独立数据文件随代码仓库交付，不得依赖运行时联网抓取 | 断网环境仍可完成匹配 |
-| FR-606 | 因子须标注数据年份，报告中披露年份分布 | 报告附录含因子年份统计表 |
+| FR-601 | Build a local factor library from public sources. Recommended sources: the UK government's annual GHG conversion factors report, the US EPA Emission Factors Center, and publicly available industry average factor sets | README clearly lists the names, version years, and public links of the data sources actually used |
+| FR-602 | Cover 5 industries: electronics manufacturing, apparel and textiles, food processing, logistics and transport, general office services | At least 40 entries per industry, with a total not exceeding 1,200 entries |
+| FR-603 | Each factor must include the attributes: factor ID, factor name, natural language description, applicable activity type, emission unit, activity data unit, value, greenhouse gas coverage scope, system boundary type, GWP version, data year, source name, original source location | 100% attribute completeness on a spot check of 50 entries |
+| FR-604 | The factor library supports both keyword search and semantic vector search recall channels | The two channels can be independently disabled for controlled experiments |
+| FR-605 | The factor library is delivered as an independent data file alongside the code repository and must not rely on runtime web scraping | Matching can still be completed in an offline environment |
+| FR-606 | Factors must be annotated with data year; the report discloses the year distribution | The report appendix contains a factor year statistics table |
 
-### 4.7 语义因子匹配模块（核心能力）
+### 4.7 Semantic Factor Matching Module (Core Capability)
 
-本模块是技术制高点，须严格按三阶段流水线实现。
+This module is the technical high ground and must be implemented strictly as a three-stage pipeline.
 
-**阶段一，候选召回。** 针对每条活动记录，分别从两条通道召回。第一条为关键词与结构化字段匹配，第二条为语义向量相似度检索。两路合并去重后候选数量控制在 5 至 15 条。候选少于 5 条时自动放宽召回阈值并重试，重试过程记录日志；重试后仍不足 5 条的，以实际数量进入下一阶段，并在该记录上标注「召回不足」。候选超过 15 条时按相关度截断。
+**Stage 1, candidate recall.** For each activity record, recall is performed via the two channels separately. The first is keyword and structured field matching; the second is semantic vector similarity search. After merging and deduplicating the two paths, the candidate count is controlled between 5 and 15. When there are fewer than 5 candidates, the recall threshold is automatically relaxed and the recall retried; the retry process is logged; if still fewer than 5 after retry, the actual number proceeds to the next stage, and the record is marked "insufficient recall". When there are more than 15 candidates, they are truncated by relevance.
 
-**阶段二，推理择优。** 将结构化的活动描述与候选因子列表交给推理模型，要求其选出最优一条并输出五项内容：
+**Stage 2, reasoning-based selection.** The structured activity description and the candidate factor list are handed to the reasoning model, which is required to select the single best one and output five items:
 
-| 输出项 | 类型 | 约束 |
+| Output Item | Type | Constraint |
 |---|---|---|
-| selected_factor_id | 字符串 | 必须存在于候选列表，严禁凭空生成 |
-| confidence | 数值 | 介于 0 与 1 |
-| rationale | 字符串 | 英文，不少于 40 个词，说明选择该因子而非次优候选的具体理由 |
-| key_semantic_features | 字符串数组 | 列出 2 至 4 项关键语义特征 |
-| runner_up_id | 字符串 | 次优候选编号，可为空 |
+| selected_factor_id | string | Must exist in the candidate list; fabricating values is strictly prohibited |
+| confidence | number | Between 0 and 1 |
+| rationale | string | In English, no fewer than 40 words, explaining the specific reasons for choosing this factor over the runner-up candidate |
+| key_semantic_features | string array | Lists 2 to 4 key semantic features |
+| runner_up_id | string | Runner-up candidate ID; may be empty |
 
-**阶段三，不确定性分级。** 依据匹配置信度、字段完整度、因子边界吻合度，为每条结果赋级：
+**Stage 3, uncertainty grading.** Based on matching confidence, field completeness, and factor boundary fit, a level is assigned to each result:
 
-| 等级 | 判定条件 | 界面呈现 |
+| Level | Determination Condition | Interface Presentation |
 |---|---|---|
-| 低 | 置信度不低于 0.85，且全部必需字段由单据直接抽取 | 绿色标记 |
-| 中 | 置信度不低于 0.65 且低于 0.85，或存在 1 个推断所得必需字段 | 琥珀色标记 |
-| 高 | 置信度低于 0.65，或存在 2 个及以上推断字段，或单位口径需二次换算 | 红色标记并强制进入复核队列 |
+| Low | Confidence not lower than 0.85, and all required fields extracted directly from the document | Green marker |
+| Medium | Confidence not lower than 0.65 and below 0.85, or 1 inferred required field exists | Amber marker |
+| High | Confidence below 0.65, or 2 or more inferred fields exist, or the unit convention requires secondary conversion | Red marker and forced entry into the review queue |
 
-分级判定顺序为从高到低：先检查是否满足「高」的任一条件，再检查「中」，均不满足方为「低」。同一记录同时命中多级条件时取最严重等级。
+Grading is applied in descending order of severity: first check whether any condition for the "High" tier is met, then check "Medium"; only if neither is met is the record "Low". When a single record triggers conditions at multiple tiers, the most severe tier applies.
 
-| 编号 | 需求 | 验收标准 |
+| ID | Requirement | Acceptance Criteria |
 |---|---|---|
-| FR-701 | 实现三阶段流水线 | 单条记录端到端匹配不超过 8 秒 |
-| FR-702 | 选定因子编号必须存在于候选列表 | Golden 全集中引用有效性 100%，无效引用为 0 |
-| FR-703 | 输出英文书面理由且须提及为何不选次优候选 | 抽检 20 条理由非空且含对比表述 |
-| FR-704 | 不确定性三级分布在报告中统计披露 | 报告含三级占比表 |
-| FR-705 | 记录次优候选以支持人工改选 | 界面可手动改选并触发重算 |
-| FR-706 | 支持一次性批量重算 | 触发后聚合与图表同步刷新 |
+| FR-701 | Implement the three-stage pipeline | End-to-end matching of a single record takes no more than 8 seconds |
+| FR-702 | The selected factor ID must exist in the candidate list | 100% reference validity across the full Golden set, with zero invalid references |
+| FR-703 | Output a written rationale in English that explains why the runner-up candidate was not selected | A spot check of 20 rationales shows all are non-empty and contain comparative statements |
+| FR-704 | Statistically disclose the three-tier uncertainty distribution in the report | The report contains a three-tier proportion table |
+| FR-705 | Record the runner-up candidate to support manual re-selection | The UI allows manual re-selection and triggers recalculation |
+| FR-706 | Support one-click batch recalculation | Aggregations and charts refresh synchronously after triggering |
 
-### 4.8 计算与聚合模块
+### 4.8 Calculation and Aggregation Module
 
-**计算约定**：单条记录排放量等于归一化后的活动数据乘以所选因子数值。若因子覆盖的温室气体范围不是单一二氧化碳，须明确是否已含 GWP 折算；若未含，须另行乘以对应气体 GWP 系数，且该过程必须写入审计轨迹。
+**Calculation conventions**: The emission of a single record equals the normalized activity data multiplied by the selected factor value. If the greenhouse gas coverage of the factor is not limited to carbon dioxide alone, it must be explicitly stated whether GWP conversion is already included; if it is not, the corresponding GWP factor for each gas must be applied separately, and this process must be recorded in the audit trail.
 
-**精度与舍入规则（必须严格遵守）**
+**Precision and rounding rules (strictly enforced)**
 
-中间计算过程须保留完整浮点精度，不得中途舍入。所有汇总值必须先以未舍入的明细值求和，再对结果执行一次舍入，严禁先舍入明细再相加。展示层统一换算为吨二氧化碳当量并保留三位小数，采用四舍五入规则。验收时允许 1e-6 以内的相对浮点误差，但展示层呈现的各分项之和与总量必须在三位小数口径下完全一致，不得出现肉眼可见的不一致。
+Intermediate calculations must preserve full floating-point precision and must not be rounded mid-way. All aggregate values must first be summed from unrounded detail values, and rounding is then applied once to the result; rounding detail values before summing them is strictly prohibited. The presentation layer uniformly converts values to tonnes of CO2 equivalent with three decimal places, using round-half-up. During acceptance, a relative floating-point error within 1e-6 is tolerated, but in the presentation layer the sum of all line items and the total must be exactly consistent under the three-decimal-place convention, with no discrepancy visible to the naked eye.
 
-| 编号 | 需求 | 验收标准 |
+| ID | Requirement | Acceptance Criteria |
 |---|---|---|
-| FR-801 | 计算单位统一为千克二氧化碳当量，展示时自动换算为吨并保留三位小数 | 10 组已知答案计算题全部正确 |
-| FR-802 | 支持按 Scope、类别、供应商、月份四个维度聚合 | 各维度合计值与总量一致 |
-| FR-803 | Top 排放源榜单默认 Top 10，按排放量降序 | 排序与明细一致 |
-| FR-804 | 每次单位换算、GWP 折算、乘法须写入审计轨迹并可在界面查看 | 任意记录可展开完整计算步骤 |
-| FR-805 | 总量必须等于各分项之和，展示层三位小数口径下完全一致 | 按上述舍入规则校验，任何展示页不出现合计与分项不一致 |
+| FR-801 | Calculations use kg CO2e uniformly; the presentation layer automatically converts to tonnes with three decimal places | All 10 known-answer calculation problems are correct |
+| FR-802 | Support aggregation across four dimensions: Scope, category, supplier, and month | Aggregated values in each dimension are consistent with the total |
+| FR-803 | The Top emission sources ranking defaults to Top 10, sorted by emissions in descending order | The ordering is consistent with the detail records |
+| FR-804 | Every unit conversion, GWP conversion, and multiplication must be written to the audit trail and viewable in the UI | The complete calculation steps can be expanded for any record |
+| FR-805 | The total must equal the sum of all line items, exactly consistent in the presentation layer under the three-decimal-place convention | Validated against the rounding rules above; no display page shows an inconsistency between totals and line items |
 
-### 4.9 情景分析模块
+### 4.9 Scenario Analysis Module
 
-| 情景编号 | 情景名称 | 建模方式 | 必须输出 |
+| Scenario ID | Scenario Name | Modeling Approach | Required Outputs |
 |---|---|---|---|
-| S-1 | 运输方式替换 | 将空运（普货、冷链）活动替换为海运（集装箱）因子、公路货运活动替换为铁路运输因子，重跑匹配与计算；其余运输方式不受影响 | 减排绝对量、百分比、受影响记录清单、定性说明 |
-| S-2 | 供应商替换 | 将排放量最高的前三个供应商的全部活动记录，改用因子库中同活动类别下数值最低的因子重算 | 同上 |
-| S-3 | 材料替换 | 将高排放原材料采购记录替换为因子库中可得的低碳替代材料因子重算；无可用替代因子的记录保持不变，并在结果说明中逐一注明 | 同上 |
+| S-1 | Transport mode substitution | Replace air freight (general cargo, cold chain) activities with sea freight (container) factors and road freight activities with rail transport factors, then re-run matching and calculation; other transport modes are unaffected | Absolute emission reduction, percentage, list of affected records, qualitative notes |
+| S-2 | Supplier substitution | Recalculate all activity records of the three highest-emitting suppliers using the lowest-value factor within the same activity category in the factor library | Same as above |
+| S-3 | Material substitution | Recalculate high-emission raw material purchase records using low-carbon alternative material factors available in the factor library; records without an available alternative factor remain unchanged and are noted individually in the results | Same as above |
 
-若当前任务中不存在某情景适用的活动记录，该情景按零受影响记录处理，界面与报告如实展示并说明原因，不得报错，也不得隐藏该情景。
+If the current task contains no activity records to which a scenario applies, that scenario is handled as having zero affected records; the UI and report display this faithfully and explain the reason, without raising errors and without hiding the scenario.
 
-| 编号 | 需求 | 验收标准 |
+| ID | Requirement | Acceptance Criteria |
 |---|---|---|
-| FR-901 | 三种情景全部自动可算，无需用户输入 | 主流程跑完情景页直接展示三份结果 |
-| FR-902 | 输出减排绝对量与百分比，与基准同屏对比 | 数值与明细一致，百分比正确 |
-| FR-903 | 每种情景附不少于 80 个英文单词的可行性分析，说明前提假设与局限 | 三种情景均非空且明确提及假设 |
-| FR-904 | 支持调整替换比例参数 | 调整后实时刷新且不报错 |
+| FR-901 | All three scenarios are computed automatically, with no user input required | After the main flow completes, the scenario page directly displays three results |
+| FR-902 | Output absolute emission reduction and percentage, compared with the baseline on the same screen | Values are consistent with the detail records and percentages are correct |
+| FR-903 | Each scenario is accompanied by a feasibility analysis of at least 80 English words stating the assumptions and limitations | All three scenarios are non-empty and explicitly mention assumptions |
+| FR-904 | Support adjusting the substitution ratio parameter | Refreshes in real time after adjustment without errors |
 
-### 4.10 报告生成与导出模块
+### 4.10 Report Generation and Export Module
 
-**报告结构（严格遵循此章节顺序）**
+**Report structure (follow this section order strictly)**
 
-一、封面：主体名称、覆盖期间、生成日期、GWP 版本声明、赛道归属声明
-二、执行摘要：总排放量、三 Scope 分解、Top 排放源、核心建议三条
-三、核算方法与边界：遵循标准、组织边界、运营边界、因子年份分布
-四、排放量分解：Scope 汇总表、Scope 3 类别分解表、供应商 Top 榜单
-五、活动数据明细表
-六、不确定性说明：三级分布、主要不确定性来源、数据质量改进建议
-七、减排情景建议：三情景对比与实施建议
-八、附录一：所用排放因子清单（编号、名称、数值、单位、年份、来源）
-九、附录二：引用溯源索引（每个数据点对应来源单据编号或因子编号）
-十、免责声明
+1. Cover page: entity name, coverage period, generation date, GWP version statement, track attribution statement
+2. Executive summary: total emissions, breakdown across the three Scopes, Top emission sources, three core recommendations
+3. Accounting methodology and boundaries: standards followed, organizational boundary, operational boundary, factor year distribution
+4. Emission breakdown: Scope summary table, Scope 3 category breakdown table, supplier Top ranking
+5. Activity data detail table
+6. Uncertainty statement: three-tier distribution, main uncertainty sources, data quality improvement recommendations
+7. Emission reduction scenario recommendations: comparison of the three scenarios and implementation recommendations
+8. Appendix 1: list of emission factors used (ID, name, value, unit, year, source)
+9. Appendix 2: reference traceability index (each data point mapped to its source document ID or factor ID)
+10. Disclaimer
 
-**各章节必须写入的具体内容（缺项视为报告不合格）**
+**Specific content that must be included in each section (any omission renders the report non-compliant)**
 
-| 章节 | 必须包含的具体内容项 |
+| Section | Required Content Items |
 |---|---|
-| 一 封面 | 报告主体名称、覆盖期间起止、生成日期、GWP 版本声明、赛道归属声明、免责声明索引 |
-| 二 执行摘要 | 总排放量数值及单位、三 Scope 各自数值与占比、Top 三排放源名称与数值、三条核心建议每条不少于 30 个英文单词 |
-| 三 核算方法与边界 | 遵循标准名称、组织边界说明、运营边界说明、GWP 版本与来源、跨 GWP 版本使用因子的记录数量与占比（如为零亦须写明为零）、因子年份分布表、数据质量总体评价 |
-| 四 排放量分解 | Scope 汇总表、Scope 3 十五类分解表（未发生的类别须显示为零而非省略）、供应商 Top 十榜单 |
-| 五 活动明细 | 全部记录摘要列表，含单据来源、活动描述、数量与单位、所选因子编号、排放量、不确定性等级 |
-| 六 不确定性说明 | 三级分布统计表、主要不确定性来源归类、数据质量改进建议不少于三条 |
-| 七 减排情景建议 | S-1、S-2、S-3 三情景对比表、各情景减排绝对量与百分比、各情景不少于 80 个英文单词的可行性说明 |
-| 八 附录一 因子清单 | 本报告实际使用的全部因子，逐条列出编号、名称、数值、单位、年份、来源名称 |
-| 九 附录二 溯源索引 | 报告中每个数据点到来源单据编号或因子编号的对照条目 |
-| 十 免责声明 | 声明本工具产出结果不构成审计意见或法律意见，建议使用者在对外披露前自行核验 |
+| 1. Cover | Report entity name, coverage period start and end, generation date, GWP version statement, track attribution statement, disclaimer index |
+| 2. Executive summary | Total emission value and unit, value and share of each of the three Scopes, names and values of the Top 3 emission sources, three core recommendations each of at least 30 English words |
+| 3. Accounting methodology and boundaries | Name of the standards followed, organizational boundary description, operational boundary description, GWP version and source, count and share of records using factors across different GWP versions (if zero, state zero explicitly), factor year distribution table, overall data quality assessment |
+| 4. Emission breakdown | Scope summary table, Scope 3 fifteen-category breakdown table (categories that did not occur must be shown as zero rather than omitted), supplier Top 10 ranking |
+| 5. Activity detail | Summary list of all records, including document source, activity description, quantity and unit, selected factor ID, emissions, uncertainty tier |
+| 6. Uncertainty statement | Three-tier distribution statistics table, categorization of main uncertainty sources, at least three data quality improvement recommendations |
+| 7. Emission reduction scenario recommendations | Comparison table for scenarios S-1, S-2, and S-3, absolute emission reduction and percentage for each scenario, feasibility description of at least 80 English words per scenario |
+| 8. Appendix 1: Factor list | All factors actually used in this report, listed individually with ID, name, value, unit, year, and source name |
+| 9. Appendix 2: Traceability index | Cross-reference entries from every data point in the report to its source document ID or factor ID |
+| 10. Disclaimer | A statement that the results produced by this tool do not constitute an audit opinion or legal advice, and that users should independently verify the results before external disclosure |
 
-| 编号 | 需求 | 验收标准 |
+| ID | Requirement | Acceptance Criteria |
 |---|---|---|
-| FR-1001 | 按上述章节结构生成英文报告 | 章节齐全且顺序正确 |
-| FR-1002 | 每个数值型结论带引用锚点，在 Web 阅读视图内点击可跳转至来源单据或因子条目；PDF 中以附录二溯源索引呈现对应关系 | 锚点覆盖率 100%，失效锚点 0 个 |
-| FR-1003 | 支持导出 PDF，含页眉页码与目录，可直接对外交付 | PDF 不少于 6 页 |
-| FR-1004 | 支持导出 CSV，至少包含活动明细与按类别汇总两个 CSV 文件 | 无编码乱码 |
-| FR-1005 | 报告封面标注 GWP 版本与因子年份分布 | 封面含两项声明 |
-| FR-1006 | 包含免责说明：本工具产出结果不构成审计意见或法律意见 | 免责声明存在 |
+| FR-1001 | Generate an English report following the section structure above | All sections are present and in the correct order |
+| FR-1002 | Every numerical conclusion carries a reference anchor that, when clicked in the Web reading view, jumps to the source document or factor entry; in the PDF, the correspondence is presented via the Appendix 2 traceability index | 100% anchor coverage with zero broken anchors |
+| FR-1003 | Support PDF export with header, page numbers, and a table of contents, ready for external delivery | The PDF has at least 6 pages |
+| FR-1004 | Support CSV export with at least two files: activity detail and category summary | No encoding corruption |
+| FR-1005 | The report cover states the GWP version and the factor year distribution | The cover contains both statements |
+| FR-1006 | Include a disclaimer that the results produced by this tool do not constitute an audit opinion or legal advice | The disclaimer is present |
 
-### 4.11 复核队列模块
+### 4.11 Review Queue Module
 
-| 编号 | 需求 | 验收标准 |
+| ID | Requirement | Acceptance Criteria |
 |---|---|---|
-| FR-1101 | 集中展示需人工处理的记录，按高、中、低不确定性等级排序（高在前） | 排序正确可滚动浏览 |
-| FR-1102 | 允许编辑数量、单位、运输方式、起讫地四个字段，并允许补充步骤五识别出的缺失必需字段（如日期、数量、单位） | 保存后触发重算 |
-| FR-1103 | 允许手动指定因子，优先级高于自动匹配并显式标注「人工指定」 | 改选后结果更新 |
-| FR-1104 | 允许标记记录为「排除核算」并填写英文理由 | 排除后不计入总量且报告中列出被排除项 |
-| FR-1105 | 复核动作记录操作人与时间戳写入审计轨迹 | 审计轨迹可见 |
+| FR-1101 | Centrally display records requiring manual handling, sorted by high, medium, and low uncertainty tier (high first) | Correct sorting with scrollable browsing |
+| FR-1102 | Allow editing of four fields: quantity, unit, transport mode, and origin/destination; also allow filling in missing required fields identified in Step 5 (such as date, quantity, and unit) | Recalculation is triggered after saving |
+| FR-1103 | Allow manual factor specification, which takes precedence over automatic matching and is explicitly labeled "Manually Specified" | Results update after re-selection |
+| FR-1104 | Allow marking records as "Excluded from Accounting" with a written reason in English | Excluded records are not counted in the total and are listed in the report |
+| FR-1105 | Review actions record the operator and timestamp in the audit trail | The audit trail is visible |
 
-### 4.12 可观测性与演示辅助
+### 4.12 Observability and Demo Aids
 
-| 编号 | 需求 | 验收标准 |
+| ID | Requirement | Acceptance Criteria |
 |---|---|---|
-| FR-1201 | 提供处理过程实时可视化：当前阶段、已完成数量、每文件状态 | 20 文件处理中进度连续无倒退 |
-| FR-1202 | 提供每次 AI 调用追踪记录：输入摘要、输出摘要、耗时、用量估算 | 追踪面板可按阶段筛选 |
-| FR-1203 | 提供预置示例数据集，一键载入即可完整复现主流程 | 一键载入后 3 分钟内产出完整报告 |
+| FR-1201 | Provide real-time visualization of the processing workflow: current stage, number completed, and per-file status | Progress is continuous and never regresses while processing 20 files |
+| FR-1202 | Provide tracing records for every AI call: input summary, output summary, duration, and usage estimate | The tracing panel can be filtered by stage |
+| FR-1203 | Provide a prebuilt sample dataset that fully reproduces the main flow with one-click loading | A complete report is produced within 3 minutes of one-click loading |
 
 ---
 
-## 5. 非功能需求
+## 5. Non-Functional Requirements
 
-### 5.1 性能
+### 5.1 Performance
 
-| 编号 | 需求 | 验收标准 |
+| ID | Requirement | Acceptance Criteria |
 |---|---|---|
-| NFR-101 | 20 张单据端到端处理 P90 不超过 3 分钟 | 10 次测试 P90 达标 |
-| NFR-102 | 单张单据 AI 处理成本不高于 0.03 美元 | 用量统计累加达标 |
-| NFR-103 | 首屏加载不超过 3 秒 | 标准网络下 5 次取平均 |
-| NFR-104 | 报告 PDF 导出不超过 10 秒 | 连续 5 次达标 |
-| NFR-105 | 3 个并发任务下不出现请求失败 | 压测无服务端错误 |
+| NFR-101 | End-to-end processing of 20 documents within a P90 of 3 minutes | P90 target met across 10 test runs |
+| NFR-102 | AI processing cost per document no higher than USD 0.03 | Cumulative usage statistics meet the target |
+| NFR-103 | First-screen load within 3 seconds | Average of 5 runs under standard network conditions |
+| NFR-104 | Report PDF export within 10 seconds | Target met on 5 consecutive runs |
+| NFR-105 | No request failures under 3 concurrent tasks | No server-side errors under load testing |
 
-### 5.2 可靠性与容错
+### 5.2 Reliability and Fault Tolerance
 
-| 编号 | 需求 | 验收标准 |
+| ID | Requirement | Acceptance Criteria |
 |---|---|---|
-| NFR-201 | 单文件失败不得阻塞整体流程 | 混入 3 个损坏文件时其余 17 个全部成功 |
-| NFR-202 | AI 调用超时自动重试两次，仍失败则明确标记失败对象（文件或记录）并置为失败状态 | 模拟超时行为符合预期 |
-| NFR-203 | 页面刷新后重新进入，进度与已完成任务数据不丢失 | 中途刷新状态正确恢复 |
-| NFR-204 | 所有失败须产生机器可读错误码与人类可读英文描述 | 错误码覆盖全部已知失败类型 |
+| NFR-201 | A single file failure must not block the overall workflow | With 3 corrupted files mixed in, all 17 remaining files succeed |
+| NFR-202 | AI call timeouts are automatically retried twice; if the call still fails, the failing object (file or record) is explicitly marked and set to a failed state | Simulated timeout behavior matches expectations |
+| NFR-203 | Re-entering after a page refresh preserves progress and completed task data | State is correctly restored after a mid-process refresh |
+| NFR-204 | All failures produce a machine-readable error code and a human-readable English description | Error codes cover all known failure types |
 
-### 5.3 安全与隐私
+### 5.3 Security and Privacy
 
-| 编号 | 需求 | 验收标准 |
+| ID | Requirement | Acceptance Criteria |
 |---|---|---|
-| NFR-301 | 用户上传文件不得被其他任务或用户访问 | 跨任务访问被测出为拒绝 |
-| NFR-302 | 不得将用户数据用于任何模型训练 | README 明确声明 |
-| NFR-303 | 对外演示网址须具备基本访问频率限制 | 验证存在限流逻辑 |
-| NFR-304 | 不得硬编码任何生产环境密钥 | 代码扫描确认 |
+| NFR-301 | User-uploaded files must not be accessible to other tasks or users | Cross-task access attempts are detected and denied |
+| NFR-302 | User data must not be used for any model training | Explicitly stated in the README |
+| NFR-303 | The public demo URL must have basic access rate limiting | Rate-limiting logic is verified to exist |
+| NFR-304 | No production environment secrets may be hardcoded | Confirmed by code scanning |
 
-### 5.4 可用性与无障碍
+### 5.4 Usability and Accessibility
 
-| 编号 | 需求 | 验收标准 |
+| ID | Requirement | Acceptance Criteria |
 |---|---|---|
-| NFR-401 | 主界面须在 5 秒内让首次使用者理解核心交互 | 3 名未参与开发的旁观者测试达成 |
-| NFR-402 | 全站文案为英文且无语法错误 | 人工校对一遍 |
-| NFR-403 | 支持键盘导航，主要按钮可键盘触发 | 主流程可纯键盘完成 |
-| NFR-404 | 颜色不得作为唯一信息载体，等级须同时有线稿图标区分 | 灰度打印截图仍可区分 |
+| NFR-401 | First-time users must understand the core interaction of the main UI within 5 seconds | Achieved in tests with 3 observers who did not participate in development |
+| NFR-402 | All site copy is in English with no grammatical errors | One manual proofreading pass |
+| NFR-403 | Support keyboard navigation; primary buttons are keyboard-operable | The main flow can be completed using the keyboard alone |
+| NFR-404 | Color must not be the sole carrier of information; tiers must also be distinguished by line-art icons | Tiers remain distinguishable in grayscale printed screenshots |
 
-### 5.5 可维护性与可扩展性
+### 5.5 Maintainability and Scalability
 
-| 编号 | 需求 | 验收标准 |
+| ID | Requirement | Acceptance Criteria |
 |---|---|---|
-| NFR-501 | 因子库与代码解耦，新增因子无需改代码 | 新增 10 条因子后系统正常 |
-| NFR-502 | 模型选型集中配置，替换模型只需改配置 | 改配置后正常运行 |
-| NFR-503 | 全部服务参数可通过环境变量覆盖 | README 列出全部环境变量 |
-| NFR-504 | 自研代码总量目标不超过 7,000 行，任何情况下不得超过 10,000 行硬上限（与文档元信息表一致） | 统计工具确认 |
+| NFR-501 | The factor library is decoupled from the code; adding factors requires no code changes | The system works normally after adding 10 factors |
+| NFR-502 | Model selection is centrally configured; replacing a model requires only a configuration change | The system runs normally after the configuration change |
+| NFR-503 | All service parameters can be overridden via environment variables | The README lists all environment variables |
+| NFR-504 | The total self-developed codebase should not exceed 7,000 lines, and must never exceed the hard cap of 10,000 lines (consistent with the document metadata table) | Confirmed by a statistics tool |
 
 ---
 
-## 6. AI 与智能体设计规范
+## 6. AI and Agent Design Specifications
 
-### 6.1 模型分工
+### 6.1 Model Roles
 
-| 环节 | 使用模型档位 | 理由 |
+| Stage | Model Tier Used | Rationale |
 |---|---|---|
-| 单据分类与字段抽取 | 高速档模型（Gemini Flash 系列） | 数据量大，任务结构化程度高，成本敏感 |
-| 边界判定 | 高速档模型 | 任务明确 |
-| 候选因子召回排序 | 关键词检索加嵌入模型语义检索，高速档模型可选用于重排 | 双通道召回为主，重排仅依赖结构化输出，不需要深度推理 |
-| 因子最终择优与理由生成 | 高性能档模型（Gemini Pro 系列） | 需要语义推断与详细论证 |
-| 不确定性分级判定 | 规则引擎，不调用模型 | 4.7 节分级条件为明确阈值规则，按规则执行保证结果可复现、可验收 |
-| 报告生成与减排建议 | 高性能档模型 | 需要长文本与专业术语 |
-| 语义向量召回 | 嵌入模型 | 须使用 Google Cloud 官方提供的嵌入模型，支持语义检索 |
+| Document classification and field extraction | High-speed tier model (Gemini Flash series) | High data volume, highly structured tasks, cost-sensitive |
+| Boundary determination | High-speed tier model | Well-defined task |
+| Candidate factor retrieval and ranking | Keyword retrieval plus embedding-model semantic retrieval, with a high-speed tier model optionally used for re-ranking | Dual-channel retrieval is primary; re-ranking relies only on structured output and does not require deep reasoning |
+| Final factor selection and rationale generation | High-performance tier model (Gemini Pro series) | Requires semantic inference and detailed argumentation |
+| Uncertainty tier determination | Rule engine, no model call | The tiering conditions in Section 4.7 are explicit threshold rules; rule-based execution ensures results are reproducible and verifiable |
+| Report generation and reduction recommendations | High-performance tier model | Requires long-form text and professional terminology |
+| Semantic vector retrieval | Embedding model | Must use the embedding model officially provided by Google Cloud to support semantic retrieval |
 
-模型的具体型号由开发者在实现时选定，但必须同时满足以下条件：承担生成式任务的模型全部属于 Gemini 或 Gemma 系列；语义向量召回使用 Google Cloud 官方提供的文本嵌入模型；全部通过 Google Cloud 提供的官方接口调用；型号名称集中在配置文件中，不得散落各处。
+The specific model versions are selected by the developer at implementation time, but must satisfy all of the following conditions: all models performing generative tasks belong to the Gemini or Gemma series; semantic vector retrieval uses the text embedding model officially provided by Google Cloud; all calls are made through the official interfaces provided by Google Cloud; model names are centralized in the configuration file and must not be scattered across the codebase.
 
-### 6.2 输出契约
+### 6.2 Output Contract
 
-| 编号 | 需求 | 验收标准 |
+| ID | Requirement | Acceptance Criteria |
 |---|---|---|
-| AI-101 | 所有生成式模型调用必须启用结构化输出模式，严禁返回自由文本后再人工解析；嵌入向量调用不在此列 | 代码中不存在对自然语言返回值的字符串切分逻辑 |
-| AI-102 | 所有枚举字段使用封闭集合校验，非法值触发重试而非静默通过 | 构造非法值测试，被测出为拒绝或重试 |
-| AI-103 | 每次调用须携带来源标识，便于后续溯源 | 审计轨迹中来源标识完整 |
-| AI-104 | 所有由模型给出的数值型字段须附带 0 至 1 的置信度 | 抽检完整 |
-| AI-105 | 用户可见的文本输出一律为英文 | 抽检无中文片段 |
-| AI-106 | 每次调用须记录耗时与用量估算 | 追踪面板可见 |
+| AI-101 | All generative model calls must enable structured output mode; returning free text for subsequent manual parsing is strictly prohibited. Embedding vector calls are exempt | The codebase contains no string-splitting logic on natural-language return values |
+| AI-102 | All enum fields are validated against a closed set; invalid values trigger a retry rather than being silently accepted | Tests with constructed invalid values are detected as rejected or retried |
+| AI-103 | Every call must carry a source identifier to support subsequent traceability | Source identifiers are complete in the audit trail |
+| AI-104 | All numeric fields produced by the model must carry a confidence score between 0 and 1 | Verified in spot checks |
+| AI-105 | All user-visible text output is in English | Spot checks show no Chinese fragments |
+| AI-106 | Every call must record duration and a usage estimate | Visible in the tracing panel |
 
-### 6.3 幻觉治理
+### 6.3 Hallucination Mitigation
 
-| 编号 | 需求 | 验收标准 |
+| ID | Requirement | Acceptance Criteria |
 |---|---|---|
-| AI-201 | 报告中每个数值型结论至少带一个引用锚点 | 覆盖率 100%，失效 0 个 |
-| AI-202 | 引用锚点指向的单据或因子必须真实存在 | 定向注入 5 个失效引用，全部被检出 |
-| AI-203 | 系统不得输出无引用的结转值或拼接推断值 | 环绕测试中未出现 |
-| AI-204 | 当模型返回的因子编号不在候选列表中时，必须视为调用失败并重试，不得直接使用 | 定向测试验证 |
+| AI-201 | Every numerical conclusion in the report carries at least one reference anchor | 100% coverage with zero failures |
+| AI-202 | The documents or factors referenced by anchors must actually exist | Five deliberately injected invalid references are all detected |
+| AI-203 | The system must not output unreferenced carried-over values or concatenated inferred values | Does not occur in the wraparound tests |
+| AI-204 | When the factor ID returned by the model is not in the candidate list, the call must be treated as failed and retried, not used directly | Verified by targeted testing |
 
-### 6.4 自检机制
+### 6.4 Self-Check Mechanism
 
-| 编号 | 需求 | 验收标准 |
+| ID | Requirement | Acceptance Criteria |
 |---|---|---|
-| AI-301 | 对每条记录，因子匹配结果须经过一次一致性自检：核对所选因子的活动数据单位与归一化后的活动数据单位是否可换算 | 自检记录可见，Golden 集全部通过 |
-| AI-302 | 自检不通过时自动降为高不确定性并强制进入复核队列 | 构造 3 例全部正确降级 |
-| AI-303 | 单位口径自检的结果须在界面上显示为显式字段，不得隐式处理 | 界面可见 |
+| AI-301 | For every record, the factor matching result must pass a consistency self-check: verify whether the activity data unit of the selected factor is convertible to the normalized activity data unit | Self-check records are visible and the full Golden set passes |
+| AI-302 | If the self-check fails, the record is automatically downgraded to high uncertainty and forced into the review queue | All 3 constructed cases are correctly downgraded |
+| AI-303 | The result of the unit-basis self-check must be displayed in the UI as an explicit field, not handled implicitly | Visible in the UI |
 
 ---
 
-## 7. 数据规格
+## 7. Data Specifications
 
-### 7.1 Golden Case 数据集
+### 7.1 Golden Case Dataset
 
-开发者须构建一套包含下列部分的测试集，每一部分都必须同时提供机器可读的答案文件。
+Developers must build a test set comprising the following parts, each of which must be accompanied by a machine-readable answer file.
 
-**第一组，30 张样例单据。** 覆盖：影像型扫描 PDF、手机拍摄照片、Excel 采购明细、航空运单、水电账单、装箱单、手写标注单据。每张均已知正确答案。
+**Group 1: 30 sample documents.** Coverage: scanned image PDFs, photos taken with a phone, Excel purchase details, air waybills, utility bills, packing lists, and documents with handwritten annotations. The correct answer is known for each.
 
-**第二组，30 条活动记录答案。** 由第一组单据抽取产出，每条记录的全部字段已知正确取值。
+**Group 2: 30 activity record answers.** Extracted from the Group 1 documents, with known correct values for every field of each record.
 
-**第三组，40 条因子匹配案例。** 可复用第二组记录并补充构造至 40 条，每条已知最优因子编号与次优候选。案例须覆盖五类难度：
+**Group 3: 40 factor matching cases.** Group 2 records may be reused and supplemented to reach 40 cases, each with a known optimal factor ID and runner-up candidate. The cases must cover five difficulty types:
 
-- 明确匹配，置信度应达到高水平
-- 需边界推断，例如空运普货与空运冷链之间选择
-- 需单位换算，例如磅转千克后再匹配
-- 需语义推论，例如带有附加费用描述的拼箱运输应匹配集装箱海运因子
-- 需边界口径判断，例如燃料类的上游口径与燃烧口径二选一
+- Explicit matches, for which confidence should reach a high level
+- Requiring boundary inference, for example choosing between air freight general cargo and air freight cold chain
+- Requiring unit conversion, for example converting pounds to kilograms before matching
+- Requiring semantic inference, for example an LCL (less-than-container-load) shipment with an ancillary charge description should match the container sea freight factor
+- Requiring boundary basis judgment, for example choosing between the upstream basis and the combustion basis for fuel categories
 
-**第四组，3 组异常数据。** 分别为损坏文件、缺失字段单据、重复上传文件。
+**Group 4: 3 sets of anomalous data.** These are, respectively, corrupted files, documents with missing fields, and duplicate uploaded files.
 
-### 7.2 因子库规格
+### 7.2 Factor Library Specifications
 
-按 4.6 节要求构建。补充要求：因子描述文本须保留原始英文名称，便于与来源比对；起讫地字段统一为 ISO 3166 国家地区代码加城市名；同一语义的因子若存在多来源，须全部保留并标注优先级，推理择优阶段遇到语义等同的多来源候选时，应选择优先级最高的来源并在理由中说明，避免混淆。
+Build in accordance with the requirements in Section 4.6. Additional requirements: factor description text must retain the original English names to facilitate comparison with the source; origin/destination fields must uniformly use ISO 3166 country/region codes followed by the city name; if factors with the same semantics exist from multiple sources, all must be retained with a priority annotation; when semantically equivalent multi-source candidates are encountered during inference and selection, the highest-priority source should be chosen and the choice explained in the rationale to avoid confusion.
 
-### 7.3 示例演示数据集
+### 7.3 Sample Demo Dataset
 
-开发者须制作一套用于演示的一键载入数据集，要求：20 张单据，混合全部支持格式；至少覆盖 Scope 1、Scope 2 各 2 条，Scope 3 至少覆盖 6 个不同类别；虚构一家可信的企业作为报告主体，名称、地址、行业须虚构但合理；数据须在演示时能在 3 分钟内跑完全流程并产出完整报告。
-
----
-
-## 8. 架构与技术选型约束
-
-### 8.1 必须包含的组件
-
-| 层 | 组件 | 约束 |
-|---|---|---|
-| 前端 | 单页响应式 Web 应用 | 部署于 Firebase Hosting |
-| 后端 | 后端服务加异步任务队列 | 部署于 Cloud Run，支持自动扩缩容，允许缩容到零 |
-| 文件存储 | 对象存储 | Firebase Storage |
-| 结构化存储 | 文档数据库 | Firestore，集合与字段按 8.4 节数据模型定义 |
-| 向量检索 | 向量索引 | 因子库不超过 1,200 条，允许采用进程内向量方案，也可使用托管的向量检索能力 |
-| 任务队列 | 异步任务管理 | Cloud Tasks 或等效托管服务 |
-| 身份认证 | 用户登录 | Firebase Auth，匿名登录或邮箱登录 |
-| 观测追踪 | 日志与链路追踪 | Cloud Logging 与 Cloud Trace |
-
-### 8.2 禁止事项
-
-- 禁止调用任何非 Google 厂商的生成式模型服务
-- 禁止部署到 Cloud Run 与 Firebase 之外的目标
-- 禁止引入需要额外付费的第三方服务
-- 禁止把任何形式的密钥提交到代码仓库
-- 禁止为追求通用性而扩大因子库或功能范围，凡超出本文件范围的功能一律不实现
-
-### 8.3 环境变量清单
-
-以下变量必须在配置文件中定义并允许环境变量覆盖，README 中须逐一说明默认值与含义：抽取模型名称、推理模型名称、嵌入模型名称、批处理大小、分类置信度阈值（默认 0.7）、因子匹配置信度阈值（默认 0.65）、调用重试次数、调用超时秒数、默认 GWP 版本、存储桶名称、云服务项目标识。
-
-### 8.4 数据模型
-
-Firestore 至少须包含以下集合。每个集合的必填字段、类型与约束按下表实现，字段命名可自由调整但语义不得缺失。
-
-| 集合 | 用途 | 关键字段 |
-|---|---|---|
-| tasks | 核算任务 | 任务标识、主体名称、时间区间起止、GWP 版本、创建时间、状态、创建者标识 |
-| documents | 上传的原始文件 | 文件标识、所属任务标识、原始文件名、格式、大小、页数、内容哈希、存储路径、上传状态 |
-| document_units | 页面单元 | 单元标识、所属文件标识、页码（无分页概念的文件作为一个单元处理）、认定单据类型、类型置信度、是否需要人工确认 |
-| activity_records | 活动记录 | 字段严格按 4.3 节活动记录字段表实现，另须含所属任务标识与不确定性等级 |
-| emission_factors | 排放因子 | 字段严格按 4.6 节 FR-603 属性清单实现，另须含向量数据 |
-| matches | 因子匹配结果 | 匹配标识、所属活动记录标识、选定因子编号、次优因子编号、置信度、理由文本、关键语义特征、GWP 版本是否一致 |
-| calculations | 计算结果 | 计算标识、所属活动记录标识、活动数据归一化值、单位、所选因子数值、排放量、折算过程明细 |
-| scenarios | 情景结果 | 情景标识、所属任务标识、情景编号、情景名称、参数、减排绝对量、减排百分比、可行性说明 |
-| reports | 生成的报告 | 报告标识、所属任务标识、章节内容、生成时间、导出文件路径 |
-| review_items | 复核队列项 | 复核项标识、所属任务标识、关联活动记录标识、不确定性等级、状态、处理人、处理时间、处理说明 |
-| audit_trail | 审计轨迹 | 轨迹标识、所属任务标识、动作类型、动作主体、关联对象标识、时间戳、动作明细 |
-| ai_traces | 模型调用追踪 | 追踪标识、所属任务标识、调用阶段、模型名称、输入摘要、输出摘要、耗时、用量估算、成功与否 |
-
-关联约束：所有存在引用关系的集合，其被引用标识必须真实有效。评测工具须包含一项针对失效引用的全量扫描，扫描结果纳入 10.1 节的失效引用数指标，不允许有任何遗漏或例外。
+Developers must produce a one-click-loading dataset for demonstration, with the following requirements: 20 documents mixing all supported formats; at least 2 records each covering Scope 1 and Scope 2, and at least 6 different categories covered under Scope 3; a plausible fictional company as the report entity, whose name, address, and industry are fictional but reasonable; during the demo, the data must run the full workflow and produce a complete report within 3 minutes.
 
 ---
 
-## 9. UI 与 UX 规范
+## 8. Architecture and Technology Stack Constraints
 
-### 9.1 页面清单
+### 8.1 Required Components
 
-| 页面 | 必须包含的元素 |
+| Layer | Component | Constraint |
+|---|---|---|
+| Frontend | Single-page responsive web application | Deployed on Firebase Hosting |
+| Backend | Backend service plus asynchronous task queue | Deployed on Cloud Run, supporting automatic scaling, with scale-to-zero allowed |
+| File storage | Object storage | Firebase Storage |
+| Structured storage | Document database | Firestore, with collections and fields defined per the data model in Section 8.4 |
+| Vector retrieval | Vector index | The factor library contains no more than 1,200 entries; an in-process vector approach is allowed, as is a managed vector retrieval capability |
+| Task queue | Asynchronous task management | Cloud Tasks or an equivalent managed service |
+| Authentication | User login | Firebase Auth, with anonymous login or email login |
+| Observability and tracing | Logging and distributed tracing | Cloud Logging and Cloud Trace |
+
+### 8.2 Prohibitions
+
+- Calling any generative model service from a vendor other than Google is prohibited
+- Deploying to any target other than Cloud Run and Firebase is prohibited
+- Introducing third-party services that require additional payment is prohibited
+- Committing any form of secret to the code repository is prohibited
+- Expanding the factor library or functional scope in pursuit of generality is prohibited; any functionality beyond the scope of this document must not be implemented
+
+### 8.3 Environment Variables
+
+The following variables must be defined in the configuration file and overridable by environment variables, and the README must explain the default value and meaning of each: extraction model name, inference model name, embedding model name, batch size, classification confidence threshold (default 0.7), factor matching confidence threshold (default 0.65), call retry count, call timeout in seconds, default GWP version, storage bucket name, and cloud service project identifier.
+
+### 8.4 Data Model
+
+Firestore must contain at least the following collections. The required fields, types, and constraints for each collection are implemented as shown in the table below; field naming may be adjusted freely, but no semantics may be omitted.
+
+| Collection | Purpose | Key Fields |
+|---|---|---|
+| tasks | Accounting task | Task ID, entity name, time interval start and end, GWP version, creation time, status, creator ID |
+| documents | Uploaded source files | File ID, owning task ID, original file name, format, size, page count, content hash, storage path, upload status |
+| document_units | Page units | Unit ID, owning file ID, page number (files with no pagination concept are handled as a single unit), identified document type, type confidence, whether manual confirmation is required |
+| activity_records | Activity records | Fields implemented strictly per the activity record field table in Section 4.3, additionally including the owning task ID and the uncertainty tier |
+| emission_factors | Emission factors | Fields implemented strictly per the FR-603 attribute list in Section 4.6, additionally including vector data |
+| matches | Factor matching results | Match ID, owning activity record ID, selected factor ID, runner-up factor ID, confidence, rationale text, key semantic features, whether the GWP version is consistent |
+| calculations | Calculation results | Calculation ID, owning activity record ID, normalized activity data value, unit, selected factor value, emissions, conversion process detail |
+| scenarios | Scenario results | Scenario ID, owning task ID, scenario number, scenario name, parameters, absolute emission reduction, emission reduction percentage, feasibility description |
+| reports | Generated reports | Report ID, owning task ID, section content, generation time, exported file path |
+| review_items | Review queue items | Review item ID, owning task ID, related activity record ID, uncertainty tier, status, handler, handling time, handling notes |
+| audit_trail | Audit trail | Trail ID, owning task ID, action type, action subject, related object ID, timestamp, action detail |
+| ai_traces | Model call traces | Trace ID, owning task ID, call stage, model name, input summary, output summary, duration, usage estimate, success or failure |
+
+Referential constraints: for all collections with reference relationships, the referenced identifiers must be genuinely valid. The evaluation tool must include a full scan for invalid references, and the scan results must be incorporated into the invalid reference count metric in Section 10.1, with no omissions or exceptions permitted.
+
+---
+
+## 9. UI and UX Specifications
+
+### 9.1 Page Inventory
+
+| Page | Required Elements |
 |---|---|
-| P1 首页与任务创建 | 产品名称、一句话价值主张、创建任务表单（名称、时间区间、GWP 版本） |
-| P2 上传与处理 | 拖拽区、文件列表与状态标签、整体进度、一键载入示例数据按钮 |
-| P3 活动记录明细 | 表格、每条可展开查看字段置信度、查看原始文件入口、因子匹配结果与理由、不确定性标签、复核入口 |
-| P4 因子匹配查看器 | 任意记录的候选列表、最优与次优对比、手动改选入口 |
-| P5 图表仪表板 | 三 Scope 分解图、类别分解、供应商 Top、月度趋势、维度筛选 |
-| P6 情景对比 | 三情景卡片、与基准对比、减排绝对量与百分比、可行性说明展开区 |
-| P7 报告 | 十章结构的阅读视图（封面至免责声明）、引用锚点跳转、导出入口 |
-| P8 复核队列 | 按不确定性排序、字段编辑、因子改选、排除标记 |
-| P9 追踪面板 | 各阶段 AI 调用记录、按项查询 |
+| P1 Home and task creation | Product name, one-sentence value proposition, task creation form (name, time interval, GWP version) |
+| P2 Upload and processing | Drag-and-drop area, file list with status labels, overall progress, one-click sample data loading button |
+| P3 Activity record detail | Table, per-record expandable field confidence, entry to view the source file, factor matching result and rationale, uncertainty label, review entry |
+| P4 Factor match viewer | Candidate list for any record, comparison of optimal and runner-up, manual re-selection entry |
+| P5 Chart dashboard | Three-Scope breakdown chart, category breakdown, supplier Top, monthly trend, dimension filters |
+| P6 Scenario comparison | Three scenario cards, comparison with the baseline, absolute emission reduction and percentage, expandable feasibility description |
+| P7 Report | Reading view of the ten-section structure (from cover page to disclaimer), reference anchor navigation, export entry |
+| P8 Review queue | Sorted by uncertainty, field editing, factor re-selection, exclusion marking |
+| P9 Tracing panel | AI call records for each stage, queryable by item |
 
-### 9.2 交互准则
+### 9.2 Interaction Guidelines
 
-- 任何用户操作须立即有视觉确认；超过 3 秒的操作须有进行中指示。
-- 任何错误须提供恢复路径，不得出现死路。
-- 超过 5 秒的长任务须提供取消能力。
-- 具有破坏性的操作须二次确认。
-- 界面主体色采用浅色系，保持专业克制，不得使用大范围高饱和色块。
+- Any user action must receive immediate visual confirmation; operations exceeding 3 seconds must show an in-progress indicator.
+- Any error must provide a recovery path; dead ends must not occur.
+- Long tasks exceeding 5 seconds must provide a cancel capability.
+- Destructive operations must require secondary confirmation.
+- The UI primary palette should use light tones, remaining professional and restrained; large areas of highly saturated color blocks must not be used.
 
 ---
 
-## 10. 测试与验收
+## 10. Testing and Acceptance
 
-### 10.1 评测指标表
+### 10.1 Evaluation Metrics Table
 
-开发者须提供可命令行运行的评测工具，**单次运行即输出下表全部指标及其是否达标**。
+Developers must provide an evaluation tool that runs from the command line, **outputting all metrics in the table below along with their pass/fail status in a single run**.
 
-**评测工具的输出格式要求（必须遵守）**
+**Output format requirements for the evaluation tool (must be followed)**
 
-| 编号 | 要求 |
+| ID | Requirement |
 |---|---|
-| EV-1 | 输出为单张完整表格，列依次为指标名称、目标值、实测值、是否达标，不得把结果分散到多处输出 |
-| EV-2 | 每行必须在是否达标列明确写出达标或未达标两种取值之一，禁止使用模糊措辞 |
-| EV-3 | 表格末尾输出汇总行：达标项数、未达标项数、整体结论取合格或不合格二选一 |
-| EV-4 | 若一票否决类指标未达标，整体结论直接判定为不合格，即便其余指标全部达标也不例外 |
-| EV-5 | 支持两种运行方式：一次运行全部指标，或指定运行单个指标组，便于开发过程中快速回归 |
-| EV-6 | 运行结束时须同时输出机器可读的结果文件与人类可读的摘要，供写入提交材料 |
+| EV-1 | Output a single complete table with columns in order: metric name, target value, measured value, and pass/fail status; results must not be scattered across multiple outputs |
+| EV-2 | Every row must explicitly state one of two values in the pass/fail column: Pass or Fail; vague wording is prohibited |
+| EV-3 | Output a summary row at the end of the table: number of passing metrics, number of failing metrics, and an overall conclusion that is either Pass or Fail |
+| EV-4 | If any veto-category metric fails, the overall conclusion is directly Fail, even if all other metrics pass |
+| EV-5 | Support two run modes: running all metrics at once, or running a specified individual metric group, to facilitate rapid regression during development |
+| EV-6 | At the end of a run, output both a machine-readable results file and a human-readable summary, for inclusion in submission materials |
 
+All accuracy metrics are computed on the Golden Case dataset in Section 7.1, and all time and cost metrics are computed on the sample dataset in Section 7.3.
 
-准确率类指标一律在 7.1 节 Golden Case 数据集上计算，耗时与成本类指标一律在 7.3 节示例数据集上计算。
-
-| 指标 | 目标值 | 是否必达 |
+| Metric | Target Value | Mandatory |
 |---|---|---|
-| 单据分类准确率 Top-1 | 不低于 93%（30 张 Golden 单据中至少 28 张正确） | 必达 |
-| 字段抽取准确率（数量、单位、金额、日期、币种） | 平均不低于 95%，其中数量与单位不低于 98% | 必达 |
-| 因子匹配准确率 Top-1 | 不低于 85%（40 条 Golden 案例中至少 34 条正确） | 必达 |
-| 因子匹配准确率 Top-3 命中 | 不低于 95%（40 条中至少 38 条命中） | 参考 |
-| Scope 判定准确率 | 不低于 90%（Scope 层级 10 条与 Scope 3 类别 12 条分别统计，各不低于 90%） | 必达 |
-| 计算正确率 | 100%（展示层吨二氧化碳当量三位小数口径下零容差；中间浮点过程允许 1e-6 相对误差，口径与 4.8 节一致） | 必达 |
-| 报告引用覆盖率 | 100% | 必达 |
-| 失效引用数（幻觉） | 0 | 一票否决，非 0 则整体不合格 |
-| 汇总值一致性 | 分项之和与总量在展示层三位小数口径下完全一致（与 FR-805 同口径） | 必达 |
-| 端到端耗时（20 张） | P90 不超过 3 分钟 | 必达 |
-| 单张单据 AI 处理成本 | 不高于 0.03 美元 | 必达 |
+| Document classification accuracy, Top-1 | No lower than 93% (at least 28 of 30 Golden documents correct) | Mandatory |
+| Field extraction accuracy (quantity, unit, amount, date, currency) | Average no lower than 95%, with quantity and unit no lower than 98% | Mandatory |
+| Factor matching accuracy, Top-1 | No lower than 85% (at least 34 of 40 Golden cases correct) | Mandatory |
+| Factor matching accuracy, Top-3 hit rate | No lower than 95% (at least 38 of 40 hit) | Reference |
+| Scope determination accuracy | No lower than 90% (counted separately for 10 Scope-level items and 12 Scope 3 category items, each no lower than 90%) | Mandatory |
+| Calculation accuracy | 100% (zero tolerance under the presentation-layer tonnes CO2e three-decimal-place convention; a relative error of 1e-6 is allowed in the intermediate floating-point process, consistent with the convention in Section 4.8) | Mandatory |
+| Report reference coverage | 100% | Mandatory |
+| Invalid reference count (hallucination) | 0 | Veto: any non-zero value fails the overall result |
+| Aggregate value consistency | The sum of line items and the total are exactly consistent under the presentation-layer three-decimal-place convention (same convention as FR-805) | Mandatory |
+| End-to-end duration (20 documents) | P90 no more than 3 minutes | Mandatory |
+| AI processing cost per document | No higher than USD 0.03 | Mandatory |
 
-### 10.2 阶段验收关卡
+### 10.2 Stage Acceptance Gates
 
-每个关卡必须有可展示的支持证据才能通过，不得口头声明完成。
+Each gate may only be passed with demonstrable supporting evidence; verbal declarations of completion are not permitted.
 
-| 关卡 | 时点 | 准入条件 | 准出条件 |
+| Gate | Timing | Entry Criteria | Exit Criteria |
 |---|---|---|---|
-| G0 立项 | 第 1 天 | 需求读完 | 因子来源确定并记录文档；工程骨架初始化完成且可本地一键构建运行；基础自测脚本可执行 |
-| G1 数据就绪 | 第 2 天 | G0 通过 | 因子库导入完成可查询；Golden 集 30 张单据及答案全部就位 |
-| G2 抽取跑通 | 第 4 天 | G1 通过 | Golden 集上字段准确率达标；溯源链路完整可跳转 |
-| G3 匹配与计算跑通 | 第 6 天 | G2 通过 | 因子匹配准确率达标；计算正确率 100%；汇总一致性验证通过 |
-| G4 报告与情景完成 | 第 7 天 | G3 通过 | 章节齐全的报告可生成导出；三情景计算正确；引用覆盖率 100% |
-| G5 部署与演示就绪 | 第 8 天 | G4 通过 | 部署成功；公开网址在 3 个不同网络环境可访问；示例数据一键载入真实跑完并产出报告 |
-| G6 交付完成 | 第 9 至 10 天 | G5 通过 | 视频录制完毕；英文 deck PDF 完成；README 完整；验收清单全部勾选 |
+| G0 Project kickoff | Day 1 | Requirements fully read | Factor sources determined and documented; project skeleton initialized and buildable/runnable locally with one command; basic self-test scripts executable |
+| G1 Data readiness | Day 2 | G0 passed | Factor library import complete and queryable; all 30 Golden documents and their answers in place |
+| G2 Extraction working | Day 4 | G1 passed | Field accuracy targets met on the Golden set; traceability chain complete and navigable |
+| G3 Matching and calculation working | Day 6 | G2 passed | Factor matching accuracy targets met; calculation accuracy 100%; aggregate consistency validation passed |
+| G4 Report and scenarios complete | Day 7 | G3 passed | A report with all sections can be generated and exported; all three scenarios calculate correctly; reference coverage 100% |
+| G5 Deployment and demo readiness | Day 8 | G4 passed | Deployment successful; the public URL is accessible from 3 different network environments; sample data loads with one click and runs to completion, producing a report |
+| G6 Delivery complete | Days 9-10 | G5 passed | Video recording complete; English deck PDF complete; README complete; all acceptance checklist items checked |
 
-### 10.3 最终验收清单
+### 10.3 Final Acceptance Checklist
 
-全部勾选方可提交，任何一项未勾选即视为交付失败。
+Submission is permitted only when all items are checked; any unchecked item is considered a delivery failure.
 
-**功能验收**
-- [ ] 五种格式文件全部成功解析
-- [ ] 20 张单据一键载入后 3 分钟内产出完整报告
-- [ ] Web 阅读视图内所有引用锚点可点击跳转至原始文件，覆盖率 100%
-- [ ] 高不确定性记录自动进入复核队列
-- [ ] 复核修改触发重算并同步刷新报告
-- [ ] 三种情景全部可算并输出减排绝对量与百分比
-- [ ] PDF 与 CSV 导出成功，无编码异常
-- [ ] 页面刷新后任务状态不丢失
+**Functional acceptance**
+- [ ] All five file formats parse successfully
+- [ ] A complete report is produced within 3 minutes after one-click loading of 20 documents
+- [ ] All reference anchors in the Web reading view can be clicked to jump to the original file, with 100% coverage
+- [ ] High-uncertainty records automatically enter the review queue
+- [ ] Review edits trigger recalculation and synchronously refresh the report
+- [ ] All three scenarios are calculable and output absolute emission reduction and percentage
+- [ ] PDF and CSV exports succeed with no encoding anomalies
+- [ ] Task state is not lost after a page refresh
 
-**赛事合规验收**
-- [ ] 部署在 Cloud Run 与 Firebase，公开网址可访问
-- [ ] 全部生成式 AI 能力来自 Gemini 系列模型，向量召回使用 Google Cloud 官方嵌入模型，无第三方模型
-- [ ] 公开网址无登录阻碍，进入即自动完成匿名登录，无需注册或输入任何凭据
-- [ ] 全部 UI 文案、报告正文、README、视频字幕均为英文
-- [ ] deck 首页、README 首屏、视频片尾三处赛道标注一致
+**Competition compliance acceptance**
+- [ ] Deployed on Cloud Run and Firebase, with the public URL accessible
+- [ ] All generative AI capabilities come from the Gemini series models, vector retrieval uses the official Google Cloud embedding model, and no third-party models are used
+- [ ] The public URL has no login barrier; anonymous login completes automatically on entry, with no registration or credentials required
+- [ ] All UI copy, report body, README, and video subtitles are in English
+- [ ] The track label is consistent across the deck title page, the README landing section, and the video ending
+**Video Acceptance (3 minutes)**
+- [ ] Convey the value numbers (cost and labor-hour comparison) clearly within the first 15 seconds of the opening
+- [ ] Show one complete continuous process from drag-and-drop to report generation, with no appearance of cut or skipped frames from editing
+- [ ] Show at least one comparison case where the correct factor is selected only because of semantic understanding
+- [ ] Show at least one click-through of citation traceability
 
-**视频验收（3 分钟）**
-- [ ] 片头 15 秒内讲清价值数字（成本与工时对比）
-- [ ] 完整展示一次从拖拽到出报告的连续过程，无剪辑跳帧嫌疑
-- [ ] 至少展示一个「因为语义理解才选对因子」的对比案例
-- [ ] 至少展示一次引用溯源点击
-
-**工程验收**
-- [ ] 评测工具可命令行运行并输出完整报告
-- [ ] 全部指标达到 10.1 节目标值
-- [ ] 代码中无密钥泄露
-- [ ] 自研代码行数不超过 7,000 行，未触及 10,000 行硬上限
-- [ ] README 清晰说明架构、部署步骤、环境变量与评测结果
+**Engineering Acceptance**
+- [ ] The evaluation tool can be run from the command line and outputs a complete report
+- [ ] All metrics meet the target values in Section 10.1
+- [ ] No secrets leaked in the code
+- [ ] Self-developed code does not exceed 7,000 lines and does not touch the 10,000-line hard limit
+- [ ] The README clearly explains the architecture, deployment steps, environment variables, and evaluation results
 
 ---
 
-## 11. 交付物清单与里程碑排期
+## 11. Deliverables List and Milestone Schedule
 
-### 11.1 交付物清单
+### 11.1 Deliverables List
 
-| 编号 | 交付物 | 格式 | 交付时限 |
+| ID | Deliverable | Format | Delivery Deadline |
 |---|---|---|---|
-| DEL-1 | 可访问的 Web 原型 | 公开网址 | 第 8 天 |
-| DEL-2 | 英文 README | Markdown | 第 9 天 |
-| DEL-3 | 英文提案 deck | PDF，10 至 14 页 | 第 9 天 |
-| DEL-4 | 3 分钟演示视频 | 公开 YouTube 或 Vimeo 链接，或公开 Google Drive 链接 | 第 9 天 |
-| DEL-5 | 评测工具与结果 | 命令行工具加结果报告 | 第 8 天 |
-| DEL-6 | 因子库数据文件 | 随代码仓库 | 第 2 天 |
-| DEL-7 | 架构与部署说明 | 并入 README | 第 9 天 |
+| DEL-1 | Accessible Web prototype | Public URL | Day 8 |
+| DEL-2 | English README | Markdown | Day 9 |
+| DEL-3 | English proposal deck | PDF, 10 to 14 pages | Day 9 |
+| DEL-4 | 3-minute demo video | Public YouTube or Vimeo link, or public Google Drive link | Day 9 |
+| DEL-5 | Evaluation tool and results | Command-line tool plus results report | Day 8 |
+| DEL-6 | Factor library data file | Bundled with the code repository | Day 2 |
+| DEL-7 | Architecture and deployment documentation | Incorporated into the README | Day 9 |
 
-### 11.2 十天排期
+### 11.2 Ten-Day Schedule
 
-起始日 2026-10-08，截止日 2026-10-18。
+Start date 2026-10-08, deadline 2026-10-18.
 
-| 天 | 日期 | 重点任务 | 完成标志 |
+| Day | Date | Key Tasks | Completion Criteria |
 |---|---|---|---|
-| D1 | 10-08 | 技术选型确认；因子来源锁定；工程骨架搭建 | 通过 G0 |
-| D2 | 10-09 | 因子库清洗入库；Golden 数据制作 | 通过 G1 |
-| D3 | 10-10 | 文件接入与分类模块实现 | 分类模块单测通过 |
-| D4 | 10-11 | 字段抽取与归一化；溯源链路 | 通过 G2（组队截止日） |
-| D5 | 10-12 | 因子候选双通道实现 | 候选召回效果验证 |
-| D6 | 10-13 | 推理择优与不确定性分级；计算聚合 | 通过 G3 |
-| D7 | 10-14 | 报告生成、情景分析、导出 | 通过 G4 |
-| D8 | 10-15 | 部署、压测、示例数据调优 | 通过 G5 |
-| D9 | 10-16 | 录制视频并保留两条备份；撰写 deck 与 README | DEL-2、3、4 完成 |
-| D10 | 10-17 | 验收清单勾选；查漏补缺；提交前自查 | 通过 G6 |
-| 截止 | 10-18 | 提交，留半天缓冲 | 提交完成 |
+| D1 | 10-08 | Confirm technology stack; lock factor sources; set up engineering skeleton | Pass G0 |
+| D2 | 10-09 | Clean and load the factor library; create Golden data | Pass G1 |
+| D3 | 10-10 | Implement file ingestion and classification module | Classification module unit tests pass |
+| D4 | 10-11 | Field extraction and normalization; traceability chain | Pass G2 (team formation deadline) |
+| D5 | 10-12 | Implement dual-channel factor candidate retrieval | Candidate recall effectiveness validated |
+| D6 | 10-13 | Inference-based selection and uncertainty grading; calculation aggregation | Pass G3 |
+| D7 | 10-14 | Report generation, scenario analysis, export | Pass G4 |
+| D8 | 10-15 | Deployment, load testing, sample data tuning | Pass G5 |
+| D9 | 10-16 | Record the video and keep two backups; write the deck and README | DEL-2, 3, 4 complete |
+| D10 | 10-17 | Check off the acceptance checklist; fill gaps; pre-submission self-check | Pass G6 |
+| Deadline | 10-18 | Submit, with half a day of buffer | Submission complete |
 
 ---
 
-## 12. 风险登记表
+## 12. Risk Register
 
-| 编号 | 风险 | 概率 | 影响 | 应对措施 |
+| ID | Risk | Probability | Impact | Mitigation |
 |---|---|---|---|---|
-| R-1 | 因子来源格式不统一或数据质量差 | 中 | 高 | 第一日即锁定唯一来源、版本与获取方式；严禁运行时联网抓取 |
-| R-2 | 扫描件抽取准确率不足 | 中 | 高 | 设立置信度门槛；低置信走人工队列，不影响主演示流程 |
-| R-3 | 因子匹配准确率不达 85% | 中 | 高 | 优先手工校准全部 40 条案例用于迭代提示词；必要时收窄因子库范围 |
-| R-4 | 视频录制超时或素材不足 | 低 | 中 | 主流程跑熟即录，保留两条备份版本 |
-| R-5 | Cloud Run 部署失败 | 中 | 中 | 第八日全天专门用于部署与排障，不得拖到最后 |
-| R-6 | Token 成本超支 | 低 | 中 | 严格模型分工；每次调用记录用量并在面板可视化 |
+| R-1 | Factor source formats are inconsistent or data quality is poor | Medium | High | Lock the single source, version, and acquisition method on Day 1; runtime web scraping is strictly prohibited |
+| R-2 | Insufficient extraction accuracy for scanned documents | Medium | High | Set a confidence threshold; low-confidence items go to a manual queue without affecting the main demo flow |
+| R-3 | Factor matching accuracy falls short of 85% | Medium | High | Prioritize manually calibrating all 40 cases for prompt iteration; narrow the factor library scope if necessary |
+| R-4 | Video recording runs over time or footage is insufficient | Low | Medium | Record as soon as the main flow is well rehearsed; keep two backup versions |
+| R-5 | Cloud Run deployment fails | Medium | Medium | Reserve all of Day 8 specifically for deployment and troubleshooting; do not leave it until the end |
+| R-6 | Token cost overrun | Low | Medium | Enforce strict model task allocation; log usage for every call and visualize it on the dashboard |
 
 ---
 
-## 13. 假设与待确认事项
+## 13. Assumptions and Items to Be Confirmed
 
-以下为本文档成立的前提。开发者若发现与事实不符，应立即停止推进并反馈。
+The following are the premises on which this document holds. If the developer finds any of them to be inconsistent with the facts, they should stop work immediately and report back.
 
-| 编号 | 假设 | 若不成立则 |
+| ID | Assumption | If Not Valid |
 |---|---|---|
-| A-1 | 公开的排放因子数据可由开发者自由获取 | 需更换数据源并重新确定范围 |
-| A-2 | 团队具备 Google Cloud 项目额度并开通所需服务 | 需替换为等效托管能力 |
-| A-3 | 开发者拥有 Gemini 系列模型的合法调用权限 | 项目无法启动，须立即上报 |
-| A-4 | 本文档为中文工作文档，所有对外产出物为英文 | 需重新确认语言策略 |
-| A-5 | 赛事提交截止日期与规则以需求方提供版本为准 | 须以赛事官网最新公告重新核校一遍 |
+| A-1 | Publicly available emission factor data can be freely obtained by the developer | A different data source must be selected and the scope redefined |
+| A-2 | The team has a Google Cloud project quota and has enabled the required services | Must be replaced with equivalent managed capabilities |
+| A-3 | The developer has lawful access to call Gemini-series models | The project cannot start and must be reported immediately |
+| A-4 | This document is a Chinese working document and all external deliverables are in English | The language policy must be reconfirmed |
+| A-5 | The competition submission deadline and rules are based on the version provided by the requester | Must be re-verified against the latest announcement on the competition's official website |
 
 ---
 
-## 14. 版本变更记录
+## 14. Version Change Log
 
-| 版本 | 日期 | 变更内容 |
+| Version | Date | Changes |
 |---|---|---|
-| v1.0 | 2026-10-08 | 初版发布 |
-| v1.1 | 2026-10-12 | 审查修订，全部为一致性与明确性修正，不新增任何功能：修复 4.10 节表格结构错误与 8.4 节重复文字；换算关系计数由 12 组修正为实际的 10 组；FR-501 验收口径由全部正确统一为不低于 90%，与 10.1 节一致；调和计算正确率零容差与 1e-6 浮点误差的表述；统一代码行数口径（目标 7,000、硬上限 10,000）；明确不确定性分级边界值与判定顺序；明确三情景替换映射规则及零适用记录的处理；transport_mode 改为运输类活动条件必填；明确引用锚点跳转发生于 Web 阅读视图；G0 关卡以本地一键构建与自测替代 CI 流水线；方法学章节补充跨 GWP 版本因子使用统计项；报告结构列表与章节内容表的年份分布表述统一为因子年份分布；补充术语表条目；补充因配置信度阈值默认值 |
-| v1.2 | 2026-10-12 | 三轮全面审查修订：取消 MoSCoW 优先级分层，全部功能需求改为必做项，不做 MVP、不分期，移除全部优先级列；修正 Gemini 合规表述与嵌入模型的关系（M-1、6.1、10.3、AI-101 区分生成式模型与嵌入模型）；6.1 节不确定性分级由高性能档模型改为规则引擎执行，与 4.7 节阈值规则保持一致；候选因子召回排序改为双通道检索为主、模型重排可选；复核队列补充缺失必需字段的补充入口，补齐步骤五承诺的补充链路；source_ref 定位语义扩展到工作表与数据行；document_units 明确无分页文件按单单元处理；定义「有效记录」；FR-202 与 FR-403 明确压力测试累计调用口径；Golden 集各项准确率指标补充最小正确数（93% 即 28/30、90% 即 9/10 与 11/12、85% 即 34/40、Top-3 即 38/40）；明确准确率类指标在 Golden 集计算、耗时成本类在示例数据集计算；汇总值一致性指标明确为展示层三位小数口径；FR-1004 明确为两个 CSV 文件；NFR-202 失败对象明确为文件或记录；多来源因子优先级补充使用规则；评审权重表「内主项」写法加注说明；术语表 AR5/AR6 条目与 4.5 节跨版本规则对齐；7.1 节明确第二、三组 Golden 数据的构成关系 |
+| v1.0 | 2026-10-08 | Initial release |
+| v1.1 | 2026-10-12 | Review revision; all changes are consistency and clarity fixes with no new functionality added: fixed the table structure error in Section 4.10 and duplicated text in Section 8.4; corrected the conversion relationship count from 12 to the actual 10; unified the FR-501 acceptance criterion from all correct to no less than 90%, consistent with Section 10.1; reconciled the wording of zero tolerance for calculation accuracy with 1e-6 floating-point error; unified the code line count convention (target 7,000, hard limit 10,000); clarified the uncertainty grading boundary values and the order of determination; clarified the three-scenario substitution mapping rules and the handling of zero applicable records; changed transport_mode to conditionally required for transport-type activities; clarified that citation anchor jumps occur in the Web reading view; replaced the CI pipeline with a local one-click build and self-test at gate G0; added a cross-GWP-version factor usage statistic item to the methodology section; unified the wording for year distribution in the report structure list and the section content table as factor year distribution; added glossary entries; added the default value for the factor configuration confidence threshold |
+| v1.2 | 2026-10-12 | Three rounds of comprehensive review revision: removed the MoSCoW priority tiers, changed all functional requirements to mandatory items with no MVP and no phasing, and removed all priority columns; corrected the relationship between the Gemini compliance statement and the embedding model (M-1, 6.1, 10.3, and AI-101 now distinguish generative models from embedding models); in Section 6.1, changed uncertainty grading from execution by a high-performance-tier model to execution by a rule engine, consistent with the threshold rules in Section 4.7; changed candidate factor recall ranking to dual-channel retrieval as the primary method with model re-ranking optional; added an entry point in the review queue for supplying missing required fields, completing the supplementary path promised in Step 5; extended the source_ref location semantics to worksheets and data rows; clarified in document_units that files without pagination are treated as a single unit; defined "valid record"; clarified the cumulative call convention for stress testing in FR-202 and FR-403; added minimum correct counts to the accuracy metrics of the Golden set (93% means 28/30, 90% means 9/10 and 11/12, 85% means 34/40, Top-3 means 38/40); clarified that accuracy-type metrics are calculated on the Golden set while time and cost-type metrics are calculated on the sample dataset; clarified that the aggregate value consistency metric uses the three-decimal-place convention at the presentation layer; clarified that FR-1004 refers to two CSV files; clarified that the failure object in NFR-202 is a file or record; added usage rules for multi-source factor priority; added an explanatory note for the wording "internal main item" in the review weighting table; aligned the AR5/AR6 entries in the glossary with the cross-version rules in Section 4.5; clarified in Section 7.1 the compositional relationship of the second and third Golden data groups |
 
 ---
 
-文档结束。开发者以本文档为唯一需求基准，任何疑问处先行确认再实现，不得自行猜测扩大或缩小范围。
-
+End of document. The developer shall treat this document as the sole requirements baseline; any point of doubt must be confirmed before implementation, and the scope must not be expanded or reduced based on guesswork.

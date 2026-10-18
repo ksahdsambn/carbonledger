@@ -1,804 +1,804 @@
-# CarbonLedger 实施计划（AI 开发者执行版）
+# CarbonLedger Implementation Plan (AI Developer Execution Edition)
 
-| 项目元信息 | 内容 |
+| Project Meta-information | Content |
 |---|---|
-| 依据文档 | 《需求规格说明书：CarbonLedger》v1.2（唯一需求来源，本计划不改变任何需求，仅定义执行顺序与验证方式） |
-| 执行模式 | 无人值守、严格串行、一次只执行一个任务 |
-| 任务总数 | 51 项（T-001 至 T-051），分 8 个阶段，对应 PRD 关卡 G0 至 G6 |
-| 核心铁律 | **任何任务的验证未全部通过，不得进入下一项任务** |
-| 文档语言 | 本计划为中文工作文档；所有产出物（代码注释、UI 文案、报告、README、deck、字幕）一律为英文 |
+| Basis document | "Requirements Specification: CarbonLedger" v1.2 (sole source of requirements; this plan changes no requirements, it only defines the execution order and verification methods) |
+| Execution mode | Unattended, strictly serial, one task at a time |
+| Total tasks | 51 items (T-001 to T-051), in 8 phases, corresponding to PRD gates G0 to G6 |
+| Core iron rule | **No next task may begin until all verifications of the current task pass** |
+| Document language | This plan is a Chinese working document; all deliverables (code comments, UI copy, reports, README, deck, subtitles) are in English |
 
 ---
 
-## 0. 全局执行规则（开始前必须完整阅读）
+## 0. Global Execution Rules (Must Be Read in Full Before Starting)
 
-1. **串行不可跳步**：任务严格按编号顺序执行。禁止并行开发多个任务，禁止跳过任何任务，禁止调换顺序。前一项任务未记录为「通过」时，不得开始下一项。
-2. **验证即完成**：每个任务的「验证」小节所列检查项必须全部通过，任务才算完成。部分通过视为未通过。
-3. **失败处理协议**：验证失败时，允许定位原因并修复，修复后必须**重跑该任务全部验证项**（不是只重跑失败项）。同一任务连续两轮修复后仍未通过，立即停止执行，在进度日志中写入阻塞报告（含失败现象、原因分析、已尝试措施），等待人工介入。严禁为通过验证而降低标准、删除测试、伪造数据或绕过检查。
-4. **范围冻结**：只实现 PRD 规定的内容。PRD 全部功能需求均为必做项（不做 MVP、不分期、不裁剪）。发现疑似需要扩大或缩小范围时，记录待确认事项并继续按 PRD 执行，不得自行决定。与 PRD 有冲突时以 PRD 为准，并在进度日志记录冲突点。
-5. **测试数据冻结**：所有准确率、功能验证必须使用本计划阶段 1 构建的 Golden Case 数据集与示例演示数据集，严禁临时拼凑替代数据。
-6. **进度日志**：在仓库 progress 目录下维护一份执行日志。每完成一个任务追加一条记录：任务号、结论（通过或阻塞）、每项验证的实际结果与数值、证据文件位置。每个阶段结束时追加关卡（G0 至 G6）判定记录。
-7. **密钥纪律**：任何密钥、服务账号凭据不得写入仓库。全部通过环境变量注入。每次阶段关卡执行一次密钥扫描。
-8. **语言纪律**：用户可见的一切输出（界面、报告、错误提示、README、deck、字幕）为英文；开发注释为英文；进度日志可用中文。
-9. **模型纪律**：生成式任务只用 Gemini 系列（Flash 档与 Pro 档至少各一个型号），向量召回只用 Google Cloud 官方嵌入模型，型号名集中在配置中（PRD 6.1、8.3 节）。
-10. **证据留痕**：验收类验证（准确率、耗时、成本）的原始输出必须保存为文件，供评测工具与关卡引用，不得只口头声明。
+1. **Serial, no skipping**: Tasks are executed strictly in numerical order. Developing multiple tasks in parallel is prohibited, skipping any task is prohibited, and reordering is prohibited. The next task must not begin until the previous task is recorded as "passed".
+2. **Verification is completion**: A task counts as complete only when every check item listed in its "Verification" subsection passes. Partial passing counts as not passing.
+3. **Failure handling protocol**: When verification fails, diagnosing the cause and fixing it is permitted; after the fix, **all verification items of that task must be re-run** (not only the failed items). If the same task still fails after two consecutive rounds of fixes, stop execution immediately, write a blocking report into the progress log (including failure symptoms, cause analysis, and measures attempted), and wait for human intervention. It is strictly forbidden to lower standards, delete tests, fabricate data, or bypass checks in order to pass verification.
+4. **Scope freeze**: Implement only what the PRD specifies. All functional requirements in the PRD are mandatory (no MVP, no phasing, no trimming). When something appears to require expanding or narrowing the scope, record it as a to-be-confirmed item and continue executing per the PRD; do not decide on your own. When there is a conflict with the PRD, the PRD prevails, and the conflict point is recorded in the progress log.
+5. **Test data freeze**: All accuracy and functional verification must use the Golden Case dataset and the sample demo dataset built in Phase 1 of this plan; piecing together substitute data on the fly is strictly prohibited.
+6. **Progress log**: Maintain an execution log under the repository's progress directory. Append one record after each completed task: task number, conclusion (passed or blocked), actual results and values for each verification item, and evidence file locations. At the end of each phase, append the gate (G0 to G6) verdict record.
+7. **Secret discipline**: No secrets or service account credentials may be written into the repository. All are injected via environment variables. A secret scan is run once at each phase gate.
+8. **Language discipline**: All user-visible output (interface, reports, error messages, README, deck, subtitles) is in English; development comments are in English; the progress log may be in Chinese.
+9. **Model discipline**: Generative tasks use only the Gemini family (at least one model each in the Flash tier and Pro tier); vector recall uses only Google Cloud official embedding models; model names are centralized in configuration (PRD Sections 6.1, 8.3).
+10. **Evidence trail**: The raw output of acceptance-type verification (accuracy, elapsed time, cost) must be saved as files for reference by the evaluation tool and gates; verbal claims alone are not acceptable.
 
-### 任务卡片格式
+### Task Card Format
 
-每个任务包含五个字段：前置依赖（必须已通过的任务号）、目标、实施要点（编号步骤）、验证（编号检查项与通过标准）、证据要求。验证项默认要求可自动化执行并在命令行输出结果；确需人工判断的项目已在任务内注明替代方案。
+Each task contains five fields: prerequisites (task numbers that must already be passed), objective, implementation points (numbered steps), verification (numbered check items with pass criteria), and evidence requirements. Verification items are by default required to be automatable and to output results on the command line; items that genuinely require human judgment have an alternative noted within the task.
 
-### 阶段与关卡映射
+### Phase and Gate Mapping
 
-| 阶段 | 任务范围 | 结束关卡 | 对应 PRD 章节 |
+| Phase | Task range | Closing gate | Corresponding PRD section |
 |---|---|---|---|
-| 阶段 0 基线 | T-001 至 T-005 | G0 立项 | 2、8 |
-| 阶段 1 数据资产 | T-006 至 T-010 | G1 数据就绪 | 4.6、7 |
-| 阶段 2 接入与分类 | T-011 至 T-015 | — | 4.1、4.2 |
-| 阶段 3 抽取与归一化 | T-016 至 T-020 | G2 抽取跑通 | 4.3、4.4 |
-| 阶段 4 匹配与计算 | T-021 至 T-030 | G3 匹配与计算跑通 | 4.5、4.7、4.8、6 |
-| 阶段 5 情景报告复核 | T-031 至 T-037 | G4 报告与情景完成 | 4.9、4.10、4.11 |
-| 阶段 6 前端 | T-038 至 T-042 | — | 4.12、5.4、9 |
-| 阶段 7 部署与总验收 | T-043 至 T-051 | G5 部署就绪、G6 交付完成 | 5、8.1、10、11 |
+| Phase 0 Baseline | T-001 to T-005 | G0 Project Initiation | 2, 8 |
+| Phase 1 Data Assets | T-006 to T-010 | G1 Data Ready | 4.6, 7 |
+| Phase 2 Ingestion and Classification | T-011 to T-015 | — | 4.1, 4.2 |
+| Phase 3 Extraction and Normalization | T-016 to T-020 | G2 Extraction Working | 4.3, 4.4 |
+| Phase 4 Matching and Calculation | T-021 to T-030 | G3 Matching and Calculation Working | 4.5, 4.7, 4.8, 6 |
+| Phase 5 Scenario and Report Review | T-031 to T-037 | G4 Reports and Scenarios Complete | 4.9, 4.10, 4.11 |
+| Phase 6 Frontend | T-038 to T-042 | — | 4.12, 5.4, 9 |
+| Phase 7 Deployment and Final Acceptance | T-043 to T-051 | G5 Deployment Ready, G6 Delivery Complete | 5, 8.1, 10, 11 |
 
 ---
 
-## 阶段 0：工程基线（T-001 至 T-005）
+## Phase 0: Engineering Baseline (T-001 to T-005)
 
-### T-001 需求跟踪清单与云环境盘点
+### T-001 Requirements Tracking Checklist and Cloud Environment Inventory
 
-- **前置**：无。
-- **目标**：建立覆盖全部需求编号的跟踪清单；确认所有云服务与模型 API 可用。
-- **实施要点**：
-  1. 通读 PRD v1.2 全文，建立需求跟踪清单文件，逐条登记：57 条 FR、21 条 NFR、13 条 AI 约束、6 条 EV 要求、5 条 M、5 条 D、3 条 L，每条含状态列（未开始、进行中、已验证）。
-  2. 核对 Google Cloud 项目已开通：Cloud Run、Firebase Hosting、Firebase Auth、Firebase Storage、Firestore、Cloud Tasks（或等效异步队列）、Cloud Logging、Cloud Trace。
-  3. 核对 Gemini 系列 Flash 档与 Pro 档至少各一个型号、以及一个官方文本嵌入模型均具备调用权限。
-  4. 建立决策记录文件：选定各环节模型型号、默认 GWP 版本（AR5 或 AR6 二选一）、部署区域，后续写入集中配置。
-- **验证**：
-  1. 需求跟踪清单条目数与上列编号数量逐类一致（57、21、13、6、5、5、3）。
-  2. 上述每项云服务通过命令行或控制台查询到已启用状态，结果截图或文本输出存入证据目录。
-  3. Gemini Flash 档、Pro 档、嵌入模型各完成一次最小调用并成功返回。
-- **证据**：需求跟踪清单、决策记录、三项模型调用结果。
+- **Prerequisites**: None.
+- **Objective**: Establish a tracking checklist covering all requirement numbers; confirm all cloud services and model APIs are available.
+- **Implementation points**:
+  1. Read the entire PRD v1.2, create a requirements tracking checklist file, and register item by item: 57 FRs, 21 NFRs, 13 AI constraints, 6 EV requirements, 5 M, 5 D, 3 L, each with a status column (Not Started, In Progress, Verified).
+  2. Verify the Google Cloud project has the following enabled: Cloud Run, Firebase Hosting, Firebase Auth, Firebase Storage, Firestore, Cloud Tasks (or an equivalent asynchronous queue), Cloud Logging, Cloud Trace.
+  3. Verify that at least one model each from the Gemini family's Flash tier and Pro tier, plus one official text embedding model, all have invocation permissions.
+  4. Create a decision record file: select the model for each stage, the default GWP version (choose one of AR5 or AR6), and the deployment region; these are later written into the centralized configuration.
+- **Verification**:
+  1. The number of entries in the requirements tracking checklist matches the counts listed above for each category (57, 21, 13, 6, 5, 5, 3).
+  2. Each of the above cloud services is queried via command line or console and found to be enabled; the resulting screenshots or text output are stored in the evidence directory.
+  3. A minimal invocation is completed and returns successfully for each of the Gemini Flash tier, Pro tier, and the embedding model.
+- **Evidence**: Requirements tracking checklist, decision record, and results of the three model invocations.
 
-### T-002 工程骨架与集中配置
+### T-002 Engineering Skeleton and Centralized Configuration
 
-- **前置**：T-001。
-- **目标**：初始化可构建的 monorepo 骨架，全部服务参数集中于配置。
-- **实施要点**：
-  1. 建立仓库目录结构：前端应用、后端服务、数据目录（因子库、Golden 集、示例集）、评测工具、部署配置、进度日志目录。
-  2. 建立集中配置文件，承载 PRD 8.3 节全部 11 项参数（抽取模型、推理模型、嵌入模型、批处理大小、分类置信度阈值默认 0.7、因子匹配置信度阈值默认 0.65、调用重试次数、调用超时秒数、默认 GWP 版本、存储桶名称、云项目标识），每一项均允许环境变量覆盖，代码中不得出现散落的硬编码配置。
-  3. 后端框架包含：健康检查端点、异步任务队列接入（按 PRD 8.1 选定托管服务）、结构化日志输出。
-  4. 前端框架：响应式单页应用骨架，浅色系主题基调（PRD 9.2）。
-  5. 建立全局错误码登记文件：至少覆盖 PRD NFR-204 的已知失败类型（格式不支持、超过大小上限、文件损坏、解析失败、抽取失败、模型调用失败与超时、枚举非法值、候选不足、无高置信因子、引用失效、存储访问失败、任务不存在），每项含机器可读标识与英文描述；后续各模块的失败路径一律引用登记表中的错误码，T-046 做覆盖核查。
-  6. 配置仓库忽略规则：密钥文件、依赖目录、构建产物一律不入库。
-- **验证**：
-  1. 打印集中配置全部键值，与 8.3 节 11 项一一对应且默认值齐全。
-  2. 修改任一环境变量后重新读取，配置值随之改变。
-  3. 仓库文件扫描常见密钥模式（私钥头、服务账号 JSON 特征、长随机串），零命中。
-- **证据**：配置清单输出、环境变量覆盖实验结果、密钥扫描结果。
+- **Prerequisites**: T-001.
+- **Objective**: Initialize a buildable monorepo skeleton, with all service parameters centralized in configuration.
+- **Implementation points**:
+  1. Create the repository directory structure: frontend app, backend service, data directory (factor library, Golden set, sample set), evaluation tool, deployment configuration, and progress log directory.
+  2. Create a centralized configuration file carrying all 11 parameters of PRD Section 8.3 (extraction model, reasoning model, embedding model, batch size, classification confidence threshold default 0.7, factor matching confidence threshold default 0.65, invocation retry count, invocation timeout in seconds, default GWP version, bucket name, cloud project identifier), each overridable by environment variable; no scattered hard-coded configuration may appear in the code.
+  3. The backend framework includes: a health check endpoint, asynchronous task queue integration (hosted service selected per PRD 8.1), and structured log output.
+  4. Frontend framework: a responsive single-page application skeleton with a light-theme base (PRD 9.2).
+  5. Create a global error code registry file: covering at least the known failure types of PRD NFR-204 (unsupported format, exceeding the size limit, corrupted file, parse failure, extraction failure, model invocation failure and timeout, illegal enum value, insufficient candidates, no high-confidence factor, invalid reference, storage access failure, task not found), each with a machine-readable identifier and an English description; failure paths in all subsequent modules must reference the error codes in the registry, and T-046 performs a coverage check.
+  6. Configure repository ignore rules: secret files, dependency directories, and build artifacts are never committed.
+- **Verification**:
+  1. Print all key-value pairs of the centralized configuration; they correspond one-to-one with the 11 items in Section 8.3 and all default values are present.
+  2. After modifying any environment variable and re-reading, the configuration value changes accordingly.
+  3. Scan repository files for common secret patterns (private key headers, service account JSON signatures, long random strings); zero hits.
+- **Evidence**: Configuration listing output, environment variable override experiment results, secret scan results.
 
-### T-003 本地构建、自测与冒烟基线
+### T-003 Local Build, Self-Test, and Smoke Baseline
 
-- **前置**：T-002。
-- **目标**：建立一条命令完成的本地构建与单元测试入口，并跑通最小冒烟链路。
-- **实施要点**：
-  1. 提供仓库根级一键构建脚本：完成前端构建与后端打包。
-  2. 提供一键测试脚本：运行当前全部自动化测试并输出统计（用例数、通过数、失败数）。
-  3. 提供冒烟链路：启动后端、调用健康检查、优雅关闭。
-- **验证**：
-  1. 一键构建脚本连续执行 3 次全部成功。
-  2. 一键测试脚本退出码为成功，输出测试统计。
-  3. 冒烟链路连续执行 3 次无失败、无残留进程。
-- **证据**：三次构建与冒烟的输出记录。
+- **Prerequisites**: T-002.
+- **Objective**: Establish a one-command local build and unit test entry point, and get a minimal smoke chain running end to end.
+- **Implementation points**:
+  1. Provide a repository-root one-click build script: completes the frontend build and backend packaging.
+  2. Provide a one-click test script: runs all current automated tests and outputs statistics (number of cases, passed, failed).
+  3. Provide a smoke chain: start the backend, call the health check, and shut down gracefully.
+- **Verification**:
+  1. The one-click build script is executed 3 consecutive times, all successful.
+  2. The one-click test script exits with a success code and outputs test statistics.
+  3. The smoke chain is executed 3 consecutive times with no failures and no leftover processes.
+- **Evidence**: Output records of the three builds and smoke runs.
 
-### T-004 评测工具骨架
+### T-004 Evaluation Tool Skeleton
 
-- **前置**：T-003。
-- **目标**：先建立符合 PRD 10.1 节 EV-1 至 EV-6 输出契约的评测工具空壳，后续每个阶段的验证结果都汇入该工具。
-- **实施要点**：
-  1. 命令行评测工具支持两种运行方式：全量运行，或按指标组运行（PRD EV-5）。
-  2. 指标组按 10.1 节指标逐条定义（当前全部标记为未达标、实测值留空）。
-  3. 输出契约按 EV-1 至 EV-6 实现：单张完整表格（指标名称、目标值、实测值、是否达标四列）、达标列只允许达标或未达标两种取值、末尾汇总行（达标项数、未达标项数、整体结论合格或不合格）、失效引用数非零时整体直接判不合格（一票否决）、同时产出机器可读结果文件与人类可读摘要。
-  4. 每个指标预留证据文件路径字段。
-- **验证**：
-  1. 全量运行输出表格包含 10.1 节全部 11 项指标且四列齐全。
-  2. 单指标组运行只输出所选组。
-  3. 构造一次失效引用数为 1 的假数据灌入，整体结论输出不合格，验证一票否决逻辑生效后清除假数据。
-  4. 机器可读文件与人类可读摘要同时生成且内容一致。
-- **证据**：两次运行的输出与结果文件。
+- **Prerequisites**: T-003.
+- **Objective**: First build an evaluation tool shell conforming to the output contract of PRD Section 10.1 EV-1 to EV-6; verification results from every subsequent phase feed into this tool.
+- **Implementation points**:
+  1. The command-line evaluation tool supports two run modes: a full run, or a run by metric group (PRD EV-5).
+  2. Metric groups are defined item by item per the metrics in Section 10.1 (currently all marked as not met, with measured values left blank).
+  3. The output contract is implemented per EV-1 to EV-6: a single complete table (four columns: metric name, target value, measured value, whether met), the met column allows only two values (met or not met), a summary row at the end (number of met items, number of unmet items, overall verdict pass or fail), a non-zero count of invalid references makes the overall verdict immediately fail (veto), and both a machine-readable result file and a human-readable summary are produced.
+  4. Each metric reserves an evidence file path field.
+- **Verification**:
+  1. The full-run output table contains all 11 metrics from Section 10.1 with all four columns present.
+  2. A single-metric-group run outputs only the selected group.
+  3. Construct and inject fake data with an invalid reference count of 1 once; confirm the overall verdict outputs fail, verify that the veto logic takes effect, then remove the fake data.
+  4. The machine-readable file and the human-readable summary are generated at the same time and are consistent in content.
+- **Evidence**: Output and result files from the two runs.
 
-### T-005 排放因子来源锁定（关卡 G0）
+### T-005 Emission Factor Source Lock-In (Gate G0)
 
-- **前置**：T-004。
-- **目标**：锁定排放因子数据来源并记录，达成 G0 全部准出条件。
-- **实施要点**：
-  1. 从 PRD 4.6 节推荐来源（英国政府温室气体换算因子年度报告、美国环保署排放因子中心、公开行业平均因子集）中确定实际使用的来源，逐一记录：来源名称、版本年份、公开链接、获取方式。
-  2. 确认所选来源可覆盖 5 个目标行业（电子制造、服装纺织、食品加工、物流运输、通用办公服务）的基础因子需求，记录覆盖缺口与拟补充来源。
-  3. 因子文件将随仓库交付，不依赖运行时联网（PRD FR-605）。
-- **验证**：
-  1. 来源记录文件包含名称、版本年份、链接、获取方式四要素且链接可访问。
-  2. 5 个行业各有初步因子清单（条数不限，阶段 1 补齐）。
-  3. 逐项核对 G0 准出条件：因子来源已记录、工程骨架可本地一键构建运行、基础自测脚本可执行——全部成立后在进度日志记录「G0 通过」。
-- **证据**：来源记录文件、G0 判定记录。
-
----
-
-## 阶段 1：数据资产（T-006 至 T-010）
-
-### T-006 因子库数据文件构建
-
-- **前置**：T-005。
-- **目标**：产出结构完整、随仓库交付的因子库数据文件。
-- **实施要点**：
-  1. 按 PRD FR-603 的 13 项属性逐条构建因子：因子编号、因子名称、自然语言描述、适用活动类型、排放单位、活动数据单位、数值、覆盖温室气体范围、系统边界类型、GWP 版本、数据年份、来源名称、原始出处定位。
-  2. 规模约束：5 个行业每行业不少于 40 条，总数不超过 1,200 条。
-  3. 同一语义因子存在多来源时全部保留并标注优先级（PRD 7.2）；描述文本保留原始英文名称；涉及地点的因子统一为国家地区代码加城市名。
-  4. 因子库以独立数据文件存放于数据目录，加载不得依赖运行时联网。
-- **验证**：
-  1. 随机抽检 50 条，13 项属性完整率 100%。
-  2. 按行业统计条数，每行业不少于 40，总数不超过 1,200。
-  3. 因子编号全库唯一，无重复。
-  4. 断网状态下因子文件可被完整加载（条数与文件一致）。
-- **证据**：抽检记录、行业统计表、断网加载结果。
-
-### T-007 因子库装载与检索就绪（含 G1 前半）
-
-- **前置**：T-006。
-- **目标**：因子库装载入库、可按编号与关键词查询，字段与数据模型 8.4 节一致。
-- **实施要点**：
-  1. 将因子文件导入结构化存储，集合与字段按 PRD 8.4 节 emission_factors 定义。
-  2. 提供按编号精确查询与按关键词查询两条基础查询能力。
-  3. 统计并保存因子年份分布，供报告附录使用（FR-606）。
-- **验证**：
-  1. 任意取 20 个因子编号逐一查询，全部返回且字段值与源文件一致。
-  2. 关键词查询对常见品类词（如 electricity、air freight、steel）返回非空结果。
-  3. 年份分布统计生成且各年份条数之和等于总条数。
-- **证据**：查询结果样本、年份分布表。
-
-### T-008 Golden Case 数据集制作
-
-- **前置**：T-007。
-- **目标**：制作 PRD 7.1 节四组 Golden 数据。
-- **实施要点**：
-  1. 第一组：30 张样例单据，覆盖影像型扫描 PDF、手机拍摄照片、Excel 采购明细、航空运单、水电账单、装箱单、手写标注单据七类样本各有代表，其中含一张 4 页 3 类混合 PDF、三行明细发票一张、缺字段单据不少于 5 张、手写标注不少于 3 张、刻意模糊的低清晰度单据不少于 3 张（供 FR-203 低置信确认测试使用）。
-  2. 第二组：30 条活动记录标准答案，字段与 PRD 4.3 节字段表完全一致，由第一组单据抽取产出。
-  3. 第三组：40 条因子匹配案例（可复用第二组并补充构造），每条含最优因子编号与次优候选编号，五类难度各不少于 6 条：明确匹配、边界推断（空运普货与冷链二选一）、单位换算（磅转千克）、语义推论（拼箱运输匹配集装箱海运）、边界口径（燃料上游口径与燃烧口径二选一）。
-  4. 第四组：3 组异常数据——损坏文件、缺失必需字段单据、重复上传文件。
-  5. 全部答案以机器可读文件交付，路径登记到评测工具。
-- **验证**：
-  1. 单据计数与覆盖逐项核对（30 张、七类样本各有代表、4 页 3 类 PDF 存在、手写不少于 3 张、模糊单据不少于 3 张）。
-  2. 答案文件可被评测工具解析，30 条记录字段名与 4.3 节字段表逐一对应。
-  3. 40 条匹配案例中，每条的最优与次优因子编号均存在于因子库。
-  4. 五类难度计数各不少于 6 条。
-  5. 异常组三件齐备。
-- **证据**：数据清单、解析输出、编号存在性校验结果。
-
-### T-009 Golden 完整性终检
-
-- **前置**：T-008。
-- **目标**：对 Golden 集做一次全量一致性终检，防止后续所有准确率指标建立在有错的标准答案上。
-- **实施要点**：
-  1. 编写一次性校验流程：答案文件字段类型合法性（数值大于零、日期格式、枚举取值）、数量与单位成对、运输类记录起讫地非空、运输方式在封闭枚举内。
-  2. 人工复核一遍第三组案例的最优与次优判定是否确实合理（此为唯一允许人工判断的环节，复核意见写入记录）。
-- **验证**：
-  1. 合法性校验零报错；如报错，修正答案文件后重跑至零。
-  2. 运输类记录的枚举与成对检查全部通过。
-  3. 人工复核记录非空且无未处理的质疑项。
-- **证据**：校验输出、复核记录。
-
-### T-010 示例演示数据集制作（关卡 G1）
-
-- **前置**：T-009。
-- **目标**：制作一键载入的演示数据集，达成 G1。
-- **实施要点**：
-  1. 按 PRD 7.3 节：20 张单据、混合全部五种支持格式；活动记录至少覆盖 Scope 1 两条、Scope 2 两条、Scope 3 六个不同类别。
-  2. 虚构一家可信企业作为报告主体（名称、地址、行业合理虚构）。
-  3. 数据集以固定目录结构存放，附一份机器可读的预期结果说明（预期记录数、预期类别覆盖），供 T-044 与评测工具引用。
-- **验证**：
-  1. 文件计数 20、格式覆盖五种。
-  2. 预期结果说明中类别覆盖满足 Scope 1 两条、Scope 2 两条、Scope 3 六类。
-  3. 核对 G1 准出条件：因子库导入完成可查询、Golden 集 30 张单据及答案全部就位——成立后记录「G1 通过」。
-- **证据**：数据集清单、G1 判定记录。
+- **Prerequisites**: T-004.
+- **Objective**: Lock in and record the emission factor data sources, meeting all G0 exit conditions.
+- **Implementation points**:
+  1. From the sources recommended in PRD Section 4.6 (UK Government greenhouse gas conversion factors annual report, US EPA emission factors hub, public industry-average factor sets), determine the sources actually used, and record each one: source name, version year, public link, and acquisition method.
+  2. Confirm the selected sources can cover the basic factor needs of the 5 target industries (electronics manufacturing, apparel and textiles, food processing, logistics and transport, general office services), and record coverage gaps and planned supplementary sources.
+  3. Factor files are delivered with the repository and do not depend on network access at runtime (PRD FR-605).
+- **Verification**:
+  1. The source record file contains the four elements of name, version year, link, and acquisition method, and the links are accessible.
+  2. Each of the 5 industries has a preliminary factor list (no limit on the number of entries; completed in Phase 1).
+  3. Check the G0 exit conditions item by item: factor sources recorded, engineering skeleton can be built and run locally with one command, basic self-test script executable — once all hold, record "G0 passed" in the progress log.
+- **Evidence**: Source record file, G0 verdict record.
 
 ---
 
-## 阶段 2：文件接入与分类（T-011 至 T-015）
+## Phase 1: Data Assets (T-006 to T-010)
 
-### T-011 文件上传与持久化服务
+### T-006 Factor Library Data File Construction
 
-- **前置**：T-010。
-- **目标**：实现 PRD 4.1 节文件接入能力（不含解析）。
-- **实施要点**：
-  1. 支持单次多文件上传，格式白名单为 PDF、JPG、PNG、XLSX、CSV；单文件上限 10 MB，超限拒绝并给英文提示（FR-101、FR-105）。
-  2. 上传后立即执行：格式校验、页数或单元数统计、内容哈希计算；哈希重复时提示用户决定是否保留（FR-104）。
-  3. 原始文件持久化到对象存储，元数据入库，集合按 8.4 节 documents 定义（FR-106）。
-  4. 文件状态机：排队中、解析中、抽取中、匹配中、已完成、需复核、失败（FR-102）。
-  5. 不支持格式或损坏文件的拒绝不得影响同批其他文件（3.2 节）。
-- **验证**：
-  1. 五种格式样例各一份上传全部成功入库，可再次取回原文件且内容一致。
-  2. 11 MB 文件被拒绝且返回英文提示；损坏文件（Golden 第四组）被拒绝，同批其余文件成功。
-  3. 同一文件上传两次触发去重提示；分别选择「保留」与「不保留」各执行一次，保留时两份共存、不保留时仅存首次上传。
-  4. 一次上传 20 个文件（用示例数据集），全部入库且状态为排队中，无一丢失。
-- **证据**：上传结果清单、去重提示输出。
+- **Prerequisites**: T-005.
+- **Objective**: Produce a structurally complete factor library data file delivered with the repository.
+- **Implementation points**:
+  1. Build each factor per the 13 attributes of PRD FR-603: factor ID, factor name, natural language description, applicable activity type, emission unit, activity data unit, value, greenhouse gas coverage, system boundary type, GWP version, data year, source name, and original source location.
+  2. Scale constraints: no fewer than 40 entries per industry across the 5 industries, with a total not exceeding 1,200 entries.
+  3. When the same semantic factor has multiple sources, retain all of them and mark priority (PRD 7.2); description text retains the original English name; factors involving locations uniformly use country/region code plus city name.
+  4. The factor library is stored as an independent data file in the data directory; loading must not depend on network access at runtime.
+- **Verification**:
+  1. Random spot-check of 50 entries: 100% completeness across the 13 attributes.
+  2. Count entries by industry: no fewer than 40 per industry, total not exceeding 1,200.
+  3. Factor IDs are unique across the entire library, with no duplicates.
+  4. With the network disconnected, the factor file loads completely (entry count matches the file).
+- **Evidence**: Spot-check records, industry statistics table, offline loading results.
 
-### T-012 上传模块回归测试固化
+### T-007 Factor Library Loading and Retrieval Readiness (First Half of G1)
 
-- **前置**：T-011。
-- **目标**：把 T-011 验证固化为可重复执行的自动化用例并纳入一键测试。
-- **实施要点**：将 T-011 四项验证改写为自动化用例，纳入 T-003 的一键测试脚本；用例数据引用 Golden 与示例集路径。
-- **验证**：
-  1. 一键测试脚本运行包含上述全部用例且通过。
-  2. 故意注入一个坏文件后重跑，对应用例报告失败（验证用例真的会失败，防止假通过），移除后恢复通过。
-- **证据**：测试输出两份（正常与注入）。
+- **Prerequisites**: T-006.
+- **Objective**: The factor library is loaded into storage and queryable by ID and keyword, with fields consistent with the data model in Section 8.4.
+- **Implementation points**:
+  1. Import the factor file into structured storage, with the collection and fields defined per PRD Section 8.4 emission_factors.
+  2. Provide two basic query capabilities: exact lookup by ID and lookup by keyword.
+  3. Compute and save the factor year distribution for use in the report appendix (FR-606).
+- **Verification**:
+  1. Take any 20 factor IDs and query them one by one; all return, and field values match the source file.
+  2. Keyword queries return non-empty results for common category words (such as electricity, air freight, steel).
+  3. The year distribution statistics are generated, and the sum of entries per year equals the total entry count.
+- **Evidence**: Query result samples, year distribution table.
 
-### T-013 PDF 分页拆分与页面单元
+### T-008 Golden Case Dataset Creation
 
-- **前置**：T-012。
-- **目标**：多页 PDF 按页拆分为页面单元（FR-103，8.4 节 document_units）。
-- **实施要点**：
-  1. 每页生成一个页面单元，记录页码、所属文件；无分页概念的文件（图片、表格类）作为一个单元处理。
-  2. 影像型扫描 PDF 的每页转出可送模型处理的页面表示。
-  3. 单元与文件的关联关系入库，供后续溯源引用。
-- **验证**：
-  1. Golden 4 页混合 PDF 拆出 4 个单元，页码连续，归属正确。
-  2. XLSX、CSV、单页图片各生成且仅生成 1 个单元。
-  3. 单元总数 = 各文件页数（或单元数）之和，抽样 5 个单元可回溯到原文件与页。
-- **证据**：单元统计与抽样回溯记录。
+- **Prerequisites**: T-007.
+- **Objective**: Create the four groups of Golden data in PRD Section 7.1.
+- **Implementation points**:
+  1. Group 1: 30 sample documents, covering the seven sample types — image-based scanned PDFs, phone-camera photos, Excel purchase details, air waybills, utility bills, packing lists, and handwritten-annotated documents — with a representative for each, including one 4-page PDF mixing 3 types, one invoice with three line items, no fewer than 5 documents missing fields, no fewer than 3 handwritten-annotated documents, and no fewer than 3 deliberately blurred low-clarity documents (for use in the FR-203 low-confidence confirmation test).
+  2. Group 2: ground-truth answers for 30 activity records, with fields exactly matching the field table in PRD Section 4.3, produced by extraction from the Group 1 documents.
+  3. Group 3: 40 factor matching cases (may reuse Group 2 with additional constructions), each containing the best factor ID and the runner-up candidate ID, with no fewer than 6 cases in each of the five difficulty categories: clear match, boundary inference (choose between general air cargo and cold chain), unit conversion (pounds to kilograms), semantic inference (LCL shipment matches container ocean freight), and boundary scope (choose between fuel upstream scope and combustion scope).
+  4. Group 4: 3 sets of anomalous data — a corrupted file, a document missing required fields, and a duplicate uploaded file.
+  5. All answers are delivered as machine-readable files, with paths registered in the evaluation tool.
+- **Verification**:
+  1. Document counts and coverage are checked item by item (30 documents, a representative for each of the seven sample types, the 4-page 3-type PDF present, no fewer than 3 handwritten documents, no fewer than 3 blurred documents).
+  2. The answer files can be parsed by the evaluation tool, and the field names of the 30 records correspond one by one with the field table in Section 4.3.
+  3. For all 40 matching cases, the best and runner-up factor IDs exist in the factor library.
+  4. Each of the five difficulty categories has no fewer than 6 cases.
+  5. The anomaly group has all three items present.
+- **Evidence**: Data inventory, parse output, ID existence validation results.
 
-### T-014 单据分类模块
+### T-009 Golden Integrity Final Check
 
-- **前置**：T-013。
-- **目标**：实现七类封闭枚举分类（PRD 4.2 节）。
-- **实施要点**：
-  1. 分类枚举限定七类：供应商发票、采购订单、物流运单、公用事业账单、差旅报销凭证、装箱单、其他；启用结构化输出，禁止自由文本类别（FR-202，AI-101）。
-  2. 每个单元输出类型与置信度；置信度低于阈值（默认 0.7）自动标记需人工确认（FR-203）。
-  3. 建立可供后续全部模型模块复用的统一调用封装：启用超时与重试（次数与超时取配置值）、每次调用写入追踪记录并按 PRD 8.4 节 ai_traces 集合落库（AI-103、AI-106）；T-016、T-023、T-025、T-033 一律复用该封装，不得各自另建调用路径。
-  4. 枚举校验失败的返回值视为调用失败并重试，不得静默通过（AI-102）。
-- **验证**：
-  1. Golden 30 张单据分类准确率不低于 93%（至少 28 张正确），结果写入评测工具。
-  2. 累计不少于 200 次分类调用中，枚举外取值出现 0 次。
-  3. 3 张模糊单据全部被标记需人工确认。
-  4. 抽查追踪记录：每条含输入摘要、输出摘要、耗时、用量估算。
-- **证据**：准确率报告、枚举压力测试输出、追踪样本。
+- **Prerequisites**: T-008.
+- **Objective**: Perform a full consistency final check on the Golden set to prevent all subsequent accuracy metrics from being built on erroneous ground-truth answers.
+- **Implementation points**:
+  1. Write a one-off validation procedure: legality of answer file field types (numeric values greater than zero, date format, enum values), quantity and unit paired, origin and destination non-empty for transport-type records, and transport mode within the closed enum.
+  2. Manually review the best and runner-up determinations of the Group 3 cases once to confirm they are indeed reasonable (this is the only step where human judgment is allowed; review comments are written into the record).
+- **Verification**:
+  1. The legality validation reports zero errors; if errors occur, fix the answer files and re-run until zero.
+  2. The enum and pairing checks for transport-type records all pass.
+  3. The manual review record is non-empty and has no unresolved objections.
+- **Evidence**: Validation output, review record.
 
-### T-015 分类模块回归固化
+### T-010 Sample Demo Dataset Creation (Gate G1)
 
-- **前置**：T-014。
-- **目标**：分类验证纳入评测工具指标组与一键测试。
-- **实施要点**：把 T-014 的准确率与枚举检查接入评测工具对应指标；准确率结果回填需求跟踪清单 FR-201 至 FR-203。
-- **验证**：
-  1. 评测工具单指标组运行（分类组）输出实测值与达标判定，且与 T-014 一致。
-  2. 需求跟踪清单三条 FR 状态更新为已验证。
-- **证据**：评测工具输出、跟踪清单快照。
-
----
-
-## 阶段 3：抽取与归一化（T-016 至 T-020）
-
-### T-016 活动数据抽取模块
-
-- **前置**：T-015。
-- **目标**：实现按字段表的结构化抽取（PRD 4.3 节）。
-- **实施要点**：
-  1. 抽取结果严格按 4.3 节字段表 17 个字段产出，记录按 PRD 8.4 节 activity_records 集合入库；缺失字段显式留空，严禁臆造（FR-301）。
-  2. 每个已抽取字段附 0 至 1 置信度（FR-303，AI-104）。
-  3. 单张单据可产出多条记录；三行明细发票应产出 3 条（FR-304）。
-  4. 手写或低质扫描件仍须尝试抽取，不得直接判失败（FR-306）。
-  5. 使用 Flash 档模型；结构化输出；调用追踪完整。
-- **验证**：
-  1. Golden 30 条记录答案比对：数量与单位字段准确率不低于 98%；数量、单位、金额、日期、币种五字段平均不低于 95%。结果写入评测工具。
-  2. 5 张缺字段单据：缺失字段全部为空，无臆造值。
-  3. 三行明细发票产出恰好 3 条记录。
-  4. 抽检 20 条记录逐字段置信度完整，取值均在 0 与 1 之间。
-  5. 3 张手写单据至少 2 张产出有效记录（至少含数量与单位在内的必填字段非空）。
-  6. 构造一张不含活动数据的单据（如纯说明页），产出零条记录且流程不报错（PRD 3.1 步骤四）。
-- **证据**：字段级比对报告、置信度抽检表。
-
-### T-017 抽取模块回归固化
-
-- **前置**：T-016。
-- **目标**：抽取验证纳入评测工具与一键测试，回填跟踪清单。
-- **实施要点**：同 T-015 模式，接入抽取指标组；FR-301 至 FR-306 状态回填。
-- **验证**：评测工具抽取指标组运行输出与 T-016 一致；跟踪清单六条更新为已验证。
-- **证据**：评测工具输出、跟踪清单快照。
-
-### T-018 单位、地点与运输方式归一化
-
-- **前置**：T-017。
-- **目标**：实现 PRD 4.4 节归一化能力。
-- **实施要点**：
-  1. 实现 10 组单位换算（质量 3、能源 3、体积 2、距离 2），换算到基准单位；中间过程保留完整精度，换算步骤写入审计轨迹（FR-401）。
-  2. 起讫地归一化到国家地区加城市两级结构（FR-402）。
-  3. 运输方式落入封闭枚举十项（FR-403）；枚举校验失败重试。
-  4. 币种只识别与标注，不做汇率折算。
-  5. 计算必需且缺失的字段进入缺口清单，驱动复核补充入口（3.1 步骤五、FR-1102）。
-- **验证**：
-  1. 10 组换算逐一通过（对照 4.4 节换算关系表）。
-  2. 「new york city」与「New York」归一化结果一致。
-  3. 累计不少于 100 次运输方式输出中枚举外取值 0 次。
-  4. 任取一条含换算的记录，审计轨迹含换算前后数值与换算关系说明。
-  5. 构造一条缺日期记录，缺口清单正确列出该字段。
-- **证据**：换算用例输出、归一化对照、枚举压力结果、审计轨迹样本。
-
-### T-019 归一化回归固化
-
-- **前置**：T-018。
-- **目标**：归一化验证纳入一键测试；FR-401 至 FR-403 回填。
-- **验证**：一键测试含 10 组换算与归一化用例并通过；跟踪清单三条更新。
-- **证据**：测试输出、跟踪清单快照。
-
-### T-020 全链路溯源（关卡 G2）
-
-- **前置**：T-019。
-- **目标**：任一活动记录可回溯到源文件内部定位，达成 G2。
-- **实施要点**：
-  1. source_ref 必须可解析到真实存在的文件及其内部定位（页面、工作表或数据行）；解析失败的引用计为失效引用，纳入评测工具一票否决指标。
-  2. 提供源文件查看入口：给定记录，取回原文件并定位到对应页面或区域（FR-106、FR-305）。
-  3. 对全部 Golden 记录执行一次引用全量扫描，结果写入评测工具。
-- **验证**：
-  1. Golden 30 条记录的 source_ref 全量扫描，解析成功率 100%，失效引用 0。
-  2. 抽 10 条记录逐一取回源文件，定位与来源一致。
-  3. 核对 G2 准出条件：Golden 集字段准确率达标、溯源链路完整可跳转——成立后记录「G2 通过」。
-- **证据**：引用扫描报告、G2 判定记录。
+- **Prerequisites**: T-009.
+- **Objective**: Create a one-click-loadable demo dataset, achieving G1.
+- **Implementation points**:
+  1. Per PRD Section 7.3: 20 documents, mixing all five supported formats; activity records covering at least two Scope 1 entries, two Scope 2 entries, and six different Scope 3 categories.
+  2. Fabricate a credible company as the reporting entity (name, address, and industry plausibly fabricated).
+  3. The dataset is stored in a fixed directory structure, accompanied by a machine-readable expected-results description (expected record count, expected category coverage) for reference by T-044 and the evaluation tool.
+- **Verification**:
+  1. File count is 20, with all five formats covered.
+  2. The category coverage in the expected-results description satisfies two Scope 1 entries, two Scope 2 entries, and six Scope 3 categories.
+  3. Check the G1 exit conditions: factor library import complete and queryable, all 30 Golden set documents and their answers in place — once they hold, record "G1 passed".
+- **Evidence**: Dataset inventory, G1 verdict record.
 
 ---
 
-## 阶段 4：因子匹配与计算（T-021 至 T-030）
+## Phase 2: File Ingestion and Classification (T-011 to T-015)
 
-### T-021 向量索引与双通道召回
+### T-011 File Upload and Persistence Service
 
-- **前置**：T-020。
-- **目标**：实现因子库向量索引与关键词、语义双通道召回（PRD 4.7 阶段一、FR-604）。
-- **实施要点**：
-  1. 用官方嵌入模型为全部因子生成向量并入库（8.4 节 emission_factors 含向量数据）；嵌入调用同样经统一封装写入追踪记录（AI-106 与 FR-1202 的「每次调用」口径）。
-  2. 通道一：关键词与结构化字段匹配；通道二：语义相似度检索。两通道可独立开关以做对照实验。
-  3. 合并去重后候选控制在 5 至 15 条：少于 5 条自动放宽阈值重试并记日志，重试后仍不足则以实际数量进入下一阶段并标注「召回不足」；超过 15 条按相关度截断。
-- **验证**：
-  1. 对 Golden 40 条匹配案例逐一召回，候选数全部落在 5 至 15 条区间（或已正确标注召回不足）。
-  2. 只开通道一、只开通道二、双通道三种模式各跑一遍 40 条，三种模式候选列表均非空且日志记录模式。
-  3. 构造一条冷门记录触发召回不足路径，验证放宽重试与标注行为。
-  4. 断网状态下召回仍可执行（向量与因子本地化）。
-- **证据**：三模式召回统计、召回不足案例记录。
+- **Prerequisites**: T-010.
+- **Objective**: Implement the file ingestion capability of PRD Section 4.1 (excluding parsing).
+- **Implementation points**:
+  1. Support multi-file upload in a single request, with a format whitelist of PDF, JPG, PNG, XLSX, CSV; per-file limit of 10 MB, with over-limit files rejected and an English message returned (FR-101, FR-105).
+  2. Immediately after upload, perform: format validation, page or unit count statistics, and content hash computation; when the hash is a duplicate, prompt the user to decide whether to keep it (FR-104).
+  3. Original files are persisted to object storage, metadata is stored in the database, and the collection is defined per Section 8.4 documents (FR-106).
+  4. File state machine: Queued, Parsing, Extracting, Matching, Completed, Needs Review, Failed (FR-102).
+  5. Rejection of unsupported formats or corrupted files must not affect other files in the same batch (Section 3.2).
+- **Verification**:
+  1. Upload one sample of each of the five formats; all succeed and are stored, and the original files can be retrieved again with identical content.
+  2. An 11 MB file is rejected with an English message; a corrupted file (Golden Group 4) is rejected while the rest of the batch succeeds.
+  3. Uploading the same file twice triggers the deduplication prompt; execute once each choosing "keep" and "do not keep"; when kept, both copies coexist, and when not kept, only the first upload is stored.
+  4. Upload 20 files in one request (using the sample dataset); all are stored with status Queued, none lost.
+- **Evidence**: Upload result inventory, deduplication prompt output.
 
-### T-022 召回回归固化
+### T-012 Upload Module Regression Test Hardening
 
-- **前置**：T-021。
-- **目标**：召回验证纳入一键测试；FR-604 相关项回填。
-- **验证**：一键测试含双通道开关对照用例并通过；Top-3 命中率（最优因子出现在候选中的比例）不低于 95%（40 条中至少 38 条），写入评测工具参考指标。
-- **证据**：测试输出、Top-3 统计。
+- **Prerequisites**: T-011.
+- **Objective**: Turn the T-011 verifications into repeatable automated test cases and include them in the one-click test.
+- **Implementation points**: Rewrite the four T-011 verifications as automated test cases and include them in the T-003 one-click test script; test case data references the Golden and sample set paths.
+- **Verification**:
+  1. The one-click test script run includes all the above cases and passes.
+  2. After deliberately injecting a bad file and re-running, the corresponding case reports failure (verifying that the case really can fail, preventing false passes); after removal it passes again.
+- **Evidence**: Two test output files (normal and injected).
 
-### T-023 边界判定模块
+### T-013 PDF Page Splitting and Page Units
 
-- **前置**：T-022。
-- **目标**：实现 Scope 与 15 类判定（PRD 4.5 节）。
-- **实施要点**：
-  1. 输出 Scope 1、2、3 层级；Scope 3 细化到 15 类之一，输出编号与英文名称；判定附英文理由（FR-501 至 FR-503）。
-  2. 枚举封闭：15 类外取值视为失败并重试。
-  3. GWP 版本规则：优先召回与任务一致的因子版本；仅存另一版本时，界面显式标注版本不一致、不确定性至少下调至中级、报告方法学章节统计披露（4.5 节）。
-  4. 高度重复记录标记疑似重复（FR-504）。
-- **验证**：
-  1. 10 条层级 Golden 记录正确率不低于 90%（至少 9 条）。
-  2. 12 条 Scope 3 类别记录正确率不低于 90%（至少 11 条）。
-  3. 全部 22 条判定理由非空且为英文。
-  4. 构造一条只有跨版本因子的记录：三项要求（标注、降级、统计）全部触发。
-  5. 构造重复记录被标记疑似重复。
-- **证据**：判定准确率报告、GWP 跨版本案例记录。
+- **Prerequisites**: T-012.
+- **Objective**: Split multi-page PDFs into page units by page (FR-103, Section 8.4 document_units).
+- **Implementation points**:
+  1. Generate one page unit per page, recording the page number and the owning file; files without a pagination concept (images, spreadsheet types) are treated as a single unit.
+  2. Convert each page of image-based scanned PDFs into a page representation that can be sent to the model for processing.
+  3. The association between units and files is stored in the database for subsequent traceability references.
+- **Verification**:
+  1. The Golden 4-page mixed PDF splits into 4 units with consecutive page numbers and correct ownership.
+  2. XLSX, CSV, and a single-page image each generate exactly 1 unit.
+  3. Total units = sum of pages (or units) per file; sampling 5 units traces back to the original file and page.
+- **Evidence**: Unit statistics and sample traceback records.
 
-### T-024 边界判定回归固化
+### T-014 Document Classification Module
 
-- **前置**：T-023。
-- **目标**：边界指标接入评测工具；FR-501 至 FR-504 回填。
-- **验证**：评测工具 Scope 判定指标组输出与 T-023 一致（层级与类别分别统计）；跟踪清单四条更新。
-- **证据**：评测工具输出、跟踪清单快照。
+- **Prerequisites**: T-013.
+- **Objective**: Implement seven-category closed-enum classification (PRD Section 4.2).
+- **Implementation points**:
+  1. The classification enum is limited to seven categories: supplier invoice, purchase order, logistics waybill, utility bill, travel expense receipt, packing list, other; structured output is enabled and free-text categories are prohibited (FR-202, AI-101).
+  2. Each unit outputs a type and a confidence; confidence below the threshold (default 0.7) is automatically flagged for manual confirmation (FR-203).
+  3. Build a unified invocation wrapper reusable by all subsequent model modules: enable timeout and retry (counts and timeouts taken from configuration), write a trace record for every invocation, and persist it to the ai_traces collection per PRD Section 8.4 (AI-103, AI-106); T-016, T-023, T-025, and T-033 must all reuse this wrapper and must not build separate invocation paths of their own.
+  4. Return values that fail enum validation are treated as invocation failures and retried; they must not pass silently (AI-102).
+- **Verification**:
+  1. Classification accuracy on the 30 Golden documents is no lower than 93% (at least 28 correct); the result is written into the evaluation tool.
+  2. Across no fewer than 200 cumulative classification invocations, out-of-enum values occur 0 times.
+  3. All 3 blurred documents are flagged for manual confirmation.
+  4. Spot-check trace records: each contains input summary, output summary, elapsed time, and usage estimate.
+- **Evidence**: Accuracy report, enum stress test output, trace samples.
 
-### T-025 推理择优模块
+### T-015 Classification Module Regression Hardening
 
-- **前置**：T-024。
-- **目标**：实现三阶段流水线的推理择优（PRD 4.7 阶段二）。
-- **实施要点**：
-  1. 使用 Pro 档模型；输入为结构化活动描述与候选因子列表；输出五项：选定因子编号、置信度、英文理由、关键语义特征（2 至 4 项）、次优候选编号。
-  2. 选定编号必须存在于候选列表；返回候选外编号视为调用失败并重试，不得直接使用（AI-204）。
-  3. 理由不少于 40 个英文词，且必须说明为何不选次优候选（FR-703）。
-  4. 保留次优候选以支持人工改选（FR-705）；匹配结果按 8.4 节 matches 集合入库。
-  5. 单条记录端到端匹配不超过 8 秒（FR-701）。
-- **验证**：
-  1. Golden 40 条案例 Top-1 不低于 85%（至少 34 条正确），写入评测工具。
-  2. 全集引用有效性 100%：每条选定编号都能在候选列表与因子库中同时找到。
-  3. 抽检 20 条理由：全部不少于 40 词且含与次优候选的对比表述。
-  4. 定向注入一次候选外编号的模拟返回，验证被拒绝并重试。
-  5. 随机 10 条记录计时，全部不超过 8 秒。
-- **证据**：匹配准确率报告、理由抽检表、计时记录。
-
-### T-026 择优回归固化
-
-- **前置**：T-025。
-- **目标**：匹配指标接入评测工具；FR-701 至 FR-705 回填。
-- **验证**：评测工具因子匹配指标组（Top-1、Top-3）输出与 T-025、T-022 一致；跟踪清单五条更新。
-- **证据**：评测工具输出、跟踪清单快照。
-
-### T-027 不确定性分级与单位口径自检
-
-- **前置**：T-026。
-- **目标**：实现规则分级与自检（PRD 4.7 阶段三、6.4 节）。
-- **实施要点**：
-  1. 分级为规则引擎，不调用模型：先判高（置信度低于 0.65，或 2 个及以上推断字段，或单位口径需二次换算），再判中（置信度不低于 0.65 且低于 0.85，或 1 个推断字段），否则低。
-  2. 高不确定性强制进入复核队列。候选因子置信度全部低于因配置信度阈值（默认 0.65）时，记录标记「无高置信因子」，界面给出候选中数值最高因子的保守参考建议，未经人工确认不得自动采用，并强制进入复核队列（PRD 3.2 节）。
-  3. 单位口径自检：核对所选因子活动数据单位与归一化后单位是否可换算；自检结果作为显式字段展示，不得隐式处理；不通过自动降为高不确定性（AI-301 至 AI-303）。
-  4. 三级分布统计供报告使用（FR-704）。
-- **验证**：
-  1. 用构造数据覆盖全部规则分支（低、中、高各至少 3 例，含同时命中多条件取最严重的用例），分级结果全部符合规则。
-  2. 构造 3 例单位不可换算的自检失败，全部降为高并进入复核队列。
-  3. 自检结果字段在记录数据中可见。
-  4. 三级分布统计输出且三级计数之和等于总记录数。
-  5. 构造一条候选置信度全部低于阈值的记录：出现「无高置信因子」标记、保守参考建议与强制复核三项行为。
-- **证据**：分级用例表、自检失败案例、分布统计。
-
-### T-028 分级与自检回归固化
-
-- **前置**：T-027。
-- **目标**：分级规则用例纳入一键测试；FR-704、AI-301 至 AI-303 回填。
-- **验证**：一键测试含分级分支用例并通过；对 Golden 40 条匹配案例全量运行单位自检，全部通过且自检记录可见（AI-301 验收口径）；跟踪清单回填。
-- **证据**：测试输出、跟踪清单快照。
-
-### T-029 计算与聚合引擎
-
-- **前置**：T-028。
-- **目标**：实现排放计算、聚合与审计轨迹（PRD 4.8 节）。
-- **实施要点**：
-  1. 计算约定：单条排放量 = 归一化活动数据 × 因子数值；因子未含 GWP 折算的须另行乘以对应系数并写入审计轨迹。
-  2. 精度规则：中间过程完整浮点精度；汇总先以未舍入明细求和再对结果一次舍入；展示层换算为吨二氧化碳当量保留三位小数，四舍五入；分项之和与总量在三位小数口径下完全一致。
-  3. 四维聚合：Scope、类别、供应商、月份（FR-802）；Top 排放源默认 Top 10 降序（FR-803）。
-  4. 每次换算、折算、乘法写入审计轨迹并可展开查看（FR-804，8.4 节 calculations、audit_trail）。
-- **验证**：
-  1. 10 组已知答案计算题全部正确（按展示层三位小数零容差比对），写入评测工具，计算正确率必须 100%。
-  2. 四个维度各自的合计值与总量完全一致（三位小数口径）。
-  3. 故意构造先舍入再求和的反例数据，验证引擎输出仍按正确规则计算（防止实现走样）。
-  4. Top 10 榜单排序与明细排序一致。
-  5. 任取一条含 GWP 折算的记录，审计轨迹含乘法链条与系数来源。
-- **证据**：计算题结果、聚合一致性报告、审计轨迹样本。
-
-### T-030 计算回归固化（关卡 G3）
-
-- **前置**：T-029。
-- **目标**：计算与汇总指标接入评测工具；达成 G3。
-- **验证**：
-  1. 评测工具计算正确率与汇总一致性两项输出达标（100%、零不一致）。
-  2. 核对 G3 准出条件：因子匹配准确率达标、计算正确率 100%、汇总一致性通过——成立后记录「G3 通过」。
-  3. 跟踪清单 FR-801 至 FR-805 回填。
-- **证据**：评测工具输出、G3 判定记录。
+- **Prerequisites**: T-014.
+- **Objective**: Classification verification is incorporated into the evaluation tool metric group and the one-click test.
+- **Implementation points**: Connect the T-014 accuracy and enum checks to the corresponding metrics in the evaluation tool; backfill the accuracy result into the requirements tracking checklist for FR-201 to FR-203.
+- **Verification**:
+  1. The evaluation tool's single-metric-group run (classification group) outputs the measured value and the pass verdict, consistent with T-014.
+  2. The status of the three FRs in the requirements tracking checklist is updated to Verified.
+- **Evidence**: Evaluation tool output, tracking checklist snapshot.
 
 ---
 
-## 阶段 5：情景、报告与复核（T-031 至 T-037）
+## Phase 3: Extraction and Normalization (T-016 to T-020)
 
-### T-031 减排情景引擎
+### T-016 Activity Data Extraction Module
 
-- **前置**：T-030。
-- **目标**：实现三种情景自动测算（PRD 4.9 节）。
-- **实施要点**：
-  1. S-1：空运（普货、冷链）替换为海运（集装箱）因子、公路货运替换为铁路因子，重跑匹配与计算；其余运输方式不受影响。
-  2. S-2：排放量最高前三个供应商的全部记录改用同活动类别下数值最低因子重算。
-  3. S-3：高排放原材料采购替换为可得低碳替代因子；无替代的记录保持不变并逐一注明。
-  4. 零适用记录的情景按零受影响处理，如实展示并说明原因，不得报错或隐藏。
-  5. 每情景输出：减排绝对量、百分比、受影响记录清单、不少于 80 英文词的可行性分析（含前提假设与局限）；支持调整替换比例参数并刷新（FR-904）；结果按 8.4 节 scenarios 入库。
-- **验证**：
-  1. 示例数据集上三情景全部自动产出，无需用户输入。
-  2. 三情景数值可复算：手工按替换规则重算 5 条受影响记录，与引擎输出一致。
-  3. 构造一个无空运与公路记录的任务，S-1 输出零受影响并说明原因，不报错。
-  4. 三段可行性分析词数均不少于 80 且明确提及假设。
-  5. 调整替换比例参数后结果刷新且与参数一致。
-- **证据**：情景结果三份、复算对照、零适用案例。
+- **Prerequisites**: T-015.
+- **Objective**: Implement structured extraction per the field table (PRD Section 4.3).
+- **Implementation points**:
+  1. Extraction results are produced strictly per the 17 fields of the field table in Section 4.3, and records are stored in the activity_records collection per PRD Section 8.4; missing fields are explicitly left empty, and fabrication is strictly prohibited (FR-301).
+  2. Each extracted field carries a confidence between 0 and 1 (FR-303, AI-104).
+  3. A single document may produce multiple records; a three-line-item invoice should produce 3 records (FR-304).
+  4. Handwritten or low-quality scans must still be attempted for extraction and must not be judged as failures outright (FR-306).
+  5. Use a Flash-tier model; structured output; complete invocation tracing.
+- **Verification**:
+  1. Comparison against the 30 Golden record answers: accuracy of the quantity and unit fields is no lower than 98%; the average across the five fields of quantity, unit, amount, date, and currency is no lower than 95%. The result is written into the evaluation tool.
+  2. For the 5 documents with missing fields: all missing fields are empty, with no fabricated values.
+  3. The three-line-item invoice produces exactly 3 records.
+  4. Spot-check 20 records: per-field confidence is complete and all values fall between 0 and 1.
+  5. At least 2 of the 3 handwritten documents produce valid records (at least the required fields including quantity and unit are non-empty).
+  6. Construct a document containing no activity data (such as a pure instruction page); it produces zero records and the flow raises no error (PRD 3.1 Step 4).
+- **Evidence**: Field-level comparison report, confidence spot-check table.
 
-### T-032 情景回归固化
+### T-017 Extraction Module Regression Hardening
 
-- **前置**：T-031。
-- **目标**：情景验证纳入一键测试；FR-901 至 FR-904 回填。
-- **验证**：一键测试含三情景可算与零适用用例并通过；跟踪清单四条更新。
-- **证据**：测试输出、跟踪清单快照。
+- **Prerequisites**: T-016.
+- **Objective**: Extraction verification is incorporated into the evaluation tool and the one-click test, and backfilled into the tracking checklist.
+- **Implementation points**: Same pattern as T-015, connecting to the extraction metric group; backfill the status of FR-301 to FR-306.
+- **Verification**: The evaluation tool's extraction metric group run output is consistent with T-016; the six checklist items are updated to Verified.
+- **Evidence**: Evaluation tool output, tracking checklist snapshot.
 
-### T-033 报告生成器
+### T-018 Unit, Location, and Transport Mode Normalization
 
-- **前置**：T-032。
-- **目标**：生成十章结构英文报告（PRD 4.10 节）。
-- **实施要点**：
-  1. 严格按十章顺序：封面、执行摘要、核算方法与边界、排放量分解、活动明细、不确定性说明、减排情景建议、附录一因子清单、附录二溯源索引、免责声明。
-  2. 逐章写入 4.10 节内容清单的全部条目，缺项视为不合格；十五类分解表中未发生类别显示为零而非省略；方法学章节含跨 GWP 版本统计（为零亦写明）；报告含被排除项清单区块（FR-1104，无排除数据时该区块为空表，有数据时的完整行为在 T-036 验证）。
-  3. 每个数值型结论带引用锚点，Web 阅读视图内可跳转来源；PDF 以附录二索引呈现（FR-1002）。
-  4. 幻觉治理：引用锚点必须指向真实存在的单据或因子；无引用的结转值、拼接推断值不得输出（AI-201 至 AI-203）。
-  5. 报告正文用 Pro 档模型生成，结构化输出；内容按 8.4 节 reports 入库。
-- **验证**：
-  1. 示例数据集生成报告：十章齐全、顺序正确、逐章内容项核对表全部命中。
-  2. 解析器扫描全部数值型结论，锚点覆盖率 100%。
-  3. 锚点有效性全量扫描，失效引用 0（写入评测工具一票否决指标）。
-  4. 定向注入 5 个失效引用（测试后清除），全部被检出。
-  5. 三条核心建议每条不少于 30 英文词；免责声明存在；封面含 GWP 版本与因子年份分布两项声明。
-- **证据**：章节核对表、锚点扫描报告、注入测试记录。
+- **Prerequisites**: T-017.
+- **Objective**: Implement the normalization capability of PRD Section 4.4.
+- **Implementation points**:
+  1. Implement 10 unit conversion groups (3 mass, 3 energy, 2 volume, 2 distance), converting to base units; the intermediate process retains full precision, and conversion steps are written into the audit trail (FR-401).
+  2. Origin and destination are normalized to a two-level structure of country/region plus city (FR-402).
+  3. Transport mode falls within a closed enum of ten items (FR-403); enum validation failure triggers a retry.
+  4. Currency is only identified and labeled; no exchange rate conversion is performed.
+  5. Fields that are required for calculation but missing enter the gap list, driving the review-and-supplement entry point (3.1 Step 5, FR-1102).
+- **Verification**:
+  1. All 10 conversion groups pass one by one (against the conversion relationship table in Section 4.4).
+  2. "new york city" and "New York" normalize to the same result.
+  3. Across no fewer than 100 cumulative transport mode outputs, out-of-enum values occur 0 times.
+  4. Take any record containing a conversion; the audit trail contains the values before and after conversion and a description of the conversion relationship.
+  5. Construct a record missing the date; the gap list correctly lists that field.
+- **Evidence**: Conversion test case output, normalization comparison, enum stress results, audit trail samples.
 
-### T-034 报告回归固化
+### T-019 Normalization Regression Hardening
 
-- **前置**：T-033。
-- **目标**：报告指标接入评测工具；FR-1001 至 FR-1006 回填。
-- **验证**：评测工具引用覆盖率与失效引用数输出达标（100%、0）；跟踪清单六条更新。
-- **证据**：评测工具输出、跟踪清单快照。
+- **Prerequisites**: T-018.
+- **Objective**: Normalization verification is incorporated into the one-click test; backfill FR-401 to FR-403.
+- **Verification**: The one-click test includes the 10 conversion groups and normalization cases and passes; the three checklist items are updated.
+- **Evidence**: Test output, tracking checklist snapshot.
 
-### T-035 PDF 与 CSV 导出
+### T-020 Full-Chain Traceability (Gate G2)
 
-- **前置**：T-034。
-- **目标**：实现可交付导出（FR-1003、FR-1004）。
-- **实施要点**：
-  1. PDF 导出：含页眉、页码、目录，不少于 6 页，可直接对外交付；导出时间不超过 10 秒（NFR-104）。
-  2. CSV 导出：至少活动明细与按类别汇总两个 CSV 文件，无编码乱码（UTF-8 兼容处理）。
-  3. 导出文件路径回写 reports 集合。
-- **验证**：
-  1. PDF 连续导出 5 次，页数均不少于 6，页眉页码目录齐全，单次耗时均不超过 10 秒。
-  2. 两个 CSV 用表格工具打开无乱码；明细行数与活动记录数一致；类别汇总之和与总量一致。
-  3. PDF 内溯源索引条目与报告数据点一一对应（抽 10 条核对）。
-- **证据**：PDF 与 CSV 样本、耗时记录。
-
-### T-036 复核队列模块
-
-- **前置**：T-035。
-- **目标**：实现复核闭环（PRD 4.11 节）。
-- **实施要点**：
-  1. 集中展示待处理记录，按高、中、低排序（高在前）（FR-1101）；复核队列项按 PRD 8.4 节 review_items 集合入库。
-  2. 可编辑数量、单位、运输方式、起讫地四个字段，并可补充缺失必需字段；保存即触发重算（FR-1102）。
-  3. 手动指定因子优先级高于自动匹配并显式标注「人工指定」（FR-1103）。
-  4. 可标记记录为「排除核算」并填写英文理由；排除后不计入总量且报告列出被排除项（FR-1104）。
-  5. 复核动作记录操作人与时间戳入审计轨迹（FR-1105）。
-  6. 支持批量重算并同步刷新聚合与图表（FR-706）。
-- **验证**：
-  1. 构造含高、中、低各若干条的任务，队列排序为高在前。
-  2. 修改一条记录的数量后，该记录排放量、所在类别合计、总量全部刷新且与手工重算一致。
-  3. 补充一条缺失日期记录后缺口清单更新。
-  4. 手动改选因子后结果更新且带「人工指定」标注。
-  5. 排除一条记录并填理由后总量下降，报告含被排除项清单。
-  6. 审计轨迹含复核动作的操作人与时间戳。
-  7. 触发一次批量重算，全部记录重算完成且聚合与图表同步刷新（FR-706）。
-- **证据**：重算前后对照、排除清单、审计样本。
-
-### T-037 复核闭环回归固化（关卡 G4）
-
-- **前置**：T-036。
-- **目标**：复核用例纳入一键测试；达成 G4。
-- **验证**：
-  1. 一键测试含复核触发重算与排除用例并通过。
-  2. 修改后重新生成报告，报告与全部图表数据同步刷新且一致。
-  3. 核对 G4 准出条件：章节齐全的报告可生成导出、三情景计算正确、引用覆盖率 100%——成立后记录「G4 通过」。
-- **证据**：测试输出、G4 判定记录。
+- **Prerequisites**: T-019.
+- **Objective**: Any activity record can be traced back to an in-file location in the source document, achieving G2.
+- **Implementation points**:
+  1. source_ref must resolve to a file that actually exists and to its in-file location (page, worksheet, or data row); references that fail to resolve count as invalid references and are included in the evaluation tool's veto metric.
+  2. Provide a source file viewing entry point: given a record, retrieve the original file and locate the corresponding page or region (FR-106, FR-305).
+  3. Perform a full reference scan over all Golden records once, and write the result into the evaluation tool.
+- **Verification**:
+  1. Full scan of the source_ref of the 30 Golden records: 100% resolution success rate, 0 invalid references.
+  2. Sample 10 records, retrieve the source file for each, and the located position matches the origin.
+  3. Check the G2 exit conditions: Golden set field accuracy meets targets, and the traceability chain is complete and jumpable — once they hold, record "G2 passed".
+- **Evidence**: Reference scan report, G2 verdict record.
 
 ---
 
-## 阶段 6：前端（T-038 至 T-042）
+## Phase 4: Factor Matching and Calculation (T-021 to T-030)
 
-### T-038 前端骨架与 P1、P2
+### T-021 Vector Index and Dual-Channel Recall
 
-- **前置**：T-037。
-- **目标**：搭建前端骨架并实现首页与上传页（PRD 9.1 节 P1、P2）。
-- **实施要点**：
-  1. P1：产品名称、一句话价值主张（PRD 1.3 原文表述）、创建任务表单（主体名称、时间区间、GWP 版本二选一）；后端提供任务创建接口，任务记录按 PRD 8.4 节 tasks 集合入库。
-  2. P2：拖拽区、文件列表与七种状态标签、整体进度（含当前处理阶段与已完成数量，FR-1201）、一键载入示例数据按钮。
-  3. 交互准则落地：任何操作立即有视觉确认；超过 3 秒的操作有进行中指示；超过 5 秒的长任务可取消；破坏性操作二次确认（9.2 节）。
-  4. 全部文案英文；浅色专业风格。
-- **验证**：
-  1. 创建任务表单三项信息齐全且 GWP 为二选一控件，提交后生成任务标识并跳转 P2。
-  2. 拖拽上传示例集 20 个文件，状态标签随处理阶段正确演进，无卡死（对接 T-011 状态机）。
-  3. 一键载入示例数据按钮触发全流程（此步只验证触发与进度展示，完整时序在 T-044）。
-  4. 自动化界面测试：上传一个 11 MB 文件出现英文超限提示。
-- **证据**：界面测试输出、任务创建记录。
+- **Prerequisites**: T-020.
+- **Objective**: Implement factor library vector indexing and keyword plus semantic dual-channel recall (PRD 4.7 Stage 1, FR-604).
+- **Implementation points**:
+  1. Use the official embedding model to generate vectors for all factors and store them (Section 8.4 emission_factors includes vector data); embedding invocations likewise go through the unified wrapper and write trace records (the "every invocation" scope of AI-106 and FR-1202).
+  2. Channel one: keyword and structured field matching; channel two: semantic similarity retrieval. The two channels can be toggled independently for controlled experiments.
+  3. After merging and deduplication, candidates are kept between 5 and 15: if fewer than 5, automatically relax the threshold and retry with logging; if still insufficient after the retry, proceed to the next stage with the actual count and mark it "insufficient recall"; if more than 15, truncate by relevance.
+- **Verification**:
+  1. Recall the Golden 40 matching cases one by one; all candidate counts fall within the 5 to 15 range (or are correctly marked as insufficient recall).
+  2. Run the 40 cases once each in the three modes — channel one only, channel two only, and dual channel — with non-empty candidate lists in all three modes and the mode recorded in the logs.
+  3. Construct an obscure record to trigger the insufficient-recall path, and verify the relaxed retry and labeling behavior.
+  4. Recall remains executable when offline (vectors and factors are localized).
+- **Evidence**: three-mode recall statistics, insufficient-recall case log.
 
-### T-039 P3 活动记录明细、P4 因子匹配查看器
+### T-022 Recall Regression Hardening
 
-- **前置**：T-038。
-- **目标**：实现记录明细与匹配查看两个页面（PRD 9.1 节）。
-- **实施要点**：
-  1. P3：记录表格；每条可展开查看逐字段置信度；查看原始文件入口（含高亮定位）；因子匹配结果与理由；不确定性标签；复核入口；可展开查看该记录完整审计计算步骤（FR-804 的界面查看要求）。
-  2. P4：候选因子列表、最优与次优对比、手动改选入口（改选即触发重算）。
-  3. 不确定性等级同时以颜色与线稿图标双编码，不以颜色为唯一载体（NFR-404）。
-- **验证**：
-  1. 展开任一记录，17 个字段与逐字段置信度全部可见。
-  2. 点击查看原始文件，源文件视图出现对应定位或高亮。
-  3. 匹配理由、关键语义特征、次优候选在 P3 与 P4 均可见。
-  4. 在 P4 改选因子后，记录结果与聚合刷新。
-  5. 灰度化界面截图后，三个等级仍可通过图标区分（自动化检查：等级图标元素存在且不同）。
-  6. 展开任一记录的审计步骤区，从原始数值到排放量的每一步换算与折算可见。
-- **证据**：界面测试输出、灰度检查结果。
+- **Prerequisites**: T-021.
+- **Goal**: incorporate recall verification into one-click testing; backfill items related to FR-604.
+- **Verification**: the one-click test includes dual-channel switch comparison cases and passes; Top-3 hit rate (the proportion of cases in which the optimal factor appears among the candidates) is no lower than 95% (at least 38 out of 40), written into the evaluation tool's reference metrics.
+- **Evidence**: test output, Top-3 statistics.
 
-### T-040 P5 图表仪表板、P6 情景对比
+### T-023 Boundary Determination Module
 
-- **前置**：T-039。
-- **目标**：实现仪表板与情景页（PRD 9.1 节）。
-- **实施要点**：
-  1. P5：三 Scope 分解图、类别分解、供应商 Top、月度趋势、维度筛选；所有图表数值与计算引擎输出一致。
-  2. P6：三情景卡片、与基准同屏对比、减排绝对量与百分比、可行性说明展开区、替换比例参数调整。
-- **验证**：
-  1. P5 各图数值与后端聚合接口返回完全一致（抽 3 个维度核对）。
-  2. 维度筛选切换后图表刷新且与对应筛选的聚合一致。
-  3. P6 三情景数值与 T-031 引擎输出一致；百分比计算正确（绝对量除以基准）。
-  4. 调整替换比例后 P6 实时刷新。
-- **证据**：图表与接口对照记录。
+- **Prerequisites**: T-022.
+- **Goal**: implement Scope and 15-category determination (PRD Section 4.5).
+- **Implementation Notes**:
+  1. Output Scope 1, 2, 3 levels; Scope 3 is refined to one of the 15 categories, outputting the number and English name; the determination carries an English rationale (FR-501 to FR-503).
+  2. Closed enumeration: a value outside the 15 categories is treated as a failure and retried.
+  3. GWP version rule: preferentially recall the factor version consistent with the task; when only another version exists, the UI explicitly flags the version mismatch, uncertainty is downgraded to at least Medium, and the report's methodology section includes a statistical disclosure (Section 4.5).
+  4. Highly duplicated records are flagged as suspected duplicates (FR-504).
+- **Verification**:
+  1. Accuracy on 10 level Golden records is no lower than 90% (at least 9 correct).
+  2. Accuracy on 12 Scope 3 category records is no lower than 90% (at least 11 correct).
+  3. All 22 determination rationales are non-empty and in English.
+  4. Construct a record with only cross-version factors: all three requirements (flagging, downgrade, statistics) are triggered.
+  5. Construct duplicate records that are flagged as suspected duplicates.
+- **Evidence**: determination accuracy report, GWP cross-version case log.
 
-### T-041 P7 报告、P8 复核队列、P9 追踪面板
+### T-024 Boundary Determination Regression Hardening
 
-- **前置**：T-040。
-- **目标**：完成剩余三页（PRD 9.1 节）。
-- **实施要点**：
-  1. P7：十章阅读视图、引用锚点点击跳转来源、导出入口（PDF、CSV）。
-  2. P8：按不确定性排序、字段编辑与缺失补充、因子改选、排除标记（对接 T-036）。
-  3. P9：各阶段 AI 调用记录，可按阶段筛选，含输入摘要、输出摘要、耗时、用量估算（FR-1202）。
-- **验证**：
-  1. P7 十章齐全；随机点击 10 个锚点全部跳转到正确来源。
-  2. P7 导出按钮产出 T-035 的两种文件。
-  3. P8 操作与 T-036 验证行为一致（抽字段编辑与排除各一次）。
-  4. P9 按阶段筛选后仅显示所选阶段记录，抽 5 条核对字段完整。
-- **证据**：三页界面测试输出。
+- **Prerequisites**: T-023.
+- **Goal**: incorporate boundary metrics into the evaluation tool; backfill FR-501 to FR-504.
+- **Verification**: the evaluation tool's Scope determination metric group output matches T-023 (levels and categories counted separately); four entries in the tracking list are updated.
+- **Evidence**: evaluation tool output, tracking list snapshot.
 
-### T-042 前端横切验证
+### T-025 Inference Selection Module
 
-- **前置**：T-041。
-- **目标**：完成跨页面的可用性、无障碍与状态持久化验证（PRD 5.4、9.2 节）。
-- **实施要点**：
-  1. 纯键盘完成主流程：创建任务、上传、查看记录、进入复核、导出报告。
-  2. 页面刷新恢复：任务状态、文件状态、已完成结果不丢失（NFR-203）。
-  3. 首屏价值主张与主交互在首屏即可见（NFR-401 的无人值守替代检查；真人 5 秒测试留待 G6 人工复核项）。
-  4. 全站文案英文校对（NFR-402 的自动化部分：扫描界面字符串无非英文片段）。
-- **验证**：
-  1. 自动化端到端测试：仅用键盘事件完成主流程全链路，零鼠标操作成功。
-  2. 处理中途刷新页面，状态与已完成数据完整恢复，用例跑通。
-  3. 首屏包含价值主张文案与创建任务入口。
-  4. 界面字符串扫描无非英文残留。
-  5. 超过 5 秒的长任务在界面可取消，取消后流程中断且状态一致；破坏性操作（如排除记录）出现二次确认（PRD 9.2 节）。
-- **证据**：端到端测试输出、刷新恢复记录。
+- **Prerequisites**: T-024.
+- **Goal**: implement inference-based selection for the three-stage pipeline (PRD 4.7, Stage 2).
+- **Implementation Notes**:
+  1. Use the Pro-tier model; the input is the structured activity description and the candidate factor list; the output has five items: selected factor ID, confidence, English rationale, key semantic features (2 to 4 items), and the runner-up candidate ID.
+  2. The selected ID must exist in the candidate list; returning an ID outside the candidates is treated as a call failure and retried, and must not be used directly (AI-204).
+  3. The rationale must be at least 40 English words and must explain why the runner-up candidate was not chosen (FR-703).
+  4. Retain the runner-up candidate to support manual re-selection (FR-705); match results are stored in the matches collection per Section 8.4.
+  5. End-to-end matching for a single record must not exceed 8 seconds (FR-701).
+- **Verification**:
+  1. Top-1 accuracy on 40 Golden cases is no lower than 85% (at least 34 correct), written into the evaluation tool.
+  2. Reference validity is 100% across the full set: every selected ID can be found in both the candidate list and the factor library.
+  3. Sample-check 20 rationales: all are at least 40 words and contain a comparison against the runner-up candidate.
+  4. Deliberately inject a simulated response containing an out-of-candidate ID, and verify it is rejected and retried.
+  5. Time 10 random records; all complete within 8 seconds.
+- **Evidence**: matching accuracy report, rationale sample-check table, timing records.
 
----
+### T-026 Selection Regression Hardening
 
-## 阶段 7：部署与总验收（T-043 至 T-051）
+- **Prerequisites**: T-025.
+- **Goal**: incorporate matching metrics into the evaluation tool; backfill FR-701 to FR-705.
+- **Verification**: the evaluation tool's factor matching metric group (Top-1, Top-3) output matches T-025 and T-022; five entries in the tracking list are updated.
+- **Evidence**: evaluation tool output, tracking list snapshot.
 
-### T-043 云上部署与匿名认证
+### T-027 Uncertainty Grading and Unit-Consistency Self-Check
 
-- **前置**：T-042。
-- **目标**：部署到规定基础设施（PRD 2.1 M-3、M-5、8.1 节）。
-- **实施要点**：
-  1. 后端部署 Cloud Run（支持自动扩缩容，允许缩容到零），前端部署 Firebase Hosting，文件入 Firebase Storage，数据入 Firestore，认证用 Firebase Auth 匿名登录。
-  2. 环境变量在云端配置齐全（8.3 节 11 项），不入库。
-  3. 对外网址进入即自动完成匿名登录，无需注册或输入凭据。
-  4. 日志与链路追踪接入 Cloud Logging 与 Cloud Trace。
-  5. 为公开网址配置基本访问频率限制（NFR-303 的实现落点，T-046 负责验证）。
-- **验证**：
-  1. 公开网址可访问，匿名状态下可从创建任务走到报告导出（评委视角全流程走通一次）。
-  2. 云端配置项数量与 8.3 节一致。
-  3. 仓库密钥扫描零命中。
-  4. Cloud Logging 中可查到结构化日志，Cloud Trace 中可查到请求链路。
-- **证据**：公开全流程记录、配置清单、扫描结果。
+- **Prerequisites**: T-026.
+- **Goal**: implement rule-based grading and the self-check (PRD 4.7 Stage 3, Section 6.4).
+- **Implementation Notes**:
+  1. Grading is a rule engine that does not call a model: first grade High (confidence below 0.65, or 2 or more inferred fields, or unit consistency requiring a second conversion), then Medium (confidence at or above 0.65 but below 0.85, or 1 inferred field), otherwise Low.
+  2. High uncertainty forces the record into the review queue. When all candidate factor confidences are below the configured confidence threshold (default 0.65), the record is flagged "No High-Confidence Factor", the UI presents a conservative reference suggestion based on the highest-valued candidate factor, it must not be adopted automatically without human confirmation, and it is forced into the review queue (PRD Section 3.2).
+  3. Unit-consistency self-check: verify whether the selected factor's activity data unit and the normalized unit are convertible; the self-check result is displayed as an explicit field and must not be handled implicitly; a failure automatically downgrades to High uncertainty (AI-301 to AI-303).
+  4. The three-level distribution statistics are provided for report use (FR-704).
+- **Verification**:
+  1. Use constructed data to cover all rule branches (at least 3 cases each for Low, Medium, and High, including a case where multiple conditions are hit simultaneously and the most severe is taken); all grading results conform to the rules.
+  2. Construct 3 self-check failures with non-convertible units; all are downgraded to High and enter the review queue.
+  3. The self-check result field is visible in the record data.
+  4. The three-level distribution statistics are output and the sum of the three counts equals the total record count.
+  5. Construct a record in which all candidate confidences are below the threshold: the three behaviors appear — the "No High-Confidence Factor" flag, the conservative reference suggestion, and forced review.
+- **Evidence**: grading case table, self-check failure cases, distribution statistics.
 
-### T-044 示例数据一键全流程验证
+### T-028 Grading and Self-Check Regression Hardening
 
-- **前置**：T-043。
-- **目标**：示例数据集在线上环境 3 分钟内跑完全流程（FR-1203、NFR-101）。
-- **实施要点**：在公开网址匿名状态下点击一键载入示例数据，从载入到报告产出全程计时，连续运行取 P90。
-- **验证**：
-  1. 连续 10 次运行，P90 端到端时长不超过 3 分钟，结果写入评测工具。
-  2. 每次运行产出的报告十章齐全且引用有效。
-  3. 处理过程中 P2 进度连续演进无倒退（FR-1201）。
-- **证据**：10 次计时与 P90 计算记录。
+- **Prerequisites**: T-027.
+- **Goal**: incorporate grading rule cases into one-click testing; backfill FR-704 and AI-301 to AI-303.
+- **Verification**: the one-click test includes grading branch cases and passes; the unit self-check runs in full on the 40 Golden matching cases, all pass, and the self-check records are visible (AI-301 acceptance criteria); the tracking list is backfilled.
+- **Evidence**: test output, tracking list snapshot.
 
-### T-045 性能与并发压测
+### T-029 Calculation and Aggregation Engine
 
-- **前置**：T-044。
-- **目标**：验证全部性能指标（PRD 5.1 节）。
-- **实施要点**：逐项执行 NFR-102（单张成本按用量与公开单价累加）、NFR-103（首屏 5 次取平均）、NFR-104（已在 T-035，复测线上）、NFR-105（3 并发任务）。
-- **验证**：
-  1. 以示例数据集完整运行为基准测算单张单据 AI 处理成本，不高于 0.03 美元，计算过程与单价来源记录在案（PRD 10.1 节口径：成本类指标在示例数据集上计算）。
-  2. 首屏加载 5 次平均不超过 3 秒。
-  3. 3 个并发任务全部完成，无服务端错误。
-  4. 全部结果写入评测工具。
-- **证据**：成本核算表、首屏计时、压测输出。
+- **Prerequisites**: T-028.
+- **Goal**: implement emissions calculation, aggregation, and the audit trail (PRD Section 4.8).
+- **Implementation Notes**:
+  1. Calculation convention: single-record emissions = normalized activity data × factor value; when a factor does not include GWP conversion, the corresponding coefficient must be multiplied separately and written into the audit trail.
+  2. Precision rules: intermediate steps retain full floating-point precision; aggregation first sums the unrounded details and then rounds the result once; the presentation layer converts to tonnes of CO2 equivalent to three decimal places, rounded half up; the sum of line items and the total are exactly consistent at three decimal places.
+  3. Four-dimensional aggregation: Scope, category, supplier, and month (FR-802); Top emission sources default to Top 10 in descending order (FR-803).
+  4. Every conversion, GWP conversion, and multiplication is written into the audit trail and can be expanded for viewing (FR-804, Section 8.4 calculations, audit_trail).
+- **Verification**:
+  1. All 10 known-answer calculation problems are correct (compared at the presentation layer's three decimal places with zero tolerance), written into the evaluation tool; the calculation accuracy must be 100%.
+  2. The totals for each of the four dimensions are exactly consistent with the grand total (at three decimal places).
+  3. Deliberately construct counterexample data that rounds before summing, and verify the engine output still computes per the correct rules (to prevent implementation drift).
+  4. The Top 10 ranking is consistent with the detail ordering.
+  5. Pick any record containing GWP conversion; its audit trail includes the multiplication chain and the coefficient source.
+- **Evidence**: calculation problem results, aggregation consistency report, audit trail samples.
 
-### T-046 容错、安全与隐私测试
+### T-030 Calculation Regression Hardening (Gate G3)
 
-- **前置**：T-045。
-- **目标**：验证可靠性与安全需求（PRD 5.2、5.3 节）。
-- **实施要点**：逐项执行 NFR-201（混入 3 个损坏文件）、NFR-202（模拟超时重试两次后标记失败对象）、NFR-204（错误码机读加英文描述）、NFR-301（跨任务访问拒绝）、NFR-303（限流存在性）。
-- **验证**：
-  1. 混入 3 个损坏文件的 20 文件批次，其余 17 个全部成功。
-  2. 模拟超时：重试恰好两次后失败对象被明确标记，错误码与英文描述齐备。
-  3. 用任务 A 的凭据访问任务 B 的文件与记录，全部被拒绝。
-  4. 高频请求触发限流响应。
-  5. 错误码清单覆盖全部已知失败类型，写入 README 草稿。
-- **证据**：四类测试输出、错误码清单。
-
-### T-047 评测工具全量运行（关卡 G5）
-
-- **前置**：T-046。
-- **目标**：评测工具线上全量运行，达成 G5。
-- **验证**：
-  1. 全量运行输出单张完整表格，10.1 节 11 项指标全部有实测值与达标判定；除 Top-3（参考项）外全部达标。
-  2. 失效引用数为 0；整体结论为合格。
-  3. 机器可读与人类可读两份结果文件落盘。
-  4. 核对 G5 准出条件：部署成功、公开网址可访问（经不少于 3 个不同网络出口或代理区域逐一访问；执行环境无法满足时降级为单一出口验证，并把「三网络环境实测」列入待人工项）、示例数据一键真实跑完并产出报告——成立后记录「G5 通过」。
-- **证据**：评测工具全量输出、三网络访问记录、G5 判定记录。
-
-### T-048 代码规模与仓库卫生
-
-- **前置**：T-047。
-- **目标**：满足代码规模与工程卫生要求（PRD 元信息、NFR-504、8.2 节）。
-- **实施要点**：用统计工具统计自研代码行数（排除依赖、生成物、数据文件）；检查禁止事项（无非 Google 生成式模型调用、无 Cloud Run 与 Firebase 之外部署、无额外付费第三方服务）。
-- **验证**：
-  1. 自研代码不超过 7,000 行；若超出，在不删减功能与测试的前提下重构精简后复测，任何情况不得超过 10,000 行硬上限。
-  2. 向因子数据文件新增 10 条因子并重启服务，新因子可被检索命中且全程零代码改动（NFR-501）。
-  3. 在集中配置中替换抽取与推理模型型号后系统正常运行（NFR-502）。
-  4. 三项禁止事项逐条核查零违反。
-  5. 行数统计方法与结果记录在案。
-- **证据**：行数统计报告、禁止事项核查表。
-
-### T-049 英文 README
-
-- **前置**：T-048。
-- **目标**：产出完整英文 README（PRD 2.2 D-4、8.3、10.3）。
-- **实施要点**：章节包含：项目与赛道声明（Sustainability & Social Impact，首页首屏可见）、价值主张、架构说明、部署步骤（Cloud Run 与 Firebase 全流程）、环境变量表（11 项逐一含默认值与含义）、数据源声明（来源名称、版本年份、公开链接）、评测方法与本次全量评测结果（引用 T-047 输出）、错误码清单、数据不用于模型训练的声明（NFR-302）、Gen AI 使用说明（模型分工与工具链深度，M-4）。
-- **验证**：
-  1. 上述十项内容逐项存在。
-  2. 环境变量表与实际配置一一对应。
-  3. 评测结果与 T-047 落盘文件一致。
-  4. 全文英文，语法自查通过。
-- **证据**：README 文件、核对表。
-
-### T-050 最终验收清单执行（关卡 G6）
-
-- **前置**：T-049。
-- **目标**：逐项执行 PRD 10.3 节最终验收清单，达成 G6。
-- **实施要点**：对功能验收 8 项、赛事合规验收 5 项、工程验收 5 项逐项执行并留证；视频验收 4 项属于 T-051 的脚本准备与后续人工录制，此处标记为待人工；NFR-401 真人 5 秒测试标记为待人工复核项。
-- **验证**：
-  1. 功能验收 8 项与工程验收 5 项全部自动执行通过且证据齐备；赛事合规 5 项中 4 项自动核验通过，语言合规项的界面、报告、README 部分自动核验通过，其视频字幕部分依据 T-051 英文脚本核验（录制后人工终验）。
-  2. 待人工项（视频验收 4 项、真人易用性测试 1 项、视频字幕英文终验 1 项）明确列入待办清单并附执行说明。
-  3. 核对工程侧 G6 准出条件：README 完整、验收清单可自动项全部执行、deck 文稿与视频脚本就绪——成立后记录「G6 工程部分通过」；PRD G6 的最终达成另需人工完成视频录制与 deck PDF 导出（已列入待人工清单），完成后方可记录「G6 通过」。
-- **证据**：验收清单逐项勾选记录、待人工项清单。
-
-### T-051 提交材料内容制作
-
-- **前置**：T-050。
-- **目标**：产出英文 deck 文稿（10 至 14 页）、3 分钟演示视频脚本（含配音稿与字幕稿）、视频拍摄分镜说明。
-- **实施要点**：
-  1. deck 首页原样使用 PRD 1.3 节价值主张与赛道名称；内容覆盖：问题、方案、Gen AI 深度（语义因子匹配三阶段流水线）、技术架构、评测结果（引用 T-047）、影响力对比（成本与工时）。
-  2. 视频脚本按 PRD 10.3 视频验收四项设计：片头 15 秒讲清价值数字；从拖拽到报告的连续过程；一个因语义理解才选对因子的对比案例（从 Golden 第三组边界推断类案例中选取）；一次引用溯源点击演示。
-  3. 全部材料标注赛道：Sustainability & Social Impact（deck 首页、README 首屏、视频片尾三处一致）。
-  4. 实际录制、上传视频与导出 deck PDF 属人工步骤，脚本就绪即视为本任务完成。
-- **验证**：
-  1. deck 文稿 10 至 14 页结构完整，首页含价值主张与赛道标注。
-  2. 视频脚本时长估算在 3 分钟以内，四项必需画面全部安排且注明对应演示数据。
-  3. 三处赛道标注文案完全一致。
-  4. 配音稿与字幕稿均为英文。
-- **证据**：deck 文稿、视频脚本、分镜说明。
+- **Prerequisites**: T-029.
+- **Goal**: incorporate calculation and aggregation metrics into the evaluation tool; achieve G3.
+- **Verification**:
+  1. The evaluation tool's two outputs — calculation accuracy and aggregation consistency — meet their targets (100% and zero inconsistencies).
+  2. Verify the G3 exit criteria: factor matching accuracy meets the target, calculation accuracy is 100%, and aggregation consistency passes — once satisfied, record "G3 Passed".
+  3. Backfill FR-801 to FR-805 in the tracking list.
+- **Evidence**: evaluation tool output, G3 determination record.
 
 ---
 
-## 附录：需求覆盖对照（审计用）
+## Stage 5: Scenarios, Reporting, and Review (T-031 to T-037)
 
-| PRD 需求组 | 实现任务 | 验证任务 |
+### T-031 Emission Reduction Scenario Engine
+
+- **Prerequisites**: T-030.
+- **Goal**: implement automatic calculation of the three scenarios (PRD Section 4.9).
+- **Implementation Notes**:
+  1. S-1: replace air freight (general cargo, cold chain) with sea freight (container) factors and road freight with rail factors, then re-run matching and calculation; other transport modes are unaffected.
+  2. S-2: re-calculate all records of the top three suppliers by emissions using the lowest-valued factor within the same activity category.
+  3. S-3: replace high-emission raw material purchases with available low-carbon alternative factors; records with no alternative remain unchanged and are noted individually.
+  4. Scenarios with zero applicable records are handled as zero affected records, displayed truthfully with the reason explained, and must not error or be hidden.
+  5. Each scenario outputs: absolute reduction, percentage, the list of affected records, and a feasibility analysis of at least 80 English words (including assumptions and limitations); adjusting the substitution-ratio parameter and refreshing is supported (FR-904); results are stored in the scenarios collection per Section 8.4.
+- **Verification**:
+  1. All three scenarios are produced automatically on the sample dataset, with no user input required.
+  2. The three scenarios' values are reproducible: manually re-calculate 5 affected records per the substitution rules, and they match the engine output.
+  3. Construct a task with no air freight or road records; S-1 outputs zero affected records with the reason explained, and does not error.
+  4. All three feasibility analyses are at least 80 words and explicitly mention assumptions.
+  5. After adjusting the substitution-ratio parameter, the results refresh and are consistent with the parameter.
+- **Evidence**: three scenario result sets, recomputation comparison, zero-applicability case.
+
+### T-032 Scenario Regression Hardening
+
+- **Prerequisites**: T-031.
+- **Goal**: incorporate scenario verification into one-click testing; backfill FR-901 to FR-904.
+- **Verification**: the one-click test includes three-scenario computability and zero-applicability cases and passes; four entries in the tracking list are updated.
+- **Evidence**: test output, tracking list snapshot.
+
+### T-033 Report Generator
+
+- **Prerequisites**: T-032.
+- **Goal**: generate an English report with a ten-chapter structure (PRD Section 4.10).
+- **Implementation Notes**:
+  1. Strictly follow the ten-chapter order: cover, executive summary, accounting methodology and boundary, emissions breakdown, activity details, uncertainty statement, emission reduction scenario recommendations, Appendix 1 factor list, Appendix 2 traceability index, and disclaimer.
+  2. Write every entry from the Section 4.10 content list chapter by chapter; any missing item counts as non-compliant; in the 15-category breakdown table, categories that did not occur display as zero rather than being omitted; the methodology chapter includes cross-GWP-version statistics (stating zero explicitly as well); the report contains an excluded-items list block (FR-1104; when there is no excluded data the block is an empty table, and the full behavior with data is verified in T-036).
+  3. Every numerical conclusion carries a citation anchor that jumps to the source within the Web reading view; the PDF presents them via the Appendix 2 index (FR-1002).
+  4. Hallucination governance: citation anchors must point to documents or factors that actually exist; carried-over values and stitched-together inferred values without citations must not be output (AI-201 to AI-203).
+  5. The report body is generated with the Pro-tier model as structured output; content is stored in the reports collection per Section 8.4.
+- **Verification**:
+  1. Generate a report on the sample dataset: all ten chapters are present, in the correct order, and every chapter content item in the checklist is matched.
+  2. A parser scans all numerical conclusions; anchor coverage is 100%.
+  3. A full scan of anchor validity shows 0 invalid citations (written into the evaluation tool as a veto metric).
+  4. Deliberately inject 5 invalid citations (cleared after testing); all are detected.
+  5. Each of the three core recommendations is at least 30 English words; the disclaimer exists; the cover contains two statements: GWP version and factor year distribution.
+- **Evidence**: chapter checklist, anchor scan report, injection test record.
+
+### T-034 Report Regression Hardening
+
+- **Prerequisites**: T-033.
+- **Goal**: incorporate report metrics into the evaluation tool; backfill FR-1001 to FR-1006.
+- **Verification**: the evaluation tool's citation coverage and invalid citation count outputs meet their targets (100% and 0); six entries in the tracking list are updated.
+- **Evidence**: evaluation tool output, tracking list snapshot.
+
+### T-035 PDF and CSV Export
+
+- **Prerequisites**: T-034.
+- **Goal**: implement deliverable exports (FR-1003, FR-1004).
+- **Implementation Notes**:
+  1. PDF export: includes a header, page numbers, and a table of contents, at least 6 pages, directly deliverable externally; export time does not exceed 10 seconds (NFR-104).
+  2. CSV export: at least two CSV files — activity details and category summary — with no encoding corruption (UTF-8 compatible handling).
+  3. Export file paths are written back to the reports collection.
+- **Verification**:
+  1. Export the PDF 5 times consecutively; each has at least 6 pages with a complete header, page numbers, and table of contents, and each takes no more than 10 seconds.
+  2. Both CSVs open in a spreadsheet tool without corruption; the detail row count matches the activity record count; the category summary total is consistent with the grand total.
+  3. Traceability index entries in the PDF correspond one-to-one with report data points (sample 10 for verification).
+- **Evidence**: PDF and CSV samples, timing records.
+
+### T-036 Review Queue Module
+
+- **Prerequisites**: T-035.
+- **Goal**: implement the closed review loop (PRD Section 4.11).
+- **Implementation Notes**:
+  1. Display pending records centrally, sorted High, Medium, Low (High first) (FR-1101); review queue items are stored in the review_items collection per PRD Section 8.4.
+  2. Four fields are editable — quantity, unit, transport mode, and origin/destination — and missing required fields can be filled in; saving triggers a recalculation (FR-1102).
+  3. Manually specified factors take priority over automatic matching and are explicitly labeled "Manually Specified" (FR-1103).
+  4. Records can be marked "Excluded from Accounting" with an English reason filled in; after exclusion they are not counted in the total, and the report lists the excluded items (FR-1104).
+  5. Review actions record the operator and timestamp in the audit trail (FR-1105).
+  6. Batch recalculation is supported, with aggregation and charts refreshed synchronously (FR-706).
+- **Verification**:
+  1. Construct a task containing several records each at High, Medium, and Low; the queue sorts High first.
+  2. After changing one record's quantity, that record's emissions, its category subtotal, and the grand total all refresh and match a manual recalculation.
+  3. After filling in a record's missing date, the gap list updates.
+  4. After manually re-selecting a factor, the result updates and carries the "Manually Specified" label.
+  5. After excluding a record and filling in the reason, the total decreases, and the report contains the excluded-items list.
+  6. The audit trail contains the operator and timestamp of the review action.
+  7. Trigger one batch recalculation; all records are recalculated, and aggregation and charts refresh synchronously (FR-706).
+- **Evidence**: before-and-after recalculation comparison, exclusion list, audit samples.
+
+### T-037 Review Loop Regression Hardening (Gate G4)
+
+- **Prerequisites**: T-036.
+- **Goal**: incorporate review cases into one-click testing; achieve G4.
+- **Verification**:
+  1. The one-click test includes review-triggered recalculation and exclusion cases and passes.
+  2. After the change, regenerate the report; the report and all chart data refresh synchronously and consistently.
+  3. Verify the G4 exit criteria: a complete-chapter report can be generated and exported, the three scenarios calculate correctly, and citation coverage is 100% — once satisfied, record "G4 Passed".
+- **Evidence**: test output, G4 determination record.
+
+---
+
+## Stage 6: Frontend (T-038 to T-042)
+
+### T-038 Frontend Skeleton and P1, P2
+
+- **Prerequisites**: T-037.
+- **Goal**: build the frontend skeleton and implement the home page and upload page (PRD Section 9.1, P1 and P2).
+- **Implementation Notes**:
+  1. P1: product name, one-sentence value proposition (verbatim from PRD 1.3), and a task creation form (entity name, time range, GWP version — choose one); the backend provides a task creation API, and task records are stored in the tasks collection per PRD Section 8.4.
+  2. P2: drag-and-drop area, file list with seven status labels, overall progress (including the current processing stage and the number completed, FR-1201), and a one-click sample data load button.
+  3. Implement the interaction guidelines: every action gets immediate visual confirmation; operations over 3 seconds show an in-progress indicator; long tasks over 5 seconds can be cancelled; destructive actions require secondary confirmation (Section 9.2).
+  4. All copy is in English; light professional style.
+- **Verification**:
+  1. The task creation form has all three fields and GWP is a choose-one control; after submission a task ID is generated and it jumps to P2.
+  2. Drag-and-drop upload the 20 files of the sample set; status labels advance correctly with the processing stage, with no hangs (integrating with the T-011 state machine).
+  3. The one-click sample data load button triggers the full pipeline (this step only verifies the trigger and progress display; the full sequence is in T-044).
+  4. Automated UI test: uploading an 11 MB file produces an English oversize message.
+- **Evidence**: UI test output, task creation records.
+
+### T-039 P3 Activity Record Details, P4 Factor Match Viewer
+
+- **Prerequisites**: T-038.
+- **Goal**: implement the two pages for record details and match viewing (PRD Section 9.1).
+- **Implementation Notes**:
+  1. P3: record table; each record expands to show per-field confidence; an entry to view the original file (including highlight location); factor match results and rationale; uncertainty labels; a review entry; and an expandable view of the record's complete audit calculation steps (FR-804's UI viewing requirement).
+  2. P4: candidate factor list, best vs. runner-up comparison, and a manual re-selection entry (re-selecting triggers recalculation).
+  3. Uncertainty levels are dual-encoded with both color and line-art icons, with color not the sole carrier (NFR-404).
+- **Verification**:
+  1. Expand any record; all 17 fields and per-field confidence are visible.
+  2. Click to view the original file; the source file view shows the corresponding location or highlight.
+  3. Match rationale, key semantic features, and the runner-up candidate are visible in both P3 and P4.
+  4. After re-selecting a factor in P4, the record result and aggregation refresh.
+  5. After grayscaling the UI screenshot, the three levels are still distinguishable by icon (automated check: level icon elements exist and differ).
+  6. Expand any record's audit steps area; every conversion step from the raw value to emissions is visible.
+- **Evidence**: UI test output, grayscale check results.
+
+### T-040 P5 Chart Dashboard, P6 Scenario Comparison
+
+- **Prerequisites**: T-039.
+- **Goal**: implement the dashboard and scenario page (PRD Section 9.1).
+- **Implementation Notes**:
+  1. P5: three-Scope breakdown chart, category breakdown, supplier Top, monthly trend, and dimension filters; all chart values are consistent with the calculation engine's output.
+  2. P6: three scenario cards, side-by-side comparison with the baseline, absolute and percentage reduction, an expandable feasibility explanation area, and substitution-ratio parameter adjustment.
+- **Verification**:
+  1. P5's chart values are exactly consistent with the backend aggregation API's response (sample 3 dimensions for verification).
+  2. After switching dimension filters, charts refresh and are consistent with the corresponding filtered aggregation.
+  3. P6's three scenario values are consistent with the T-031 engine output; percentages are computed correctly (absolute amount divided by baseline).
+  4. After adjusting the substitution ratio, P6 refreshes in real time.
+- **Evidence**: chart vs. API comparison records.
+
+### T-041 P7 Report, P8 Review Queue, P9 Trace Panel
+
+- **Prerequisites**: T-040.
+- **Goal**: complete the remaining three pages (PRD Section 9.1).
+- **Implementation Notes**:
+  1. P7: ten-chapter reading view, citation anchor clicks that jump to the source, and export entries (PDF, CSV).
+  2. P8: sorting by uncertainty, field editing and gap filling, factor re-selection, and exclusion marking (integrating with T-036).
+  3. P9: AI call records per stage, filterable by stage, including input summary, output summary, duration, and usage estimate (FR-1202).
+- **Verification**:
+  1. P7 has all ten chapters; randomly clicking 10 anchors all jump to the correct source.
+  2. P7's export button produces the two file types from T-035.
+  3. P8's operations match T-036's verified behaviors (sample one field edit and one exclusion each).
+  4. After filtering P9 by stage, only the selected stage's records show; sample 5 to verify field completeness.
+- **Evidence**: UI test output for the three pages.
+
+### T-042 Frontend Cross-Cutting Verification
+
+- **Prerequisites**: T-041.
+- **Goal**: complete cross-page usability, accessibility, and state persistence verification (PRD Sections 5.4 and 9.2).
+- **Implementation Notes**:
+  1. Complete the main flow with the keyboard alone: create task, upload, view records, enter review, export report.
+  2. Page refresh recovery: task state, file state, and completed results are not lost (NFR-203).
+  3. The first-screen value proposition and main interaction are visible on the first screen (NFR-401's unattended alternative check; the real-user 5-second test is left to the G6 manual review item).
+  4. Site-wide copy proofreading in English (NFR-402's automated portion: scan UI strings for non-English fragments).
+- **Verification**:
+  1. Automated end-to-end test: complete the main flow's full chain using keyboard events only, with zero mouse operations, successfully.
+  2. Refresh the page mid-processing; state and completed data fully recover and the test case passes.
+  3. The first screen contains the value proposition copy and the task creation entry.
+  4. The UI string scan finds no non-English remnants.
+  5. Long tasks over 5 seconds can be cancelled in the UI; after cancelling, the flow interrupts and state remains consistent; destructive actions (such as excluding a record) show secondary confirmation (PRD Section 9.2).
+- **Evidence**: end-to-end test output, refresh recovery records.
+
+---
+
+## Stage 7: Deployment and Final Acceptance (T-043 to T-051)
+
+### T-043 Cloud Deployment and Anonymous Authentication
+
+- **Prerequisites**: T-042.
+- **Goal**: deploy to the specified infrastructure (PRD 2.1 M-3, M-5, Section 8.1).
+- **Implementation Notes**:
+  1. Deploy the backend to Cloud Run (with auto-scaling support, allowing scale-to-zero), the frontend to Firebase Hosting, files into Firebase Storage, data into Firestore, and authentication via Firebase Auth anonymous login.
+  2. Environment variables are fully configured in the cloud (the 11 items in Section 8.3) and are not stored in the database.
+  3. Entering the public URL automatically completes anonymous login, with no registration or credential entry required.
+  4. Logging and trace tracking are integrated with Cloud Logging and Cloud Trace.
+  5. Configure a basic access rate limit for the public URL (NFR-303's implementation point, verified in T-046).
+- **Verification**:
+  1. The public URL is accessible, and under anonymous status one can go from task creation to report export (the full flow runs through once from a judge's perspective).
+  2. The number of cloud configuration items matches Section 8.3.
+  3. The repository secret scan has zero hits.
+  4. Structured logs are queryable in Cloud Logging, and request traces are queryable in Cloud Trace.
+- **Evidence**: public full-flow record, configuration list, scan results.
+
+### T-044 Sample Data One-Click Full-Flow Verification
+
+- **Prerequisites**: T-043.
+- **Goal**: the sample dataset completes the full flow within 3 minutes in the online environment (FR-1203, NFR-101).
+- **Implementation Notes**: on the public URL under anonymous status, click the one-click sample data load button, timing the entire process from load to report output, taking the P90 across consecutive runs.
+- **Verification**:
+  1. Run 10 consecutive times; the P90 end-to-end duration does not exceed 3 minutes, and the result is written into the evaluation tool.
+  2. The report produced by each run has all ten chapters and valid citations.
+  3. During processing, P2's progress advances continuously without regression (FR-1201).
+- **Evidence**: 10 timing records and the P90 calculation record.
+
+### T-045 Performance and Concurrency Stress Test
+
+- **Prerequisites**: T-044.
+- **Goal**: verify all performance metrics (PRD Section 5.1).
+- **Implementation Notes**: execute item by item: NFR-102 (per-document cost accumulated by usage and public unit prices), NFR-103 (first screen averaged over 5 runs), NFR-104 (already covered in T-035; retest online), NFR-105 (3 concurrent tasks).
+- **Verification**:
+  1. Measure the per-document AI processing cost based on a complete run of the sample dataset; it must not exceed USD 0.03, with the calculation process and unit price sources documented (PRD Section 10.1 convention: cost metrics are computed on the sample dataset).
+  2. The first-screen load averaged over 5 runs does not exceed 3 seconds.
+  3. All 3 concurrent tasks complete with no server-side errors.
+  4. All results are written into the evaluation tool.
+- **Evidence**: cost calculation table, first-screen timings, stress test output.
+
+### T-046 Fault Tolerance, Security, and Privacy Testing
+
+- **Prerequisites**: T-045.
+- **Goal**: verify reliability and security requirements (PRD Sections 5.2 and 5.3).
+- **Implementation Notes**: execute item by item: NFR-201 (mix in 3 corrupted files), NFR-202 (simulate a timeout, retry twice, then mark the failed object), NFR-204 (machine-readable error codes with English descriptions), NFR-301 (cross-task access denied), NFR-303 (rate limiting exists).
+- **Verification**:
+  1. In a 20-file batch with 3 corrupted files mixed in, the remaining 17 all succeed.
+  2. Simulated timeout: after exactly two retries the failed object is clearly marked, with the error code and English description complete.
+  3. Using task A's credentials to access task B's files and records is denied in all cases.
+  4. High-frequency requests trigger a rate-limit response.
+  5. The error code list covers all known failure types and is written into the README draft.
+- **Evidence**: four categories of test output, error code list.
+
+### T-047 Full Evaluation Tool Run (Gate G5)
+
+- **Prerequisites**: T-046.
+- **Goal**: the evaluation tool runs fully online; achieve G5.
+- **Verification**:
+  1. The full run outputs a single complete table with measured values and pass/fail judgments for all 11 metrics in Section 10.1; all pass except Top-3 (a reference item).
+  2. The invalid citation count is 0; the overall verdict is pass.
+  3. Two result files — machine-readable and human-readable — are written to disk.
+  4. Verify the G5 exit criteria: deployment succeeds, the public URL is accessible (accessed one by one via at least 3 different network exits or proxy regions; when the execution environment cannot satisfy this, degrade to a single-exit verification and list "three-network-environment live test" as a pending manual item), and the sample data runs end-to-end one-clickly and produces a report — once satisfied, record "G5 Passed".
+- **Evidence**: full evaluation tool output, three-network access records, G5 determination record.
+
+### T-048 Code Size and Repository Hygiene
+
+- **Prerequisites**: T-047.
+- **Goal**: meet the code size and engineering hygiene requirements (PRD metadata, NFR-504, Section 8.2).
+- **Implementation Notes**: use a statistics tool to count first-party lines of code (excluding dependencies, generated artifacts, and data files); check the prohibitions (no non-Google generative model calls, no deployment outside Cloud Run and Firebase, no additional paid third-party services).
+- **Verification**:
+  1. First-party code does not exceed 7,000 lines; if it does, refactor to slim it down without removing features or tests and retest, and in no case may it exceed the hard cap of 10,000 lines.
+  2. Add 10 factors to the factor data file and restart the service; the new factors are retrievable with zero code changes throughout (NFR-501).
+  3. After replacing the extraction and inference model model names in the central configuration, the system runs normally (NFR-502).
+  4. All three prohibitions are checked one by one with zero violations.
+  5. The line-count methodology and results are documented.
+- **Evidence**: line-count report, prohibition checklist.
+
+### T-049 English README
+
+- **Prerequisites**: T-048.
+- **Goal**: produce a complete English README (PRD 2.2 D-4, 8.3, 10.3).
+- **Implementation Notes**: chapters include: project and track statement (Sustainability & Social Impact, visible on the home first screen), value proposition, architecture description, deployment steps (the full Cloud Run and Firebase process), environment variable table (all 11 items with default values and meanings), data source statement (source names, version years, public links), evaluation methodology and this full evaluation's results (citing T-047's output), error code list, a statement that data is not used for model training (NFR-302), and Gen AI usage notes (model division of labor and toolchain depth, M-4).
+- **Verification**:
+  1. All ten items above exist individually.
+  2. The environment variable table corresponds one-to-one with the actual configuration.
+  3. The evaluation results are consistent with T-047's on-disk files.
+  4. The full text is in English and passes a grammar self-check.
+- **Evidence**: README file, checklist.
+
+### T-050 Final Acceptance Checklist Execution (Gate G6)
+
+- **Prerequisites**: T-049.
+- **Goal**: execute the PRD Section 10.3 final acceptance checklist item by item; achieve G6.
+- **Implementation points**: Execute the 8 functional acceptance items, 5 competition-compliance acceptance items, and 5 engineering acceptance items one by one and retain evidence; the 4 video acceptance items belong to T-051's script preparation and subsequent manual recording, and are marked here as pending manual work; the NFR-401 real-person 5-second test is marked as a pending manual review item.
+- **Verification**:
+  1. All 8 functional acceptance items and 5 engineering acceptance items pass automated execution with complete evidence; of the 5 competition-compliance items, 4 pass automated verification, and for the language-compliance item the UI, report, and README parts pass automated verification, while its video subtitle part is verified against the T-051 English script (final manual verification after recording).
+  2. The pending manual items (4 video acceptance items, 1 real-person usability test, 1 final English verification of video subtitles) are explicitly listed in the to-do list with execution instructions.
+  3. Check the engineering-side G6 exit criteria: README complete, all automatable items in the acceptance checklist executed, deck script and video script ready — once satisfied, record "G6 engineering portion passed"; final achievement of the PRD G6 additionally requires manual completion of video recording and deck PDF export (already listed in the pending manual list), and only after completion may "G6 passed" be recorded.
+- **Evidence**: item-by-item checked records of the acceptance checklist, list of pending manual items.
+
+### T-051 Submission Material Content Production
+
+- **Prerequisites**: T-050.
+- **Goal**: Produce the English deck script (10 to 14 pages), a 3-minute demo video script (including voice-over script and subtitle script), and the video shooting storyboard description.
+- **Implementation points**:
+  1. The deck's first page uses the value proposition and track name from PRD Section 1.3 verbatim; the content covers: problem, solution, Gen AI depth (three-stage pipeline for semantic factor matching), technical architecture, evaluation results (citing T-047), and impact comparison (cost and labor hours).
+  2. The video script is designed around the four video acceptance items in PRD 10.3: a 15-second opening that clearly states the value figures; a continuous process from drag-and-drop to report; one comparison case where the right factor is chosen only because of semantic understanding (selected from the third group of Golden boundary-inference cases); and one demonstration of clicking citation tracing.
+  3. All materials label the track: Sustainability & Social Impact (consistent in three places: deck first page, README first screen, video end credits).
+  4. Actual recording, video upload, and deck PDF export are manual steps; this task is considered complete once the scripts are ready.
+- **Verification**:
+  1. The deck script has a complete structure of 10 to 14 pages, with the first page containing the value proposition and track label.
+  2. The estimated video script duration is within 3 minutes, and all four required scenes are scheduled with the corresponding demo data noted.
+  3. The track label text in all three places is exactly identical.
+  4. Both the voice-over script and the subtitle script are in English.
+- **Evidence**: deck script, video script, storyboard description.
+
+---
+
+## Appendix: Requirement Coverage Cross-Reference (for audit)
+
+| PRD Requirement Group | Implementation Task | Verification Task |
 |---|---|---|
-| FR-101 至 FR-106 | T-011、T-013 | T-012 |
-| FR-201 至 FR-203 | T-014 | T-015 |
-| FR-301 至 FR-306 | T-016 | T-017 |
-| FR-401 至 FR-403 | T-018 | T-019 |
-| FR-501 至 FR-504 | T-023 | T-024 |
-| FR-601、FR-602、FR-603、FR-605、FR-606 | T-005 至 T-007 | T-006、T-007 |
+| FR-101 to FR-106 | T-011, T-013 | T-012 |
+| FR-201 to FR-203 | T-014 | T-015 |
+| FR-301 to FR-306 | T-016 | T-017 |
+| FR-401 to FR-403 | T-018 | T-019 |
+| FR-501 to FR-504 | T-023 | T-024 |
+| FR-601, FR-602, FR-603, FR-605, FR-606 | T-005 to T-007 | T-006, T-007 |
 | FR-604 | T-021 | T-022 |
-| FR-701 至 FR-706 | T-021、T-025、T-027、T-036 | T-022、T-026、T-028、T-036 |
-| FR-801 至 FR-805 | T-029 | T-030 |
-| FR-901 至 FR-904 | T-031 | T-032 |
-| FR-1001 至 FR-1006 | T-033、T-035 | T-034、T-035 |
-| FR-1101 至 FR-1105 | T-036 | T-037 |
-| FR-1201 至 FR-1203 | T-038、T-041 | T-042、T-044 |
-| NFR-101 至 NFR-105 | 架构各任务 | T-044、T-045 |
-| NFR-201 至 NFR-204 | T-002、T-011、T-014 等各模块 | T-046、T-042 |
-| NFR-301 至 NFR-304 | T-002、T-043 | T-046、T-049 |
-| NFR-401 至 NFR-404 | T-038 至 T-041 | T-042、T-050 |
-| NFR-501 至 NFR-504 | T-002、T-006 | T-048、T-007 |
-| AI-101 至 AI-106、AI-201 至 AI-204、AI-301 至 AI-303 | T-014 起全部模型模块 | T-014 至 T-034 各验证项 |
-| EV-1 至 EV-6 | T-004 | T-047 |
-| M、D、L 合规项 | T-043、T-049、T-051 | T-047、T-050 |
-| 7.1 至 7.3 数据集 | T-008 至 T-010 | T-008 至 T-010 |
+| FR-701 to FR-706 | T-021, T-025, T-027, T-036 | T-022, T-026, T-028, T-036 |
+| FR-801 to FR-805 | T-029 | T-030 |
+| FR-901 to FR-904 | T-031 | T-032 |
+| FR-1001 to FR-1006 | T-033, T-035 | T-034, T-035 |
+| FR-1101 to FR-1105 | T-036 | T-037 |
+| FR-1201 to FR-1203 | T-038, T-041 | T-042, T-044 |
+| NFR-101 to NFR-105 | the various architecture tasks | T-044, T-045 |
+| NFR-201 to NFR-204 | T-002, T-011, T-014, etc., per module | T-046, T-042 |
+| NFR-301 to NFR-304 | T-002, T-043 | T-046, T-049 |
+| NFR-401 to NFR-404 | T-038 to T-041 | T-042, T-050 |
+| NFR-501 to NFR-504 | T-002, T-006 | T-048, T-007 |
+| AI-101 to AI-106, AI-201 to AI-204, AI-301 to AI-303 | all model modules from T-014 onward | the verification items in T-014 to T-034 |
+| EV-1 to EV-6 | T-004 | T-047 |
+| M, D, L compliance items | T-043, T-049, T-051 | T-047, T-050 |
+| 7.1 to 7.3 datasets | T-008 to T-010 | T-008 to T-010 |
 
-执行结束时，需求跟踪清单中 57 条 FR、21 条 NFR、13 条 AI 约束必须全部为「已验证」状态，任何一条不为「已验证」即视为交付未完成。
+At the end of execution, all 57 FRs, 21 NFRs, and 13 AI constraints in the requirement tracking list must be in "Verified" status; if any single item is not "Verified", the delivery is considered incomplete.
 
 ---
 
-文档结束。执行者从 T-001 开始，严格串行推进；**未通过验证的任务不得进入下一项任务**；每一步的验证证据落盘到 progress 目录，直至 T-051 完成并在进度日志记录「G6 工程部分通过」；待人工清单移交团队完成后，方可最终判定「G6 通过」。
+End of document. The executor starts from T-001 and proceeds in strict serial order; **a task that has not passed verification must not proceed to the next task**; the verification evidence for each step is written to disk in the progress directory, until T-051 is complete and "G6 engineering portion passed" is recorded in the progress log; only after the pending manual list is handed over to the team and completed may "G6 passed" be finally determined.

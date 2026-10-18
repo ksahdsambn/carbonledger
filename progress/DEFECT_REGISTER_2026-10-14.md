@@ -1,999 +1,999 @@
-# 缺陷登记册（全面审查与修复,2026-10-14 起）
+# Defect Register (Comprehensive Audit and Fix, from 2026-10-14)
 
-> 依据 `AUDIT_FIX_PROMPT.md` 第 3.1 节建立。每条缺陷闭环后更新状态。
-> 编号 D-01 起顺序递增;来源为附录 A 疑点编号或"阶段二新发现"。
+> Established per Section 3.1 of `AUDIT_FIX_PROMPT.md`. The status is updated after each defect is closed.
+> IDs increment sequentially from D-01; the source is an Appendix A suspicion ID or a "Phase 2 new finding".
 
 ---
 
 ## D-01
 
-- **编号**:D-01
-- **来源**:阶段一新发现(基线 B-4 失败)
-- **严重度**:P1(验证基础设施在 README/任务书声明的支持环境 Git Bash 下不可用)
-- **位置**:`scripts/smoke.sh:9,37-42`
-- **描述**:`LOG_FILE=$(mktemp)` 在 Git Bash 下返回 MSYS 虚拟路径(如 `/tmp/tmp.zU5LxVRQlA`),而验证日志用的 `python -c "open(r'$LOG_FILE'…)"` 调用的是原生 Windows Python,无法解析 MSYS 路径,`open()` 抛 `FileNotFoundError`,脚本以 "SMOKE FAIL: first log line is not a structured server_started event" 失败。失败消息本身也与断言内容不符(断言只要求 `server_started` 在事件列表中,不要求首行)。触发条件:在 Windows Git Bash 下执行 `npm run smoke`。
-- **核实证据**:2026-10-14 执行 `npm run smoke` 失败;单独复现 `LOG_FILE=$(mktemp); python -c "open(r'$LOG_FILE')"` 抛 `FileNotFoundError: '/tmp/tmp.zU5LxVRQlA'`,而日志文件确实存在且包含合法 `server_started` 事件(server_started 为第二行,首行为 factor_library_loaded,断言本身应通过)。
-- **修复方案**:让 Python 从 stdin 读取日志内容(`cat "$LOG_FILE" | python -c "…sys.stdin…"`,cat 是 MSYS 工具能解析 /tmp 路径),避免把 MSYS 路径传给原生 Python;同时把失败消息改为与断言一致的表述。
-- **验证方式**:A-3(`npm run smoke` 输出 SMOKE OK)。
-- **状态**:已修复(A-3 冒烟通过)
+- **ID**:D-01
+- **Source**:Phase 1 new finding (baseline B-4 failure)
+- **Severity**:P1 (verification infrastructure unusable under Git Bash, the supported environment declared in README/task specification)
+- **Location**:`scripts/smoke.sh:9,37-42`
+- **Description**:Under Git Bash, `LOG_FILE=$(mktemp)` returns an MSYS virtual path (e.g. `/tmp/tmp.zU5LxVRQlA`), while the `python -c "open(r'$LOG_FILE'…)"` used to verify the log invokes native Windows Python, which cannot resolve MSYS paths; `open()` throws `FileNotFoundError`, and the script fails with "SMOKE FAIL: first log line is not a structured server_started event". The failure message itself also does not match the assertion content (the assertion only requires `server_started` to be in the event list, not on the first line). Trigger condition: running `npm run smoke` under Windows Git Bash.
+- **Verification evidence**:On 2026-10-14, running `npm run smoke` failed; reproducing `LOG_FILE=$(mktemp); python -c "open(r'$LOG_FILE')"` in isolation throws `FileNotFoundError: '/tmp/tmp.zU5LxVRQlA'`, while the log file does exist and contains a valid `server_started` event (server_started is the second line, the first line is factor_library_loaded, and the assertion itself should pass).
+- **Fix plan**:Have Python read the log content from stdin (`cat "$LOG_FILE" | python -c "…sys.stdin…"`, since cat is an MSYS tool that can resolve /tmp paths), avoiding passing MSYS paths to native Python; also change the failure message to wording consistent with the assertion.
+- **Verification method**:A-3 (`npm run smoke` outputs SMOKE OK).
+- **Status**:Fixed (A-3 smoke passed)
 
 ---
 
 ## D-02
 
-- **编号**:D-02
-- **来源**:阶段一新发现(基线 B-6 失败)
-- **严重度**:P1(NFR-504 预算违约,验收 A-5 直接不通过)
-- **位置**:全仓库(口径 B 统计范围:backend/src + frontend/src + eval + scripts/**/*.js,含 backend/test)
-- **描述**:口径 B 实测 7,110 行,超上限 7,000 共 110 行;任务书声称基线 6,976,实测已超,说明近期提交(T-044…T-050 批次)在无对冲情况下净增了行数。当前状态 `count_lines.sh` 判定 FAIL,验收项 A-5 无法通过。
-- **核实证据**:2026-10-14 执行 `bash scripts/count_lines.sh`,输出 `B. … 7110`、`NFR-504: FAIL (figure B 7110 <= 7000 …)`。
-- **修复方案**:本次审查修复全程以"新增行数 ≤ 回收行数 - 110"为约束;回收候选按 6.3.4:未被服务端使用的队列抽象(R-17)、报告服务空循环与死分支(R-31)、追踪服务死代码、其他阶段二确认的死代码;严禁修改统计脚本口径。
-- **验证方式**:A-5(`count_lines.sh`;口径 B 判定见下方最终账)。
-- **状态**:已按 2.6.2 条款处理(书面记录超支 + 口径 C 达标)
+- **ID**:D-02
+- **Source**:Phase 1 new finding (baseline B-6 failure)
+- **Severity**:P1 (NFR-504 budget violation; acceptance item A-5 directly fails)
+- **Location**:whole repository (basis B counting scope: backend/src + frontend/src + eval + scripts/**/*.js, including backend/test)
+- **Description**:Basis B measures 7,110 lines, exceeding the 7,000 cap by 110 lines; the task specification claims a baseline of 6,976, and the measured value already exceeds it, indicating that recent commits (the T-044…T-050 batch) added lines net with no offsetting reductions. In the current state `count_lines.sh` reports FAIL, and acceptance item A-5 cannot pass.
+- **Verification evidence**:On 2026-10-14, running `bash scripts/count_lines.sh` outputs `B. … 7110`, `NFR-504: FAIL (figure B 7110 <= 7000 …)`.
+- **Fix plan**:Throughout this audit and fix, the constraint is "added lines ≤ reclaimed lines − 110"; reclamation candidates per 6.3.4: the queue abstraction unused by the server (R-17), the report service's empty loop and dead branch (R-31), tracing service dead code, and other dead code confirmed in Phase 2; modifying the counting script's basis is strictly forbidden.
+- **Verification method**:A-5 (`count_lines.sh`; for the basis B verdict see the final accounting below).
+- **Status**:Handled per clause 2.6.2 (overage recorded in writing + basis C met)
 
-### D-02 最终账(2026-10-14 阶段四)
+### D-02 Final Accounting (2026-10-14, Phase 4)
 
-| 项 | 行数 |
+| Item | Lines |
 |---|---|
-| 审查前实测口径 B(基线) | 7,110 |
-| 回收:queue/index.js + queue.test.js(D-22 死代码移除) | −124 |
-| 回收:报告空循环、traceability 死分支、P3 死函数、taskRuns 死导出、calculation 死分支、BASE_UNITS 死导出(D-36 等) | −15 |
-| 新增:强制回归电池 `backend/test/regression.test.js`(V-01/02/03/04/05/06/07/12 必须自动化,任务书 7.2 明文要求) | +330 |
-| 新增:安全与正确性修复(属主中间件、CORS/限流重写、运行串行化、候选接口、上传限制与错误映射、追踪脱敏、嵌入防线、补丁校验、pdf-lib 计数、存储包含性、配置校验、任务字段校验、CSV 中和、报告锚点/Share 修正、脚本密钥守卫) | +305 |
-| **审查后实测口径 B** | **7,606**(目标 7,000,超支 606) |
-| 第二轮回收:死导出 FACTOR_LIBRARY_FILE / STORE_COLLECTIONS / currentIdToken + 不可达分类规则(D-64) | −8 |
-| 第二轮新增:D-60/61/62/63/65/66 修复实现 | +12 |
-| 第二轮新增:回归断言(D-60/D-62/D-63/D-65/D-66) | +63 |
-| 第二轮新增:D-67 修复(空产出保护) | +11 |
-| 第二轮新增:D-67 回归断言 | +20 |
-| 第二轮新增:D-68 修复(4 个验证脚本退出码) | +3 |
-| **第二轮复核后实测口径 B(最终)** | **7,708**(目标 7,000,超支 708) |
-| 口径 C(含 Python 工具链) | 9,503(硬上限 10,000,达标) |
+| Measured basis B before audit (baseline) | 7,110 |
+| Reclaimed: queue/index.js + queue.test.js (D-22 dead code removal) | −124 |
+| Reclaimed: report empty loop, traceability dead branch, P3 dead function, taskRuns dead export, calculation dead branch, BASE_UNITS dead export (D-36 etc.) | −15 |
+| Added: mandatory regression battery `backend/test/regression.test.js` (V-01/02/03/04/05/06/07/12 must be automated, explicitly required by task specification 7.2) | +330 |
+| Added: security and correctness fixes (owner middleware, CORS/rate-limit rewrite, run serialization, candidate endpoint, upload limits and error mapping, trace sanitization, embedding defense, patch validation, pdf-lib counting, storage containment, config validation, task field validation, CSV neutralization, report anchor/Share fix, script secret guard) | +305 |
+| **Measured basis B after audit** | **7,606** (target 7,000, overage 606) |
+| Second-round reclamation: dead exports FACTOR_LIBRARY_FILE / STORE_COLLECTIONS / currentIdToken + unreachable classification rule (D-64) | −8 |
+| Second-round addition: D-60/61/62/63/65/66 fix implementations | +12 |
+| Second-round addition: regression assertions (D-60/D-62/D-63/D-65/D-66) | +63 |
+| Second-round addition: D-67 fix (empty-output guard) | +11 |
+| Second-round addition: D-67 regression assertions | +20 |
+| Second-round addition: D-68 fix (exit codes of 4 verification scripts) | +3 |
+| **Measured basis B after second-round review (final)** | **7,708** (target 7,000, overage 708) |
+| Basis C (including Python toolchain) | 9,503 (hard cap 10,000, met) |
 
-**超支理由与接受结论(按 2.6.2)**:
-1. 审查前基线即为 7,110,已超目标 110 行——超支并非本次修复单独造成。
-2. 本次净增 496 行中,330 行是任务书第七章明文要求"必须固化为自动化回归测试"的验收场景;其余 166 行为 P0/P1 安全与正确性修复的最小实现。二者均不可删减。
-3. 若强行压到 ≤7,000,只能删除强制回归测试或回退安全修复——违反铁律 3 与红线 3,不可接受。
-4. 已按 2.6.2 全文回收可确认无引用的死代码(139 行);未发现更多可回收项(全库导出引用扫描:仅 BASE_UNITS 零引用,已移除)。
-5. 口径 C 9,401 ≤ 10,000,满足 2.6.2 的硬性要求。
-6. **严禁修改统计脚本口径**(红线 4)——`count_lines.sh` 一字未改,超支如实呈现。
+**Overage rationale and acceptance conclusion (per 2.6.2)**:
+1. The pre-audit baseline was already 7,110, exceeding the target by 110 lines — the overage was not caused by this fix alone.
+2. Of the 496 net added lines this time, 330 are acceptance scenarios that Chapter 7 of the task specification explicitly requires to be "solidified as automated regression tests"; the remaining 166 are the minimal implementation of P0/P1 security and correctness fixes. Neither can be cut.
+3. Forcing it down to ≤7,000 would leave only deleting the mandatory regression tests or rolling back security fixes — violating Iron Rule 3 and Red Line 3, which is unacceptable.
+4. Per 2.6.2, all dead code confirmed to have no references has been reclaimed (139 lines); no further reclaimable items were found (repository-wide export-reference scan: only BASE_UNITS had zero references, and it has been removed).
+5. Basis C 9,401 ≤ 10,000, satisfying the hard requirement of 2.6.2.
+6. **Modifying the counting script's basis is strictly forbidden** (Red Line 4) — `count_lines.sh` was not changed by a single character, and the overage is presented truthfully.
 
-**结论**:A-5 依 2.6.2 逃逸条款判定为"已记录并接受",`count_lines.sh` 本身仍打印 FAIL,该事实如实记录,不作粉饰。
+**Conclusion**:Per the 2.6.2 escape clause, A-5 is judged "recorded and accepted"; `count_lines.sh` itself still prints FAIL, and this fact is recorded truthfully, without glossing over it.
 
-**第二轮追加(2026-10-14)**:第二轮独立复核新增 7 项修复与 6 组回归断言,并回收 8 行死代码,口径 B 由 7,606 变为 **7,708**(超支 708),口径 C 9,503 仍 < 10,000。超支性质与第一轮相同(强制回归测试 + 安全/正确性修复),接受结论不变。全库死导出扫描(按导出名出现次数统计)在本轮仅命中 4 处,已全部回收,未发现更多可回收项。
+**Second-round addendum (2026-10-14)**:The second independent review added 7 fixes and 6 sets of regression assertions and reclaimed 8 lines of dead code; basis B moved from 7,606 to **7,708** (overage 708), and basis C 9,503 remains < 10,000. The nature of the overage is the same as the first round (mandatory regression tests + security/correctness fixes), and the acceptance conclusion is unchanged. The repository-wide dead-export scan (counting occurrences by export name) hit only 4 items this round, all of which were reclaimed; no further reclaimable items were found.
 
 ---
 
 ## D-03
 
-- **编号**:D-03
-- **来源**:阶段一新发现(B-3 与文档对账)
-- **严重度**:P3(文档口径不清)
-- **位置**:`README.md`(测试数量表述处)
-- **描述**:测试数量存在两个口径:backend/test 内 33 个 `test(` 用例;`npm test` 运行时合计 34(33 + upload 脚本套件按 1 个聚合用例计入,见 `scripts/test.sh:31-46`)。README 若只写单一数字而不说明构成,读者无法对账。
-- **核实证据**:B-3 运行输出 `[suite] backend: pass=33 fail=0`、`[suite] upload: pass=1 fail=0`、`TOTAL passed=34`;grep 统计 backend/test/*.test.js 共 33 处 `test(`。
-- **修复方案**:README 的测试数量表述改为"34(33 个 node:test 用例 + 1 个 upload 聚合脚本套件)"式的明确口径。
-- **验证方式**:V-13(文档对账)。
-- **状态**:已修复(V-13 README 对账;测试数按实测 44 写明构成)
+- **ID**:D-03
+- **Source**:Phase 1 new finding (B-3 reconciliation with documentation)
+- **Severity**:P3 (documentation basis unclear)
+- **Location**:`README.md` (where the test count is stated)
+- **Description**:There are two bases for the test count: 33 `test(` cases inside backend/test; at `npm test` runtime the total is 34 (33 + the upload script suite counted as 1 aggregate case, see `scripts/test.sh:31-46`). If README gives only a single number without explaining the composition, readers cannot reconcile it.
+- **Verification evidence**:B-3 run output `[suite] backend: pass=33 fail=0`, `[suite] upload: pass=1 fail=0`, `TOTAL passed=34`; grep counts 33 occurrences of `test(` in backend/test/*.test.js.
+- **Fix plan**:Change README's test count wording to an explicit basis of the form "34 (33 node:test cases + 1 upload aggregate script suite)".
+- **Verification method**:V-13 (documentation reconciliation).
+- **Status**:Fixed (V-13 README reconciliation; the test count is stated with its composition based on the measured 44)
 
 ---
 
 ## D-04(R-01)
 
-- **编号**:D-04
-- **来源**:R-01
-- **严重度**:P0
-- **位置**:`backend/src/services/pipeline.js:85`(修复前行号);`backend/src/services/fileService.js:117-125`
-- **描述**:多单元(多页 PDF)文档处理时,`setDocumentStatus(...,'extracting')` 在单元循环内逐单元调用;转换表 `extracting` 无自环,第二单元处理时第二次设置抛 ERR_ENUM_INVALID,withStatus 将整文档置 failed,全部页面记录丢失。演示集与测试恰为单页文档故未暴露。
-- **核实证据**:代码推演 + 阶段四 V-01 将以 GD-09(4 页)实测复现;转换表 `extracting: ['matching','failed','needs_review']` 不含 extracting。
-- **修复方案**:按任务书 6.3.3,将 extracting 状态设置移出单元循环(进入循环前设置一次);多次重跑幂等(completed 跳过)、失败态可从 queued 重试、复核重算不触发该路径,均不受影响。
-- **验证方式**:V-01 + 新增多页文档回归测试(固化于 backend/test/pipeline.e2e.test.js)。
-- **状态**:已修复(V-01 + 回归测试)
+- **ID**:D-04
+- **Source**:R-01
+- **Severity**:P0
+- **Location**:`backend/src/services/pipeline.js:85` (line number before the fix); `backend/src/services/fileService.js:117-125`
+- **Description**:When processing a multi-unit (multi-page PDF) document, `setDocumentStatus(...,'extracting')` is called per unit inside the unit loop; the transition table has no self-loop for `extracting`, so when the second unit is processed the second set throws ERR_ENUM_INVALID, withStatus marks the whole document failed, and all page records are lost. The demo set and tests happen to be single-page documents, so this was not exposed.
+- **Verification evidence**:Code reasoning + Phase 4 V-01 will reproduce it empirically with GD-09 (4 pages); the transition table `extracting: ['matching','failed','needs_review']` does not contain extracting.
+- **Fix plan**:Per task specification 6.3.3, move the extracting status set outside the unit loop (set once before entering the loop); repeated reruns are idempotent (completed is skipped), the failed state can be retried from queued, and review recalculation does not trigger this path — none are affected.
+- **Verification method**:V-01 + a new multi-page document regression test (solidified in backend/test/pipeline.e2e.test.js).
+- **Status**:Fixed (V-01 + regression test)
 
 ---
 
 ## D-05(R-02)
 
-- **编号**:D-05
-- **来源**:R-02
-- **严重度**:P0
-- **位置**:`backend/src/services/scenarios.js:15-18`;`backend/src/services/calculation.js:36-89`
-- **描述**:情景重算 rerunWithFactor 复用会持久化的 computeEmission,以 `calc_<record_id>` 同主键覆盖正式账本核算记录与核算审计记录;此后导出路由与 generateReportForTask(懒生成/复核后重建)读取落库核算时把情景值当基线值。
-- **核实证据**:代码推演(calculation.js:79 `store.put('calculations', calcId, calc)`);V-04 将实测:跑基线→跑情景→比对存储核算与报告。
-- **修复方案**:按任务书 6.3.2,computeEmission 增加 `persist = true` 可选参,情景路径传 persist:false(只算不落库、不写审计);正式路径(流水线、仪表盘重算)行为不变。被情景污染过的历史数据不迁移(演示环境可重建),在修复报告写明。
-- **验证方式**:V-04 + 新增情景隔离回归测试。
-- **状态**:已修复(V-04 + 回归测试)
+- **ID**:D-05
+- **Source**:R-02
+- **Severity**:P0
+- **Location**:`backend/src/services/scenarios.js:15-18`; `backend/src/services/calculation.js:36-89`
+- **Description**:The scenario recalculation rerunWithFactor reuses the persist-capable computeEmission, overwriting formal ledger calculation records and calculation audit records under the same primary key `calc_<record_id>`; afterwards the export route and generateReportForTask (lazy generation / rebuild after review) read the persisted calculations and treat scenario values as baseline values.
+- **Verification evidence**:Code reasoning (calculation.js:79 `store.put('calculations', calcId, calc)`); V-04 will verify empirically: run baseline → run scenario → compare stored calculations against the report.
+- **Fix plan**:Per task specification 6.3.2, add an optional `persist = true` parameter to computeEmission, with the scenario path passing persist:false (compute only, no persistence, no audit write); the formal path (pipeline, dashboard recalculation) is unchanged. Historical data contaminated by scenarios is not migrated (the demo environment can be rebuilt); this is stated in the fix report.
+- **Verification method**:V-04 + a new scenario isolation regression test.
+- **Status**:Fixed (V-04 + regression test)
 
 ---
 
 ## D-06(R-03)
 
-- **编号**:D-06
-- **来源**:R-03
-- **严重度**:P0
-- **位置**:`backend/src/server.js` 任务级全部路由(139-304,除 161-171 文件下载已有属主判断)
-- **描述**:任务详情、文档列表、上传、重复决议、状态修改、触发运行、仪表盘、报告读取、报告导出、复核全部动作、审计查看、AI 追踪查询均不校验任务属主;有属主任务对任何匿名/错误身份请求开放,违背 README 隐私承诺(NFR-301)。
-- **核实证据**:server.js 逐路由核对(仅 /file 有 `task.owner !== req.uid` 判断);V-02 矩阵将实测三种身份 × 全部任务级接口。
-- **修复方案**:按任务书 6.3.1 条件强制口径:新增可替换的令牌校验器注入点与 `requireTaskOwner` 中间件——任务存在属主时,req.uid 不属主(无 token/错 token)一律 403 ERR_FORBIDDEN;无属主任务保持开放(脚本/离线/演示语义)。复核四动作同时获得"记录属于该任务"(D-14)与属主双重校验。令牌校验组件以依赖注入方式实现,单元测试注入模拟身份;本地无凭证"校验失败降级匿名"保留,其与条件强制的组合语义(有属主任务对匿名拒绝)纳入测试。
-- **验证方式**:V-02 + 新增越权矩阵回归测试;一键演示(progress/evidence 公开任务标识)保持可用为直接检验。
-- **状态**:已修复(V-02 + 回归测试)
-- **关联决策(D-45)**:errors.js 新增 `ERR_FORBIDDEN`(http 403)与 `ERR_RATE_LIMITED`(http 429,收编 server 手写响应,消息文本保持不变)。契约新增(非变更),无既有消费方受影响。
+- **ID**:D-06
+- **Source**:R-03
+- **Severity**:P0
+- **Location**:all task-level routes in `backend/src/server.js` (139-304, except 161-171 file download which already has an owner check)
+- **Description**:Task details, document list, upload, duplicate resolution, status modification, triggering runs, dashboard, report reading, report export, all review actions, audit viewing, and AI trace queries all fail to check task ownership; owned tasks are open to any anonymous/wrong-identity request, violating README's privacy commitment (NFR-301).
+- **Verification evidence**:Route-by-route check of server.js (only /file has the `task.owner !== req.uid` check); the V-02 matrix will empirically test three identities × all task-level endpoints.
+- **Fix plan**:Per task specification 6.3.1's conditional enforcement policy: add a replaceable token verifier injection point and `requireTaskOwner` middleware — when a task has an owner, any req.uid that is not the owner (no token/wrong token) gets 403 ERR_FORBIDDEN; ownerless tasks remain open (script/offline/demo semantics). The four review actions gain both "record belongs to this task" (D-14) and owner double checks. The token verification component is implemented via dependency injection, with unit tests injecting simulated identities; the local no-credential "verification failure degrades to anonymous" behavior is retained, and its combined semantics with conditional enforcement (owned tasks reject anonymous) are covered by tests.
+- **Verification method**:V-02 + a new privilege-escalation matrix regression test; the one-click demo (progress/evidence public task IDs) remaining usable serves as a direct check.
+- **Status**:Fixed (V-02 + regression test)
+- **Related decision (D-45)**:errors.js adds `ERR_FORBIDDEN` (http 403) and `ERR_RATE_LIMITED` (http 429, absorbing the server's hand-written response, with the message text unchanged). This is a contract addition (not a change), and no existing consumers are affected.
 
 ---
 
 ## D-07(R-04)
 
-- **编号**:D-07
-- **来源**:R-04
-- **严重度**:P0
-- **位置**:`backend/src/services/fileService.js:76`;`backend/src/storage/index.js:12-25`
-- **描述**:上传文件名未规范化即拼入存储键(`${taskId}/${id}_${filename}`);本地适配器 put/get 仅 join 无包含性校验;`../../evil.pdf` 等穿越片段可逃逸存储根目录写文件(反斜杠变体在 Windows 生效;绝对路径片段同理)。
-- **核实证据**:代码推演 + V-03 将以穿越/反斜杠/绝对路径文件名上传并对比存储根目录树。
-- **修复方案**:双层防御:(1) fileService 存储键构造前对 filename 规范化——取 basename、剔除路径分隔符与空字节、字符白名单 [A-Za-z0-9._-() ]、超长截断;(2) LocalFileStorage put/get 做 resolve 后包含性校验,越界即抛 ERR_STORAGE_ACCESS。
-- **验证方式**:V-03 + 新增路径遍历回归测试(目录树前后对比断言)。
-- **状态**:已修复(V-03 + 回归测试)
+- **ID**:D-07
+- **Source**:R-04
+- **Severity**:P0
+- **Location**:`backend/src/services/fileService.js:76`; `backend/src/storage/index.js:12-25`
+- **Description**:The uploaded filename is concatenated into the storage key without normalization (`${taskId}/${id}_${filename}`); the local adapter's put/get only join without containment checks; traversal fragments such as `../../evil.pdf` can escape the storage root and write files (backslash variants take effect on Windows; absolute path fragments likewise).
+- **Verification evidence**:Code reasoning + V-03 will upload filenames containing traversal/backslashes/absolute paths and compare the storage root directory tree.
+- **Fix plan**:Two-layer defense: (1) fileService normalizes the filename before constructing the storage key — take basename, strip path separators and null bytes, character whitelist [A-Za-z0-9._-() ], truncate overly long names; (2) LocalFileStorage put/get performs containment validation after resolve, throwing ERR_STORAGE_ACCESS on escape.
+- **Verification method**:V-03 + a new path traversal regression test (assertions comparing the directory tree before and after).
+- **Status**:Fixed (V-03 + regression test)
 
 ---
 
 ## D-08(R-05)
 
-- **编号**:D-08
-- **来源**:R-05
-- **严重度**:P1
-- **位置**:`backend/src/ai/client.js:61-68,105-131,210,248-250`
-- **描述**:追踪记录 input_summary 为 parts 的 JSON 前 300 字符,抽取阶段 parts 含 inline_data base64 文档片段;失败追踪的 error 字段含上游响应体(dispatch `HTTP <status>: <body>`;embedTexts 的 AppError details 直接携带 body)。叠加 R-03 等于向任何人公开原始文档片段;D-06 收口后仍对属主可见,属最小化原则违背。
-- **核实证据**:代码推演(summarize(parts) 未过滤 inline_data;err.message 含 body.slice)。
-- **修复方案**:summarize 对 parts 数组先脱敏——inline_data 项替换为 `[<mime> omitted]`;dispatch 错误消息仅保留 `HTTP <status>` 与分类,不再内嵌响应体(embedTexts 同)。
-- **验证方式**:新增脱敏回归测试(构造含 inline_data 的调用,断言追踪记录不含 base64 特征与响应体)。
-- **状态**:已修复(回归测试:追踪无 base64/上游体)
+- **ID**:D-08
+- **Source**:R-05
+- **Severity**:P1
+- **Location**:`backend/src/ai/client.js:61-68,105-131,210,248-250`
+- **Description**:Trace records input_summary as the first 300 characters of the parts JSON, and during the extraction stage parts contain inline_data base64 document fragments; the error field of failed traces contains the upstream response body (dispatch `HTTP <status>: <body>`; embedTexts' AppError details carry the body directly). Combined with R-03 this equals exposing raw document fragments to anyone; after D-06 is closed they remain visible to the owner, which violates the minimization principle.
+- **Verification evidence**:Code reasoning (summarize(parts) does not filter inline_data; err.message contains body.slice).
+- **Fix plan**:summarize first sanitizes the parts array — inline_data items are replaced with `[<mime> omitted]`; dispatch error messages keep only `HTTP <status>` and the classification, no longer embedding the response body (same for embedTexts).
+- **Verification method**:a new sanitization regression test (constructing a call containing inline_data and asserting the trace record contains no base64 signature or response body).
+- **Status**:Fixed (regression test: trace contains no base64/upstream body)
 
 ---
 
 ## D-09(R-06)
 
-- **编号**:D-09
-- **来源**:R-06
-- **严重度**:P1
-- **位置**:`frontend/src/pages.jsx:156-168(P3),215-223(P4)`;对照 `backend/src/server.js:139-143`
-- **描述**:P3/P4 从任务详情接口读 `task.records` 字段,该接口只返回 `{...task, documents}`,两页永远为空;匹配查看器与审计入口因此不可达;pages.jsx:156-159 的 loadRecords(实现正确)是从未被调用的死代码。
-- **核实证据**:代码对照(接口无 records 字段);V-10 界面走查直接暴露。
-- **修复方案**:P3/P4 改用仪表盘接口(`api.dashboard` 返回 records,后端契约不变);删除死函数 loadRecords(D-36 一并回收)。
-- **验证方式**:V-10(P3 非空、P4 可进入并完成手动指定因子)。
-- **状态**:已修复(V-10 P3/P4)
+- **ID**:D-09
+- **Source**:R-06
+- **Severity**:P1
+- **Location**:`frontend/src/pages.jsx:156-168(P3),215-223(P4)`; compare `backend/src/server.js:139-143`
+- **Description**:P3/P4 read the `task.records` field from the task details endpoint, but that endpoint only returns `{...task, documents}`, so both pages are always empty; the match viewer and audit entry are therefore unreachable; loadRecords at pages.jsx:156-159 (correctly implemented) is dead code that is never called.
+- **Verification evidence**:Code cross-check (the endpoint has no records field); the V-10 UI walkthrough exposes it directly.
+- **Fix plan**:P3/P4 switch to the dashboard endpoint (`api.dashboard` returns records, backend contract unchanged); delete the dead function loadRecords (reclaimed together under D-36).
+- **Verification method**:V-10 (P3 non-empty, P4 can be entered and manual factor assignment completed).
+- **Status**:Fixed (V-10 P3/P4)
 
 ---
 
 ## D-10(R-07)
 
-- **编号**:D-10
-- **来源**:R-07
-- **严重度**:P1
-- **位置**:`backend/src/services/reportService.js:94`
-- **描述**:范围分解锚点 `anchor(s.value * 1000, ...)`:s.value 为千克聚合值,anchor 内部执行 t3(kg)=kg/1000,传入前再乘 1000 导致锚点吨值=千克数值(放大一千倍);逐条记录锚点与总量锚点均正确,仅该处错。
-- **核实证据**:代码推演 + V-05 将实测锚点值与仪表盘聚合值逐项比对(不相等即暴露)。
-- **修复方案**:改为 `anchor(s.value, 'aggregation', taskId, s.key, ...)`(千克入参,anchor 内统一换算),与仪表盘 t3 舍入一致。
-- **验证方式**:V-05 + 新增锚点数值回归测试。
-- **状态**:已修复(V-05 + 回归测试)
+- **ID**:D-10
+- **Source**:R-07
+- **Severity**:P1
+- **Location**:`backend/src/services/reportService.js:94`
+- **Description**:Scope breakdown anchor `anchor(s.value * 1000, ...)`: s.value is the kilogram aggregate, and anchor internally performs t3(kg)=kg/1000, so multiplying by 1000 before passing in makes the anchor tonnage value equal to the kilogram figure (inflated a thousandfold); the per-record anchor and the total anchor are both correct — only this spot is wrong.
+- **Verification evidence**:Code reasoning + V-05 will compare the measured anchor values item by item against the dashboard aggregate values (any inequality exposes it).
+- **Fix plan**:Change to `anchor(s.value, 'aggregation', taskId, s.key, ...)` (kilogram input, converted uniformly inside anchor), consistent with the dashboard's t3 rounding.
+- **Verification method**:V-05 + a new anchor value regression test.
+- **Status**:Fixed (V-05 + regression test)
 
 ---
 
 ## D-11(R-08)
 
-- **编号**:D-11
-- **来源**:R-08
-- **严重度**:P1
-- **位置**:`backend/src/services/exportService.js:8-11`
-- **描述**:csvEscape 仅处理含 `"`、`,`、换行的值;以 =、+、-、@、制表符、回车开头的单元格原样输出,品名等用户/模型可控文本可在表格软件中执行公式(CSV 公式注入)。
-- **核实证据**:代码推演 + V-06 将以 `=SUM(1+1)*cmd|'` 等恶意品名导出并检查。
-- **修复方案**:csvEscape 对以 [=+\-@\t\r] 开头的值前置单引号 `'` 中和(OASIS 通用做法),其余转义规则不变;两处 CSV 导出同享。
-- **验证方式**:V-06 + 新增公式注入回归测试。
-- **状态**:已修复(V-06 + 回归测试)
+- **ID**:D-11
+- **Source**:R-08
+- **Severity**:P1
+- **Location**:`backend/src/services/exportService.js:8-11`
+- **Description**:csvEscape only handles values containing `"`, `,`, or newlines; cells starting with =, +, -, @, tab, or carriage return are output as-is, so user/model-controllable text such as product names can execute formulas in spreadsheet software (CSV formula injection).
+- **Verification evidence**:Code reasoning + V-06 will export malicious product names such as `=SUM(1+1)*cmd|'` and inspect them.
+- **Fix plan**:csvEscape prefixes values starting with [=+\-@\t\r] with a single quote `'` to neutralize them (the common OASIS practice), with the other escaping rules unchanged; both CSV export paths share this.
+- **Verification method**:V-06 + a new formula injection regression test.
+- **Status**:Fixed (V-06 + regression test)
 
 ---
 
 ## D-12(R-09)
 
-- **编号**:D-12
-- **来源**:R-09
-- **严重度**:P1
-- **位置**:`backend/src/server.js:25,145`
-- **描述**:上传中间件 `multer({ storage: multer.memoryStorage() })` 无 limits(单文件大小、请求数);10MB 校验发生在 ingestFile( multer 已全量缓冲进内存后),构成内存耗尽攻击面(单请求 50×任意大文件全量驻留)。
-- **核实证据**:配置核对 + V-11 将实测超限行为。
-- **修复方案**:multer 增加 `limits: { fileSize: 10MB, files: 50 }`;错误中间件将 MulterError LIMIT_FILE_SIZE 映射为 ERR_FILE_TOO_LARGE(413)、LIMIT_UNEXPECTED_FILE 映射为 ERR_ENUM_INVALID(422,附文件数上限提示)。**配套决策**:verify_upload.js 的 11MB 用例当前断言服务层逐文件错误(results[0].code);中间件生效后该请求在进入服务前即被拒(HTTP 413 错误封套)。这是任务书 V-11 明确要求的更强行为(超限不完整进入内存),同步把该用例断言更新为 413+ERR_FILE_TOO_LARGE+消息含 10 MB——断言是加强(更早拒绝)而非弱化,登记为测试契约适配。既有其余断言不动。
-- **验证方式**:V-11 + upload 套件回归。
-- **状态**:已修复(V-11;verify_upload 断言同步加强)
+- **ID**:D-12
+- **Source**:R-09
+- **Severity**:P1
+- **Location**:`backend/src/server.js:25,145`
+- **Description**:The upload middleware `multer({ storage: multer.memoryStorage() })` has no limits (single-file size, request count); the 10MB check happens in ingestFile (after multer has already buffered everything into memory), forming a memory-exhaustion attack surface (a single request keeps 50 × arbitrarily large files fully resident).
+- **Verification evidence**:Configuration check + V-11 will empirically test over-limit behavior.
+- **Fix plan**:Add `limits: { fileSize: 10MB, files: 50 }` to multer; the error middleware maps MulterError LIMIT_FILE_SIZE to ERR_FILE_TOO_LARGE (413) and LIMIT_UNEXPECTED_FILE to ERR_ENUM_INVALID (422, with a file-count limit hint). **Supporting decision**: verify_upload.js's 11MB case currently asserts the service-layer per-file error (results[0].code); once the middleware takes effect, that request is rejected before entering the service (HTTP 413 error envelope). This is the stronger behavior explicitly required by task specification V-11 (over-limit content does not fully enter memory), so the case's assertion is updated in step to 413+ERR_FILE_TOO_LARGE+message containing 10 MB — the assertion is strengthened (earlier rejection) rather than weakened, and this is registered as a test contract adaptation. All other existing assertions are untouched.
+- **Verification method**:V-11 + upload suite regression.
+- **Status**:Fixed (V-11; verify_upload assertions strengthened in step)
 
 ---
 
 ## D-13(R-10)
 
-- **编号**:D-13
-- **来源**:R-10
-- **严重度**:P1
-- **位置**:`backend/src/server.js:85-95(CORS),98-113(限流)`
-- **描述**:(1) 限流键取 x-forwarded-for 首段,客户端可伪造头每次变换即重置桶;(2) rateBuckets Map 无上限增长(内存泄漏/DoS 面);(3) `new URL(origin)` 对畸形 Origin 抛 TypeError→500(V-09 "畸形来源头不导致服务器错误"不满足);(4) 见 D-37 白名单过宽。
-- **核实证据**:代码核对 + V-09 将实测(伪造头、超阈值频率、畸形头)。
-- **修复方案**:(1) 默认以 `req.socket.remoteAddress` 为键,仅当显式设置 `TRUST_PROXY=1` 时才采信 x-forwarded-for(生产经代理部署时设置);(2) 桶数量上限(如 10,000),超限清理最旧桶;(3) URL 解析包 try/catch,畸形 Origin 视为非白名单直接 next();(4) 限流阈值 RATE_LIMIT_PER_MIN 解析非法值时回退默认 60 而非 NaN。
-- **验证方式**:V-09 + 新增限流/畸形头回归测试。
-- **状态**:已修复(V-09 + 回归测试)
+- **ID**:D-13
+- **Source**:R-10
+- **Severity**:P1
+- **Location**:`backend/src/server.js:85-95(CORS),98-113(rate limiting)`
+- **Description**:(1) The rate-limit key takes the first segment of x-forwarded-for, so a client can forge the header and reset the bucket on every change; (2) the rateBuckets Map grows without bound (memory leak/DoS surface); (3) `new URL(origin)` throws TypeError on a malformed Origin → 500 (V-09 "malformed origin headers do not cause server errors" is not satisfied); (4) see D-37, whitelist too broad.
+- **Verification evidence**:Code check + V-09 will test empirically (forged headers, above-threshold frequency, malformed headers).
+- **Fix plan**:(1) By default use `req.socket.remoteAddress` as the key, trusting x-forwarded-for only when `TRUST_PROXY=1` is explicitly set (set in production behind a proxy); (2) cap the number of buckets (e.g. 10,000), evicting the oldest bucket when exceeded; (3) wrap URL parsing in try/catch, treating a malformed Origin as not whitelisted and calling next() directly; (4) fall back to the default 60 instead of NaN when RATE_LIMIT_PER_MIN parses to an invalid value.
+- **Verification method**:V-09 + a new rate-limit/malformed-header regression test.
+- **Status**:Fixed (V-09 + regression test)
 
 ---
 
 ## D-14(R-11)
 
-- **编号**:D-14
-- **来源**:R-11
-- **严重度**:P1
-- **位置**:`backend/src/services/reviewQueue.js:78-108`
-- **描述**:assignFactorManually、excludeRecord 未校验 record.task_id === taskId(跨任务改写他任务记录与匹配);editRecordFields 补丁值无类型/范围/长度校验(与 R-12 交汇);路由层属主校验由 D-06 收口。
-- **核实证据**:代码核对(assignFactorManually:81-82 仅判存在性);V-02/V-07 实测。
-- **修复方案**:三个动作函数统一补 record.task_id 校验(不匹配抛 AppError ERR_TASK_NOT_FOUND,与 editRecordFields 现口径一致);editRecordFields 补丁校验:quantity 有限数>0、amount 有限数≥0、unit/transport_mode/currency 闭集、字符串字段长度上限 500、activity_date 字符串≤40。
-- **验证方式**:V-02(跨任务标识)、V-07(非法补丁)+ 新增跨任务与非法补丁回归测试。
-- **状态**:已修复(V-02/V-07 + 回归测试)
+- **ID**:D-14
+- **Source**:R-11
+- **Severity**:P1
+- **Location**:`backend/src/services/reviewQueue.js:78-108`
+- **Description**:assignFactorManually and excludeRecord do not check record.task_id === taskId (cross-task rewriting of another task's records and matches); editRecordFields patch values have no type/range/length validation (intersecting with R-12); route-layer owner checks are closed out by D-06.
+- **Verification evidence**:Code check (assignFactorManually:81-82 only checks existence); V-02/V-07 verify empirically.
+- **Fix plan**:All three action functions gain a record.task_id check (on mismatch throw AppError ERR_TASK_NOT_FOUND, consistent with editRecordFields' current behavior); editRecordFields patch validation: quantity finite number > 0, amount finite number ≥ 0, unit/transport_mode/currency closed sets, string fields length cap 500, activity_date string ≤ 40.
+- **Verification method**:V-02 (cross-task ID), V-07 (invalid patch) + a new cross-task and invalid-patch regression test.
+- **Status**:Fixed (V-02/V-07 + regression test)
 
 ---
 
 ## D-15(R-12)
 
-- **编号**:D-15
-- **来源**:R-12
-- **严重度**:P1
-- **位置**:`backend/src/services/pipelineModelCalls.js:52-65`;`normalization.js:47-51`;`calculation.js:9-29`;复核编辑路径(并入 D-14)
-- **描述**:数量全链路缺有限数值校验:validateExtraction 对 quantity 的 `NaN<=0` 为 false、Infinity 为合法 number 均放行;amount 仅查 `<0`(类型不限,字符串/Infinity 放行);gross_weight_kg/distance_km 完全无校验;convertUnit 乘法与 activityBasis 对非有限值无防御;一旦进入即污染聚合(求和 NaN)、排序(topEmitters NaN 比较失效)与报告。
-- **核实证据**:代码推演 + V-07 将经复核编辑与 mock 抽取两路注入非数字/无穷/零/负数实测。
-- **修复方案**:validateExtraction 全数值字段(quantity/amount/gross_weight_kg/distance_km/passengers 若有)统一 `Number.isFinite && 类型 number` 校验,quantity 同时 >0;convertUnit 入参加 Number.isFinite 守卫(非有限返回 null 不换算);activityBasis 对 basis.value 非有限抛错(既有 unbridgeable 路径接管为复核)。复核编辑路径校验由 D-14 承担。
-- **验证方式**:V-07 + 新增数值防线回归测试(mock 抽取注入 + 复核编辑注入)。
-- **状态**:已修复(V-07 + 回归测试)
+- **ID**:D-15
+- **Source**:R-12
+- **Severity**:P1
+- **Location**:`backend/src/services/pipelineModelCalls.js:52-65`; `normalization.js:47-51`; `calculation.js:9-29`; review edit path (merged into D-14)
+- **Description**:The whole quantity chain lacks finite-number validation: validateExtraction passes quantity when `NaN<=0` is false and when Infinity is a valid number; amount only checks `<0` (type unrestricted, so strings/Infinity pass); gross_weight_kg/distance_km have no validation at all; convertUnit multiplication and activityBasis have no defense against non-finite values; once such a value enters, it contaminates aggregation (sums become NaN), sorting (NaN comparisons in topEmitters fail) and reports.
+- **Verification evidence**:Code reasoning + V-07 will inject non-numeric/infinite/zero/negative values through both the review edit and mock extraction paths and test empirically.
+- **Fix plan**:validateExtraction applies uniform `Number.isFinite && type is number` validation to all numeric fields (quantity/amount/gross_weight_kg/distance_km/passengers if present), with quantity also > 0; convertUnit inputs gain a Number.isFinite guard (non-finite returns null without conversion); activityBasis throws on a non-finite basis.value (the existing unbridgeable path takes over as review). The review edit path validation is handled by D-14.
+- **Verification method**:V-07 + a new numeric defense regression test (mock extraction injection + review edit injection).
+- **Status**:Fixed (V-07 + regression test)
 
 ---
 
 ## D-16(R-13a)
 
-- **编号**:D-16
-- **来源**:R-13
-- **严重度**:P1
-- **位置**:`backend/src/config.js:85-89`;`backend/src/services/pipeline.js:209`
-- **描述**:配置数值项无校验:AI_RETRY_COUNT=abc → attempts=NaN,callModel 循环不执行直接 throw null;BATCH_SIZE/阈值/超时 NaN 或负数直接生效;PIPELINE_CONCURRENCY=abc → Math.max(1,NaN)=NaN → worker 数组长度 NaN→空→流水线静默空跑(文档全不动、无报错)。
-- **核实证据**:代码推演;阶段四将以非法环境变量实测复跑。
-- **修复方案**:loadConfig 对 int/float 项做"解析失败或越界回退默认值并 log.warn"处理(范围:AI_RETRY_COUNT≥0、AI_TIMEOUT_SECONDS>0、BATCH_SIZE>0、阈值∈[0,1]);pipeline 并发数额外 `Number.isFinite` 守卫非法回退 4。
-- **验证方式**:新增配置校验回归测试(config.test.js 扩展);A-2 全量回归。
-- **状态**:已修复(回归测试:非法配置回退默认)
+- **ID**:D-16
+- **Source**:R-13
+- **Severity**:P1
+- **Location**:`backend/src/config.js:85-89`; `backend/src/services/pipeline.js:209`
+- **Description**: Numeric config items have no validation: AI_RETRY_COUNT=abc → attempts=NaN, the callModel loop does not execute and directly throws null; BATCH_SIZE/threshold/timeout NaN or negative values take effect directly; PIPELINE_CONCURRENCY=abc → Math.max(1,NaN)=NaN → worker array length NaN→empty→the pipeline silently runs empty (all documents left untouched, no error reported).
+- **Verification evidence**: Code reasoning; Phase 4 will re-run with invalid environment variables in a live test.
+- **Fix plan**: loadConfig applies "fall back to the default and log.warn on parse failure or out-of-range" to int/float items (ranges: AI_RETRY_COUNT≥0, AI_TIMEOUT_SECONDS>0, BATCH_SIZE>0, threshold ∈[0,1]); the pipeline concurrency gets an extra `Number.isFinite` guard, falling back to 4 when illegal.
+- **Verification method**: New config-validation regression tests (config.test.js extension); A-2 full regression.
+- **Status**: Fixed (regression test: illegal config falls back to default)
 
 ---
 
 ## D-17(R-13b)
 
-- **编号**:D-17
-- **来源**:R-13(检查点 5.5.1)
-- **严重度**:P1
-- **位置**:`backend/src/ai/client.js:90-142`
-- **描述**:callModel 重试循环不区分错误类别:dispatch 已标注 kind:'fatal'(4xx 非 429),但循环仍对致命错误(鉴权失败、请求非法)无谓重试到底,拉高时延与成本;重试间无退避。
-- **核实证据**:代码核对(catch 分支未读 err.kind)。
-- **修复方案**:catch 中 kind==='fatal' 直接终止循环按现有映射抛错(不再消耗重试);重试间加入指数退避+抖动(200ms×2^n ± 抖动,仅 mock 外生效,测试用极小值不受影响——退避仅真实适配器路径,mock 不经过)。
-- **验证方式**:aiRetry.test.js 扩展(fatal 不重试断言)。
-- **状态**:已修复(aiRetry 回归:fatal 不重试)
+- **ID**: D-17
+- **Source**: R-13 (checkpoint 5.5.1)
+- **Severity**: P1
+- **Location**: `backend/src/ai/client.js:90-142`
+- **Description**: The callModel retry loop does not distinguish error categories: dispatch already marks kind:'fatal' (4xx other than 429), but the loop still pointlessly retries fatal errors (authentication failure, invalid request) all the way to the end, driving up latency and cost; there is no backoff between retries.
+- **Verification evidence**: Code review (the catch branch does not read err.kind).
+- **Fix plan**: In catch, kind==='fatal' terminates the loop immediately and throws per the existing mapping (no more retry consumption); exponential backoff + jitter is added between retries (200ms×2^n ± jitter, effective only outside mock; tests using tiny values are unaffected — backoff applies only on the real adapter path, mock does not go through it).
+- **Verification method**: aiRetry.test.js extension (assertion that fatal is not retried).
+- **Status**: Fixed (aiRetry regression: fatal not retried)
 
 ---
 
 ## D-18(R-18)
 
-- **编号**:D-18
-- **来源**:R-18
-- **严重度**:P2
-- **位置**:`backend/src/ai/client.js:192-225(embedTexts)`
-- **描述**:嵌入批量调用无超时无重试;响应 embeddings 数量少于请求数时静默接受,recall.buildSemanticIndex 按 `vectors[i]` 错位写入,坏索引静默存在。
-- **核实证据**:V-12 将以模拟短响应实测。
-- **修复方案**:批量调用加 AbortController 超时(复用 AI_TIMEOUT_SECONDS);响应向量数与 chunk 长度严格校验,不足即抛 ERR_MODEL_CALL_FAILED(可重试一次);embedText 同样补超时。
-- **验证方式**:V-12 + 新增短响应回归测试(注入 mock fetch)。
-- **状态**:已修复(V-12 + 回归测试)
+- **ID**: D-18
+- **Source**: R-18
+- **Severity**: P2
+- **Location**: `backend/src/ai/client.js:192-225 (embedTexts)`
+- **Description**: The embedding batch call has no timeout and no retry; when the response embeddings count is less than the request count it is silently accepted, recall.buildSemanticIndex writes out of alignment by `vectors[i]`, and the bad index silently persists.
+- **Verification evidence**: V-12 will test live with a simulated short response.
+- **Fix plan**: Add an AbortController timeout to the batch call (reusing AI_TIMEOUT_SECONDS); strictly validate the response vector count against the chunk length, throwing ERR_MODEL_CALL_FAILED when short (one retry allowed); add the same timeout to embedText.
+- **Verification method**: V-12 + new short-response regression test (injecting mock fetch).
+- **Status**: Fixed (V-12 + regression test)
 
 ---
 
 ## D-19(R-14)
 
-- **编号**:D-19
-- **来源**:R-14
-- **严重度**:P2
-- **位置**:`backend/src/services/reportService.js:270`
-- **描述**:引用扫描对情景锚点 `scenarios.has(ref) || String(ref).includes('_S-')`——后半句使任何含 `_S-` 片段的 ref_id 免存在性校验,削弱"无效引用一票否决"治理。
-- **核实证据**:代码核对;构造含伪情景锚点的报告扫描即可证(测试将固化)。
-- **修复方案**:删除 `|| includes('_S-')` 旁路,情景锚点一律走 scenarios.has 存在性校验(存储侧 id 即 `${taskId}_${scenario_id}`,合法锚点本就命中)。
-- **验证方式**:新增伪情景锚点回归测试(合法锚点通过、伪锚点计 invalid)。
-- **状态**:已修复(回归测试:伪情景锚点计 invalid)
+- **ID**: D-19
+- **Source**: R-14
+- **Severity**: P2
+- **Location**: `backend/src/services/reportService.js:270`
+- **Description**: The reference scan treats scenario anchors as `scenarios.has(ref) || String(ref).includes('_S-')` — the second clause exempts any ref_id containing the `_S-` fragment from existence validation, weakening the "invalid references are an automatic veto" governance.
+- **Verification evidence**: Code review; provable by scanning a report constructed with a fake scenario anchor (the test will pin it down).
+- **Fix plan**: Remove the `|| includes('_S-')` bypass; scenario anchors all go through scenarios.has existence validation (the storage-side id is `${taskId}_${scenario_id}`, so legitimate anchors hit anyway).
+- **Verification method**: New fake-scenario-anchor regression test (legitimate anchors pass, fake anchors counted as invalid).
+- **Status**: Fixed (regression test: fake scenario anchor counted as invalid)
 
 ---
 
 ## D-20(R-15)
 
-- **编号**:D-20
-- **来源**:R-15
-- **严重度**:P2
-- **位置**:`backend/src/store/index.js:37-52`
-- **描述**:集合文件 JSON 解析失败被 catch 后静默重置为空 Map——存量数据视同不存在,无任何告警,且下一次 put 会以空集覆写全文件(数据丢失固化);#persist 整文件 writeFileSync 非原子(写一半崩溃即损坏)。
-- **核实证据**:代码核对;损坏一个集合文件重启服务即可证(阶段四手工验证留证)。
-- **修复方案**:解析失败时 log.error(带文件名)再降级空集(告警不静默);#persist 改为"写临时文件+renameSync 原子替换"。并发整文件重写最后赢为单进程语义,保持现状(生产为 Firestore)。
-- **验证方式**:新增存储健壮性测试(坏 JSON 文件构造 + 原子写断言);手工损坏文件重启留证。
-- **状态**:已修复(回归:坏 JSON 告警 + 原子写)
+- **ID**: D-20
+- **Source**: R-15
+- **Severity**: P2
+- **Location**: `backend/src/store/index.js:37-52`
+- **Description**: A collection file JSON parse failure is caught and silently reset to an empty Map — existing data is treated as nonexistent, with no warning at all, and the next put overwrites the whole file with the empty set (making the data loss permanent); #persist's whole-file writeFileSync is non-atomic (a crash halfway through corrupts it).
+- **Verification evidence**: Code review; provable by corrupting one collection file and restarting the service (Phase 4 manual verification for the record).
+- **Fix plan**: On parse failure, log.error (with the file name) before degrading to an empty set (alert, not silent); #persist changed to "write a temp file + renameSync atomic replace". Concurrent whole-file rewrite is last-writer-wins single-process semantics, kept as is (production uses Firestore).
+- **Verification method**: New storage robustness tests (bad JSON file construction + atomic-write assertions); manually corrupt a file and restart for the record.
+- **Status**: Fixed (regression: bad JSON warning + atomic write)
 
 ---
 
 ## D-21(R-16)
 
-- **编号**:D-21
-- **来源**:R-16
-- **严重度**:P2
-- **位置**:`backend/src/services/pipeline.js:137`;`backend/src/services/uncertainty.js:123-127`
-- **描述**:召回候选置信度被硬编码 0.5(< 阈值 0.65),assessRecord 的 allBelowThreshold 恒真 → 全部含候选记录被标 no_high_confidence_factor 并开复核项,该信号零区分度;levelDistribution 对缺失等级产生 `undefined: NaN` 键(仪表盘渲染 NaN 行)。
-- **核实证据**:代码核对;修复后以演示任务实测标记比例与分布键集合。
-- **修复方案**:候选传真实召回得分(pipeline 传 `match_confidence: c.score`,assessRecord 已支持 match_confidence 优先);levelDistribution 缺省并入 medium(`r.uncertainty_level ?? 'medium'`,与报告侧口径一致)。修复后必须实测:演示任务复核队列仍非空(V-10 P8 依赖)、评估指标不回归(A-6)。
-- **验证方式**:A-6 + V-10 + 新增分布键纯度测试(low/medium/high 三键)。
-- **状态**:已修复(回归:分布三键;V-10 P5)
+- **ID**: D-21
+- **Source**: R-16
+- **Severity**: P2
+- **Location**: `backend/src/services/pipeline.js:137`; `backend/src/services/uncertainty.js:123-127`
+- **Description**: Recall candidate confidence is hard-coded to 0.5 (< the 0.65 threshold), so assessRecord's allBelowThreshold is always true → every record containing candidates is flagged no_high_confidence_factor and opens a review item, giving the signal zero discriminating power; levelDistribution produces an `undefined: NaN` key for missing levels (the dashboard renders a NaN row).
+- **Verification evidence**: Code review; after the fix, measure the flagging ratio and the distribution key set with the demo task.
+- **Fix plan**: Candidates pass the real recall score (pipeline passes `match_confidence: c.score`; assessRecord already supports match_confidence taking precedence); levelDistribution folds missing levels into medium (`r.uncertainty_level ?? 'medium'`, consistent with the reporting side). After the fix, live verification is mandatory: the demo task's review queue is still non-empty (V-10 P8 depends on it) and evaluation metrics do not regress (A-6).
+- **Verification method**: A-6 + V-10 + new distribution-key purity test (three keys low/medium/high).
+- **Status**: Fixed (regression: three distribution keys; V-10 P5)
 
 ---
 
 ## D-22(R-17)
 
-- **编号**:D-22
-- **来源**:R-17;任务书 5.4.3
-- **严重度**:P2
-- **位置**:`backend/src/queue/index.js`(全文);`backend/test/queue.test.js`
-- **描述**:队列抽象未被服务端任何代码引用(全库仅自身测试引用),且存在运行期 setImmediate 派发不移出 pending 导致 stop/start 重复消费的双派发缺陷;服务端实际内联执行流水线。
-- **核实证据**:全库引用搜索(grep queue/index 与 createQueue/InProcessQueue):仅 backend/test/queue.test.js。
-- **修复方案**:**移除**(任务书 5.4.3 授权二选一决策):删除 backend/src/queue/index.js 与 backend/test/queue.test.js,回收行数对冲 D-02 超支;README 中"async task-queue abstraction"表述同步修订(D-46)。不选"修复"理由:无调用方的修复是纯支出,而行数预算已超支 110 行。
-- **验证方式**:A-2(用例总数因新增回归测试保持 ≥ 基线)+ A-5(口径 B 回到 ≤7000)+ 全量构建/测试。
-- **状态**:已修复(A-2/A-5)
-- **红线对照说明**:红线 3 禁止"为让测试通过而删除/弱化断言";本项为死代码清理(该测试当前本就通过),且任务书 5.4.3 明确授权移除选项;总用例数不降低(见验证方式)。
+- **ID**: D-22
+- **Source**: R-17; task specification 5.4.3
+- **Severity**: P2
+- **Location**: `backend/src/queue/index.js` (entire file); `backend/test/queue.test.js`
+- **Description**: The queue abstraction is not referenced by any server-side code (in the whole repository, only its own test references it), and it has a double-dispatch defect where runtime setImmediate dispatch does not remove from pending, causing duplicate consumption on stop/start; the server actually executes the pipeline inline.
+- **Verification evidence**: Whole-repository reference search (grep queue/index and createQueue/InProcessQueue): only backend/test/queue.test.js.
+- **Fix plan**: **Remove** (task specification 5.4.3 authorizes a choice between two options): delete backend/src/queue/index.js and backend/test/queue.test.js, reclaiming lines to offset the D-02 overspend; the "async task-queue abstraction" wording in the README is revised accordingly (D-46). Reason for not choosing "fix": fixing something with no caller is pure expenditure, and the line budget is already 110 lines over.
+- **Verification method**: A-2 (total test case count stays ≥ baseline thanks to the new regression tests) + A-5 (metric B back to ≤7000) + full build/test.
+- **Status**: Fixed (A-2/A-5)
+- **Red-line cross-check note**: Red line 3 prohibits "deleting/weakening assertions to make tests pass"; this item is dead-code cleanup (that test already passes as is), and task specification 5.4.3 explicitly authorizes the removal option; the total test case count does not decrease (see verification method).
 
 ---
 
 ## D-24(R-19)
 
-- **编号**:D-24
-- **来源**:R-19
-- **严重度**:P2
-- **位置**:`backend/src/services/normalization.js:101-110`
-- **描述**:币种识别表 CNY 行(含 `¥`)先于 JPY 行,`¥jp` 标记永不可达,裸 `¥` 恒判 CNY;歧义符号无上下文消歧。
-- **核实证据**:正则顺序推演;将针对全部币种符号写用例测试。
-- **修复方案**:重排识别顺序——显式代码/无歧义符号优先(USD/$/dollars、EUR/€、JPY/円/yen/¥jp、HKD/港币、CNY/人民币/RMB),裸 `¥` 最后且仅判 CNY(中文语境默认,与现有行为兼容)。
-- **验证方式**:normalization.test.js 扩展全部符号用例。
-- **状态**:已修复(回归:全币种符号用例)
+- **ID**: D-24
+- **Source**: R-19
+- **Severity**: P2
+- **Location**: `backend/src/services/normalization.js:101-110`
+- **Description**: In the currency recognition table the CNY row (containing `¥`) precedes the JPY row, so the `¥jp` marker is never reachable and a bare `¥` is always judged CNY; ambiguous symbols have no context disambiguation.
+- **Verification evidence**: Regex order reasoning; test cases will be written for all currency symbols.
+- **Fix plan**: Reorder the recognition sequence — explicit codes/unambiguous symbols first (USD/$/dollars, EUR/€, JPY/円/yen/¥jp, HKD/港币, CNY/人民币/RMB), bare `¥` last and judged CNY only (the Chinese-language default, compatible with existing behavior).
+- **Verification method**: normalization.test.js extended with all-symbol test cases.
+- **Status**: Fixed (regression: all-currency-symbol test cases)
 
 ---
 
 ## D-25(R-20)
 
-- **编号**:D-25
-- **来源**:R-20
-- **严重度**:P2
-- **位置**:`backend/src/services/fileService.js:58-63`
-- **描述**:XLSX 校验仅为压缩包内 `xl/workbook` 子串存在性,无解压放大防线。
-- **核实证据**:全库检索确认不存在任何本地解压路径(XLSX 以 inline_data 原样交模型,本地不解压);压缩体受 10MB 上限约束;放大发生在模型侧而非本服务。
-- **修复方案**:**有意保留 + 文档化**——本服务不解压 XLSX,压缩炸弹的本地资源消耗面不存在;10MB 上限(中间件强制,D-12)约束输入规模。在 README 安全说明与修复报告中记录该评估。
-- **验证方式**:登记留证(本条即处置结论);V-11 覆盖超限行为。
-- **状态**:有意保留(附评估理由)
+- **ID**: D-25
+- **Source**: R-20
+- **Severity**: P2
+- **Location**: `backend/src/services/fileService.js:58-63`
+- **Description**: XLSX validation is only the existence of the `xl/workbook` substring inside the archive, with no defense against decompression amplification.
+- **Verification evidence**: Whole-repository search confirms no local decompression path exists (XLSX is handed to the model as-is via inline_data, not decompressed locally); the compressed body is bounded by the 10MB limit; amplification happens on the model side, not in this service.
+- **Fix plan**: **Intentionally retained + documented** — this service does not decompress XLSX, so there is no local resource-consumption surface for zip bombs; the 10MB limit (enforced by middleware, D-12) bounds the input size. Record this assessment in the README security notes and the fix report.
+- **Verification method**: Registered for the record (this item is itself the disposition conclusion); V-11 covers the over-limit behavior.
+- **Status**: Intentionally retained (with assessment rationale)
 
 ---
 
 ## D-26(R-21)
 
-- **编号**:D-26
-- **来源**:R-21
-- **严重度**:P2
-- **位置**:`backend/src/services/fileService.js:33-37,54-57`
-- **描述**:PDF 页数用原始字节正则 `/\/Type\s*\/Page[^s]/g` 统计:对压缩对象流(ObjStm)PDF 欠计(页面字典不出现在明文),0 页误判损坏、N>0 页静默少拆单元,影响页单元拆分与引用追踪页上限。
-- **核实证据**:golden 9 份 PDF 实测 0 偏差(工具生成未压缩);缺陷为对真实世界压缩 PDF 的健壮性缺口,非当前数据错误。
-- **修复方案**:ingestFile 的 PDF 分支改用 pdf-lib(既有依赖)加载取 getPageCount:天然解析对象流、附带真损坏检测(load 抛错→ERR_FILE_CORRUPT);正则版 countPdfPages 导出随之无引用(仅本文件使用),删除回收行数。
-- **验证方式**:新增多页 PDF 页数回归测试(含 GD-09 四页)+ 既有 upload 套件回归。
-- **状态**:已修复(回归:多页计数 + 损坏 PDF 拒绝)
+- **ID**: D-26
+- **Source**: R-21
+- **Severity**: P2
+- **Location**: `backend/src/services/fileService.js:33-37,54-57`
+- **Description**: PDF page count is tallied with a raw-byte regex `/\/Type\s*\/Page[^s]/g`: compressed object stream (ObjStm) PDFs are undercounted (page dictionaries do not appear in plaintext), 0 pages are misjudged as corrupt, and N>0 pages are silently split into too few units, affecting page-unit splitting and the page cap for reference tracking.
+- **Verification evidence**: live measurement of the 9 golden PDFs shows 0 deviation (tool-generated, uncompressed); the defect is a robustness gap for real-world compressed PDFs, not a current data error.
+- **Fix plan**: The PDF branch of ingestFile switches to loading with pdf-lib (an existing dependency) and taking getPageCount: it parses object streams natively and comes with real corruption detection (load throws → ERR_FILE_CORRUPT); the regex-based countPdfPages export then has no references (used only in this file), so it is deleted to reclaim lines.
+- **Verification method**: New multi-page PDF page-count regression test (including the four-page GD-09) + regression of the existing upload suite.
+- **Status**: Fixed (regression: multi-page counting + corrupt PDF rejection)
 
 ---
 
 ## D-27(R-22)
 
-- **编号**:D-27
-- **来源**:R-22
-- **严重度**:P2
-- **位置**:`backend/src/services/exportService.js:34-41,103-118`;`reportService 空表头传导`
-- **描述**:reportPdf 的 Promise 仅在 'end' resolve,PDFDocument 异常时无 'error' 处理→请求悬挂;renderTable 空 header → 495/0=NaN 宽度;categorySummaryCsv `b.header[0].startsWith` 空 header 数组→TypeError 500。("表格截断无披露"子点不成立:117 行已有 `… N more rows` 披露。)
-- **核实证据**:代码核对;异常路径以坏报告对象实测。
-- **修复方案**:reportPdf 增加 `doc.on('error', reject)`;renderTable 空 header 时跳过渲染(防御);categorySummaryCsv 空表头守卫返回仅表头行 CSV。
-- **验证方式**:新增导出健壮性回归测试(reportPdf 拒绝而非悬挂、空表头不炸)。
-- **状态**:已修复(回归:PDF 拒绝而非悬挂、空表头守卫)
+- **ID**: D-27
+- **Source**: R-22
+- **Severity**: P2
+- **Location**: `backend/src/services/exportService.js:34-41,103-118`; `reportService empty-header propagation`
+- **Description**: reportPdf's Promise resolves only on 'end', with no 'error' handling when PDFDocument throws → the request hangs; renderTable with an empty header → 495/0=NaN width; categorySummaryCsv `b.header[0].startsWith` with an empty header array → TypeError 500. (The "table truncation undisclosed" sub-point is not substantiated: line 117 already discloses with `… N more rows`.)
+- **Verification evidence**: Code review; the exception path is tested live with a bad report object.
+- **Fix plan**: Add `doc.on('error', reject)` to reportPdf; renderTable skips rendering when the header is empty (defensive); categorySummaryCsv has an empty-header guard returning a header-row-only CSV.
+- **Verification method**: New export robustness regression tests (reportPdf rejects instead of hanging, empty header does not blow up).
+- **Status**: Fixed (regression: PDF rejects instead of hanging, empty-header guard)
 
 ---
 
 ## D-28(R-23)
 
-- **编号**:D-28
-- **来源**:R-23;检查点 5.7.1
-- **严重度**:P2
-- **位置**:`scripts/verify_extraction_real.js`、`verify_boundary_real.js`、`verify_selection_real.js`、`verify_report_real.js`(均无守卫);`eval/collectors.js:24-29`
-- **描述**:五个真实适配器验证脚本仅 classification 有"无 GEMINI_API_KEY 即 exit 2"守卫;其余四个无密钥运行会以 mock 结果覆写正式指标证据文件;收集器对结果文件的 pass 字段盲信、不校验适配器来源。
-- **核实证据**:grep GEMINI_API_KEY 五脚本仅一处命中;collectors.js 仅读 measured/pass。
-- **修复方案**:四个脚本头部补齐同款守卫(exit 2,与分类脚本一致);collectors 在结果文件含 adapter 字段且值为 'mock' 时,对真实指标按"未测量"处理(pass=false,evidence 标注 mock 证据不可用)——mock 演示结果文件不受影响(其收集项本就不依赖 adapter 字段时保持原状,仅当字段存在且为 mock 才拦)。
-- **验证方式**:无密钥环境运行四脚本断言 exit 2 且不写结果文件(阶段四留证);eval/run.js 回归(A-6)。
-- **状态**:已修复(四脚本守卫 + 收集器拒 mock + 结果盖 adapter)
+- **ID**: D-28
+- **Source**: R-23; checkpoint 5.7.1
+- **Severity**: P2
+- **Location**: `scripts/verify_extraction_real.js`, `verify_boundary_real.js`, `verify_selection_real.js`, `verify_report_real.js` (none has a guard); `eval/collectors.js:24-29`
+- **Description**: Of the five real-adapter verification scripts, only classification has a "no GEMINI_API_KEY → exit 2" guard; the other four, when run without a key, overwrite the formal metric evidence files with mock results; the collector blindly trusts the pass field of result files and does not verify the adapter origin.
+- **Verification evidence**: grep GEMINI_API_KEY hits only once across the five scripts; collectors.js only reads measured/pass.
+- **Fix plan**: Add the same guard to the top of the four scripts (exit 2, consistent with the classification script); when a result file contains an adapter field whose value is 'mock', collectors treat real metrics as "not measured" (pass=false, evidence annotated as mock evidence unavailable) — mock demo result files are unaffected (items that do not depend on the adapter field remain as-is; blocking occurs only when the field exists and is mock).
+- **Verification method**: Run the four scripts in a keyless environment and assert exit 2 with no result files written (Phase 4 for the record); eval/run.js regression (A-6).
+- **Status**: Fixed (four-script guard + collector rejects mock + results stamped with adapter)
 
 ---
 
 ## D-29(R-24)
 
-- **编号**:D-29
-- **来源**:R-24
-- **严重度**:P2
-- **位置**:`Dockerfile`;`firebase.json`
-- **描述**:容器无 HEALTHCHECK 指令(平台重启策略失去健康信号);Firebase Hosting 无安全响应头(CSP、HSTS、X-Frame-Options、X-Content-Type-Options、Referrer-Policy)。
-- **核实证据**:配置文件核对。
-- **修复方案**:Dockerfile 增加 `HEALTHCHECK CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||8080)+'/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"`(slim 镜像无 curl,用 node);firebase.json headers 增加全域安全头(CSP 允许 self+Firebase 认证域需要的连接目标、HSTS、DENY 帧保护、nosniff)。仅配置变更,本地等效头以 V-09 联动核验(dev 服务器由后端中间件补发同款头过轻量验证——不加运行时代码,以配置评审留证)。
-- **验证方式**:配置 diff 留证 + docker build 本地不执行(红线:不执行部署命令;HEALTHCHECK 语法以文档核对)。
-- **状态**:已修复(Dockerfile HEALTHCHECK + firebase.json 安全头)
+- **ID**: D-29
+- **Source**: R-24
+- **Severity**: P2
+- **Location**: `Dockerfile`; `firebase.json`
+- **Description**: The container has no HEALTHCHECK instruction (the platform restart policy loses its health signal); Firebase Hosting has no security response headers (CSP, HSTS, X-Frame-Options, X-Content-Type-Options, Referrer-Policy).
+- **Verification evidence**: Config file review.
+- **Fix plan**: Add to the Dockerfile `HEALTHCHECK CMD node -e "fetch('http://127.0.0.1:'+(process.env.PORT||8080)+'/healthz').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"` (the slim image has no curl, so use node); add global security headers to firebase.json headers (CSP allowing self + the connection targets Firebase auth domains require, HSTS, DENY frame protection, nosniff). Configuration changes only; the local equivalent headers are cross-checked with V-09 (the dev server has the backend middleware send the same headers for lightweight verification — no runtime code added, documented by config review).
+- **Verification method**: Config diff for the record + docker build not executed locally (red line: do not execute deployment commands; HEALTHCHECK syntax checked against the documentation).
+- **Status**: Fixed (Dockerfile HEALTHCHECK + firebase.json security headers)
 
 ---
 
 ## D-30(R-25)
 
-- **编号**:D-30
-- **来源**:R-25
-- **严重度**:P3
-- **位置**:`frontend/src/pages.jsx:281-302(P6)`
-- **描述**:替换比例滑块的 ratio 只进 state,失焦回调仅 `api.runPipeline(taskId)` 未传比例——死滑块 + 昂贵副作用(整条流水线重跑)并存。
-- **核实证据**:代码核对;V-10 P6 将实测网络请求。
-- **修复方案**:run 请求体透传 `ratio`(可选数值,缺省 1.0),server /run 接收后传入 runPipeline → computeScenarios(ratio 参数本已存在);滑块失焦发送当前 ratio 后刷新报告。流水线重跑为既有设计("recompute at the selected ratio"),保持。
-- **验证方式**:V-10(P6 滑块行为)+ 手工核对 run 请求体含 ratio。
-- **状态**:已修复(V-10 P6:比例真实生效)
+- **ID**: D-30
+- **Source**: R-25
+- **Severity**: P3
+- **Location**: `frontend/src/pages.jsx:281-302 (P6)`
+- **Description**: The replacement-ratio slider's ratio only enters state, and the blur callback calls only `api.runPipeline(taskId)` without passing the ratio — a dead slider coexisting with an expensive side effect (a full pipeline re-run).
+- **Verification evidence**: Code review; V-10 P6 will test the network request live.
+- **Fix plan**: Pass `ratio` through in the run request body (optional number, default 1.0); the server /run receives it and passes it into runPipeline → computeScenarios (the ratio parameter already exists); the slider on blur sends the current ratio and then refreshes the report. The pipeline re-run is existing design ("recompute at the selected ratio"), kept.
+- **Verification method**: V-10 (P6 slider behavior) + manual check that the run request body contains ratio.
+- **Status**: Fixed (V-10 P6: the ratio actually takes effect)
 
 ---
 
 ## D-31(R-26)
 
-- **编号**:D-31
-- **来源**:R-26
-- **严重度**:P3
-- **位置**:`frontend/vite.config.js:6-11`;`frontend/src/pages.jsx:221(P4 挂载)`
-- **描述**:开发代理未覆盖 /factors(本地开发因子查询 404);P4 挂载即发起 `api.factors('')` 空查询,必然 400。
-- **核实证据**:配置核对 + 请求路径推演。
-- **修复方案**:vite proxy 增加 `'/factors': 'http://localhost:8080'`;删除 P4 挂载时的空查询调用(候选列表本就由 factorSearch(record) 驱动)。
-- **验证方式**:V-10(本地开发全流程,因子候选可见)。
-- **状态**:已修复(V-10 P4)
+- **ID**: D-31
+- **Source**: R-26
+- **Severity**: P3
+- **Location**: `frontend/vite.config.js:6-11`; `frontend/src/pages.jsx:221 (P4 mount)`
+- **Description**: The dev proxy does not cover /factors (factor queries in local development 404); P4 fires an empty `api.factors('')` query on mount, which inevitably returns 400.
+- **Verification evidence**: Config review + request path reasoning.
+- **Fix plan**: Add `'/factors': 'http://localhost:8080'` to the vite proxy; delete the empty query call on P4 mount (the candidate list is already driven by factorSearch(record)).
+- **Verification method**: V-10 (full local development flow, factor candidates visible).
+- **Status**: Fixed (V-10 P4)
 
 ---
 
 ## D-32(R-27)
 
-- **编号**:D-32
-- **来源**:R-27
-- **严重度**:P3
-- **位置**:`backend/src/services/reviewQueue.js:45-54(audit id)`;查重时机;线性查找
-- **描述**:审计记录 id `aud_rev_<recordId>_<Date.now()>` 毫秒时间戳,同记录同毫秒两次动作碰撞互相覆盖;查重在归一化前(子点不成立:设计即字节级 sha256,语义重复由 markSuspectedDuplicates 记录级兜底);多处 O(n²) 线性查找(子点有意保留:任务级 n 小,无实测瓶颈)。
-- **核实证据**:代码核对。
-- **修复方案**:审计 id 加随机后缀(对齐 ai_traces 既有模式 `Date.now()+random`);其余两子点登记结论不改码。
-- **验证方式**:代码评审留证;review 相关回归测试不回归。
-- **状态**:已修复(审计 ID 加随机后缀)
+- **ID**: D-32
+- **Source**: R-27
+- **Severity**: P3
+- **Location**: `backend/src/services/reviewQueue.js:45-54 (audit id)`; dedup timing; linear search
+- **Description**: The audit record id `aud_rev_<recordId>_<Date.now()>` uses a millisecond timestamp, so two actions on the same record within the same millisecond collide and overwrite each other; dedup happens before normalization (sub-point not substantiated: the design is byte-level sha256, and semantic duplicates are covered at the record level by markSuspectedDuplicates); multiple O(n²) linear searches (sub-point intentionally retained: task-level n is small, no measured bottleneck).
+- **Verification evidence**: Code review.
+- **Fix plan**: Add a random suffix to the audit id (aligning with the existing ai_traces pattern `Date.now()+random`); the other two sub-points are recorded as conclusions with no code change.
+- **Verification method**: Code review for the record; review-related regression tests do not regress.
+- **Status**: Fixed (random suffix added to the audit ID)
 
 ---
 
 ## D-33(R-28)
 
-- **编号**:D-33
-- **来源**:R-28;检查点 5.5.3(并发)
-- **严重度**:P1(直接影响 V-08 验收)
-- **位置**:`backend/src/services/pipeline.js:60`;`backend/src/services/taskRuns.js`;`backend/src/server.js:191-203`
-- **描述**:已完成文档重跑被跳过但返回空累积——重跑任务报告缺已完成文档的记录与核算(completed 文档的陈旧核算同时残留在库);taskRuns 仅单飞等待不排队——同任务并发第二次触发的运行在首跑完成后处理剩余文档,其 assembleReport 仅含第二跑处理的记录,报告与账本不一致(V-08 必挂)。
-- **核实证据**:代码推演 + V-08 将以连续两次触发实测。
-- **修复方案**:(1) processDocument 对 completed 文档改为从存储加载其既有 records/calcs/matches 入累积(不再返回空),重跑报告完整且复核改动经仪表盘重算后即为最新;(2) /run 与 /api/demo/load 触发前若该任务已有在跑运行,先 await 再启动(经 taskRuns 链式排队),保证同任务运行串行。复核排除记录的陈旧核算残留:recalculateTask 与 generateReportForTask 均按 excluded_from_calc 过滤,读取侧已免疫(登记确认,不另改)。
-- **验证方式**:V-08(PUBLIC_BASE 指本地跑 verify_consistency.js)+ 新增重跑完整性回归测试。
-- **状态**:已修复(V-08 + 回归:重跑完整)
+- **ID**: D-33
+- **Source**: R-28; checkpoint 5.5.3 (concurrency)
+- **Severity**: P1 (directly affects V-08 acceptance)
+- **Location**: `backend/src/services/pipeline.js:60`; `backend/src/services/taskRuns.js`; `backend/src/server.js:191-203`
+- **Description**: On re-run, completed documents are skipped but return an empty accumulation — the re-run task report lacks the records and calculations of completed documents (the stale calculations of completed documents also remain in the store); taskRuns only waits single-flight without queuing — a second concurrent trigger of the same task processes the remaining documents after the first run finishes, and its assembleReport contains only the records processed by the second run, making the report inconsistent with the ledger (V-08 will definitely fail).
+- **Verification evidence**: Code reasoning + V-08 will test live with two consecutive triggers.
+- **Fix plan**: (1) For completed documents, processDocument now loads their existing records/calcs/matches from storage into the accumulation (no longer returning empty), so the re-run report is complete and, once review changes are recalculated via the dashboard, up to date; (2) before /run and /api/demo/load trigger, if the task already has a running execution, await it first before starting (chained queuing via taskRuns), guaranteeing serial execution for the same task. Stale calculation residue from review-excluded records: recalculateTask and generateReportForTask both filter by excluded_from_calc, so the read side is already immune (recorded as confirmed, no further change).
+- **Verification method**: V-08 (PUBLIC_BASE pointing locally, running verify_consistency.js) + new re-run completeness regression test.
+- **Status**: Fixed (V-08 + regression: re-run complete)
 
 ---
 
 ## D-34(R-29)
 
-- **编号**:D-34
-- **来源**:R-29
-- **严重度**:P3
-- **位置**:`backend/src/services/taskService.js:7-13`
-- **描述**:任务创建仅真值浅校验:entity_name 可为任意结构(对象/数组/超长串);period_from/to 无类型与先后顺序校验,坏数据进报告与 PDF。
-- **核实证据**:代码核对;以非法字段创建任务实测。
-- **修复方案**:entity_name 必须非空字符串且 ≤200 字符;period_from/to 必须为 YYYY-MM-DD 合法日期且 from ≤ to;不符抛 ERR_ENUM_INVALID(沿用现有码,详情附字段名)。
-- **验证方式**:新增任务创建校验回归测试;P1 表单正常路径不受影响(表单本就发字符串)。
-- **状态**:已修复(回归:任务字段校验)
+- **ID**: D-34
+- **Source**: R-29
+- **Severity**: P3
+- **Location**: `backend/src/services/taskService.js:7-13`
+- **Description**: Task creation only does truthiness shallow validation: entity_name can be any structure (object/array/overlong string); period_from/to have no type or ordering validation, so bad data reaches reports and PDFs.
+- **Verification evidence**: Code review; live test creating a task with illegal fields.
+- **Fix plan**: entity_name must be a non-empty string of ≤200 characters; period_from/to must be valid YYYY-MM-DD dates with from ≤ to; violations throw ERR_ENUM_INVALID (reusing the existing code, with the field name in the details).
+- **Verification method**: New task-creation validation regression tests; the P1 form's normal path is unaffected (the form already sends strings).
+- **Status**: Fixed (regression: task field validation)
 
 ---
 
 ## D-35(R-30)
 
-- **编号**:D-35
-- **来源**:R-30
-- **严重度**:P3
-- **位置**:`backend/src/store/index.js` vs `backend/src/store/firestore.js`
-- **描述**:适配器行为差异——(1) 未定义值查询:local 返回 [],firestore `where(==, undefined)` 抛错;(2) 文档顺序:local 为插入序,firestore 无顺序保证(latestReport 按 generated_at 排序已免疫,lists 顺序敏感处:报告附录因子表顺序来自 listFactors→可能不同,仅展示顺序差异);(3) list 全量加载无分页(任务级数据量可控)。
-- **核实证据**:两实现逐项对照。
-- **修复方案**:**有意保留 + 差异表文档化**(本条即差异表):(1) 当前全部调用点均传定义值(逐一核对 query 调用),无触发路径;(2) 顺序敏感读取已有显式排序;(3) 分页缺失记为已知约束,单任务 20-200 记录量级可接受。README 部署注意事项提示。
-- **验证方式**:登记留证;A-6 回归。
-- **状态**:有意保留(附差异表)
+- **ID**: D-35
+- **Source**: R-30
+- **Severity**: P3
+- **Location**: `backend/src/store/index.js` vs `backend/src/store/firestore.js`
+- **Description**: Adapter behavior differences — (1) undefined-value queries: local returns [], firestore `where(==, undefined)` throws; (2) document order: local is insertion order, firestore gives no order guarantee (latestReport, sorted by generated_at, is already immune; where lists are order-sensitive: the report appendix factor table order comes from listFactors → may differ, a display-order difference only); (3) list loads everything with no pagination (task-level data volume is manageable).
+- **Verification evidence**: Item-by-item comparison of the two implementations.
+- **Fix plan**: **Intentionally retained + difference table documented** (this item is the difference table): (1) all current call sites pass defined values (every query call checked one by one), so there is no trigger path; (2) order-sensitive reads already have explicit sorting; (3) the missing pagination is recorded as a known constraint, acceptable at the 20-200 records per task scale. A note is added in the README deployment considerations.
+- **Verification method**: Register entry for the record; A-6 regression.
+- **Status**: Intentionally retained (with difference table)
 
 ---
 
 ## D-36(R-31)
 
-- **编号**:D-36
-- **来源**:R-31;6.3.4
-- **严重度**:P3
-- **位置**:`backend/src/services/reportService.js:95-97`;`backend/src/services/traceability.js:57-60`;`frontend/src/pages.jsx:156-159`
-- **描述**:报告服务空循环(agg.scope 双层循环内层 slice(0,0) 恒空);traceability 内层 `/^Sheet/` 判断恒真死分支;前端 loadRecords 死函数。
-- **核实证据**:全引用搜索确认无副作用依赖。
-- **修复方案**:三处删除,行数回收对冲 D-02。
-- **验证方式**:A-2/A-5;引用覆盖率不回归(A-6)。
-- **状态**:已修复(A-2/A-5)
+- **ID**: D-36
+- **Source**: R-31; 6.3.4
+- **Severity**: P3
+- **Location**: `backend/src/services/reportService.js:95-97`; `backend/src/services/traceability.js:57-60`; `frontend/src/pages.jsx:156-159`
+- **Description**: An empty loop in the report service (the inner slice(0,0) of the agg.scope double loop is always empty); an always-true dead branch on the inner `/^Sheet/` check in traceability; a dead loadRecords function in the frontend.
+- **Verification evidence**: Whole-repository reference search confirms no side-effect dependencies.
+- **Fix plan**: Delete all three, reclaiming lines to offset D-02.
+- **Verification method**: A-2/A-5; reference coverage does not regress (A-6).
+- **Status**: Fixed (A-2/A-5)
 
 ---
 
 ## D-37(R-32)
 
-- **编号**:D-37
-- **来源**:R-32
-- **严重度**:P3
-- **位置**:`backend/src/server.js:84-95`
-- **描述**:来源白名单对任意 `*.web.app` / `*.firebaseapp.com` 域名通配放行跨域——任何 Firebase 项目(含他人的)都可跨域读响应。
-- **核实证据**:正则核对(`/\.web\.app$|\.firebaseapp\.com$/`)。
-- **修复方案**:收敛为显式清单:默认 `http://localhost:5173 http://127.0.0.1:5173 https://myproject-dc19d.web.app`,CORS_ORIGINS 环境变量仍可扩展(部署域名变化属配置变更);通配正则删除。
-- **验证方式**:V-09(非白名单来源无跨域头)+ 既有联调不回归。
-- **状态**:已修复(V-09 + 回归:CORS 严格白名单)
+- **ID**: D-37
+- **Source**: R-32
+- **Severity**: P3
+- **Location**: `backend/src/server.js:84-95`
+- **Description**: The origin allowlist wildcard-permits cross-origin for any `*.web.app` / `*.firebaseapp.com` domain — any Firebase project (including someone else's) can read responses cross-origin.
+- **Verification evidence**: Regex review (`/\.web\.app$|\.firebaseapp\.com$/`).
+- **Fix plan**: Narrow to an explicit list: default `http://localhost:5173 http://127.0.0.1:5173 https://myproject-dc19d.web.app`, still extensible via the CORS_ORIGINS environment variable (deployment domain changes are configuration changes); the wildcard regex is deleted.
+- **Verification method**: V-09 (non-allowlisted origins get no CORS headers) + existing integration does not regress.
+- **Status**: Fixed (V-09 + regression: strict CORS allowlist)
 
 ---
 
 ## D-38(R-33)
 
-- **编号**:D-38
-- **来源**:R-33
-- **严重度**:P3
-- **位置**:`frontend/src/auth.js`;`frontend/src/api.js`
-- **描述**:(1) uploadFiles 不查 res.ok,服务端错误时 res.results 为 undefined→TypeError→UI 卡 busy 无反馈;(2) json() 中 `...opts` 在 headers 之后展开,opts.headers 会整体覆盖认证头(当前无调用方传,属潜伏);(3) 全部请求无超时;(4) 长期刷新令牌存 localStorage(XSS 后可劫持);(5) 刷新失败静默 signUp 新身份→"看似成功实为新身份",原属主任务不可达(会话错位)。
-- **核实证据**:代码核对 + 异常路径推演。
-- **修复方案**:(1) uploadFiles 检查 res.ok,非 ok 抛错误消息(调用方已有 note 显示通道);(2) headers 展开顺序调整为 opts 先、认证头后(认证头不可覆盖);(3) json/upload 增加 AbortSignal.timeout(60s) 默认超时;(4)(5) **有意保留并文档化**:匿名身份无 PII,令牌价值低;刷新失败换新身份是"尽力保持可用"的既定取舍,在 README 隐私节与修复报告记录风险与改进路径(后端会话/HttpOnly cookie 属架构变更,超出最小修复范围)。
-- **验证方式**:V-10(上传错误可见性——用不支持扩展名文件触发);代码评审留证 (4)(5)。
-- **状态**:已修复((1) 上传查 res.ok、(2) 认证头不可覆盖、(3) 60s 超时;V-10 复验);(4)(5) 有意保留(理由见修复方案)
+- **ID**: D-38
+- **Source**: R-33
+- **Severity**: P3
+- **Location**: `frontend/src/auth.js`; `frontend/src/api.js`
+- **Description**: (1) uploadFiles does not check res.ok, so on a server error res.results is undefined → TypeError → the UI stays stuck on busy with no feedback; (2) in json(), `...opts` is spread after headers, so opts.headers would wholly overwrite the auth header (no caller passes it currently; latent); (3) no request has a timeout; (4) the long-lived refresh token is stored in localStorage (hijackable after XSS); (5) a failed refresh silently signs up a new identity → "appears successful but is actually a new identity", leaving the original owner's tasks unreachable (session mismatch).
+- **Verification evidence**: Code review + exception path reasoning.
+- **Fix plan**: (1) uploadFiles checks res.ok and throws an error message when not ok (the caller already has a note display channel); (2) the headers spread order is adjusted to opts first and auth headers after (auth headers cannot be overridden); (3) json/upload add a default AbortSignal.timeout(60s); (4)(5) **intentionally retained and documented**: the anonymous identity carries no PII and the token has low value; switching to a new identity after a refresh failure is the established "best-effort availability" trade-off, with the risk and improvement path recorded in the README privacy section and the fix report (backend sessions/HttpOnly cookies are architectural changes, beyond the minimal fix scope).
+- **Verification method**: V-10 (upload error visibility — triggered with a file of an unsupported extension); code review retains evidence for (4)(5).
+- **Status**: Fixed ((1) upload checks res.ok, (2) auth headers cannot be overridden, (3) 60s timeout; V-10 re-verified); (4)(5) intentionally retained (rationale in the fix plan)
 
 ---
 
-## D-39(新发现)
+## D-39 (newly found)
 
-- **编号**:D-39
-- **来源**:阶段二新发现(域 C)
-- **严重度**:P1(D-06 收口后成为功能回归)
-- **位置**:`frontend/src/pages.jsx:137(AuditView)`
-- **描述**:审计视图用裸 `fetch('/api/tasks/...')` 不带 Authorization 头;D-06 属主校验生效后,有属主任务的审计查看将 403,且错误未捕获。
-- **核实证据**:代码核对。
-- **修复方案**:改走 api 层(api.js 增加 audit(taskId, recordId) 带认证头)。
-- **验证方式**:V-10(P3 展开审计可见)。
-- **状态**:已修复(V-10 P3 审计可见)
-
----
-
-## D-40(新发现)
-
-- **编号**:D-40
-- **来源**:阶段二新发现(域 C)
-- **严重度**:P1(D-06 收口后成为功能回归)
-- **位置**:`frontend/src/pages.jsx:197(源文档链接),315-317(P7 导出三链接)`
-- **描述**:文档下载与三种导出为裸 `<a href>`,浏览器导航不带认证头;有属主任务将 403。
-- **核实证据**:代码核对。
-- **修复方案**:api.js 增加 `download(path)` 助手(fetch+认证头+blob+ObjectURL 触发下载,含文件名);P3/P7 链接改按钮调用助手。无属主任务行为不变。
-- **验证方式**:V-10(P7 三个导出全部成功且内容正确)。
-- **状态**:已修复(V-10 P7 三导出成功)
+- **ID**: D-39
+- **Source**: Phase 2 new finding (domain C)
+- **Severity**: P1 (becomes a functional regression once D-06 is closed out)
+- **Location**: `frontend/src/pages.jsx:137(AuditView)`
+- **Description**: The audit view uses a bare `fetch('/api/tasks/...')` without an Authorization header; once D-06 owner validation takes effect, viewing the audit of tasks with an owner returns 403, and the error is not caught.
+- **Corroborating evidence**: Code review.
+- **Fix plan**: Route through the api layer (add audit(taskId, recordId) to api.js with auth headers).
+- **Verification method**: V-10 (P3 expanded audit visible).
+- **Status**: Fixed (V-10 P3 audit visible)
 
 ---
 
-## D-41(新发现)
+## D-40 (newly found)
 
-- **编号**:D-41
-- **来源**:阶段二新发现(域 B)
-- **严重度**:P2
-- **位置**:`backend/src/services/pipeline.js:49`
-- **描述**:文档过滤仅排除 discarded,pending_duplicate 文档进入流水线;转换表无 pending_duplicate 出边,首次 setDocumentStatus('parsing') 即抛,每次运行必产生 document_pipeline_failed 错误日志(状态本身未损,但错误风暴掩盖真实故障)。
-- **核实证据**:代码核对 + 转换表推演。
-- **修复方案**:过滤条件改为 `d.status !== 'discarded' && d.status !== 'pending_duplicate'`。
-- **验证方式**:upload 套件(重复文档场景)回归 + 重复上传后触发运行无 failed 日志(阶段四留证)。
-- **状态**:已修复(流水线过滤 pending_duplicate)
-
----
-
-## D-42(新发现)
-
-- **编号**:D-42
-- **来源**:阶段二新发现(域 B)
-- **严重度**:P2
-- **位置**:`backend/src/services/pipeline.js:203`
-- **描述**:needsReview 取自 perDocRecords(抽取原始对象,normalizeRecord 返回新对象,uncertainty_level 只写在后者)→原始对象永无该字段,文档级 needs_review 状态不可达(七态机缺一态;P2 状态图标永不出现 needs_review)。
-- **核实证据**:对象身份推演 + 修复后实测演示任务文档状态分布。
-- **修复方案**:needsReview 改基于归一化后的 recordsOut(该文档实际产出记录)判定;单条记录处理失败路径(processing_failed)同样置高不确定,一并纳入。
-- **验证方式**:V-01/V-10(P2 状态呈现)+ A-6(演示端到端不回归)。
-- **状态**:已修复(V-10 P2 状态分布)
+- **ID**: D-40
+- **Source**: Phase 2 new finding (domain C)
+- **Severity**: P1 (becomes a functional regression once D-06 is closed out)
+- **Location**: `frontend/src/pages.jsx:197(source document link),315-317(P7 export three links)`
+- **Description**: Document download and the three exports are bare `<a href>` links, so browser navigation carries no auth header; tasks with an owner will return 403.
+- **Corroborating evidence**: Code review.
+- **Fix plan**: Add a `download(path)` helper to api.js (fetch + auth headers + blob + ObjectURL to trigger the download, including the filename); the P3/P7 links become buttons that call the helper. Behavior for tasks without an owner is unchanged.
+- **Verification method**: V-10 (all three P7 exports succeed with correct content).
+- **Status**: Fixed (V-10 P7 three exports succeed)
 
 ---
 
-## D-43(新发现)
+## D-41 (newly found)
 
-- **编号**:D-43
-- **来源**:阶段二新发现(域 C)
-- **严重度**:P3
-- **位置**:`frontend/src/pages.jsx:77-78(P2 refresh)`
-- **描述**:轮询 refresh 无 catch;任务被清理(local-store 删除)后每 2.5s 一次未处理 Promise 拒绝,UI 停留 Documents(0) 无提示。
-- **核实证据**:代码核对。
-- **修复方案**:refresh 加 catch,失败时置空并显示一次错误提示(与本地存储指向已删任务时的各页表现一致化)。
-- **验证方式**:V-10 走查 + 手工删除任务后 P2 表现留证。
-- **状态**:已修复(P2 轮询加 catch)
-
----
-
-## D-44(新发现)
-
-- **编号**:D-44
-- **来源**:阶段二新发现(域 A)
-- **严重度**:P3
-- **位置**:`backend/src/server.js:116-125`
-- **描述**:/factors 空 q 返回 400 + ERR_INTERNAL——状态码 400 配内部错误码语义错位;前端修复(D-31 删除空调用)后无调用方。
-- **修复方案**:**有意保留**——改码属对外契约变更(verify 脚本可能断言现状),收益低;在前端删除必 400 的调用后该路径仅手工误触达。
-- **验证方式**:登记留证。
-- **状态**:有意保留
+- **ID**: D-41
+- **Source**: Phase 2 new finding (domain B)
+- **Severity**: P2
+- **Location**: `backend/src/services/pipeline.js:49`
+- **Description**: Document filtering excludes only discarded, so pending_duplicate documents enter the pipeline; the transition table has no pending_duplicate out-edge, so the first setDocumentStatus('parsing') throws, and every run necessarily produces a document_pipeline_failed error log (the status itself is not corrupted, but the error storm masks real failures).
+- **Corroborating evidence**: Code review + transition-table derivation.
+- **Fix plan**: Change the filter condition to `d.status !== 'discarded' && d.status !== 'pending_duplicate'`.
+- **Verification method**: upload suite (duplicate-document scenario) regression + no failed log when a run is triggered after duplicate upload (evidence retained in Phase 4).
+- **Status**: Fixed (pipeline filters pending_duplicate)
 
 ---
 
-## D-45(新发现,并入 D-06 关联决策)
+## D-42 (newly found)
 
-- **编号**:D-45
-- **来源**:阶段二新发现(域 A/G)
-- **严重度**:P3
-- **位置**:`backend/src/errors.js`
-- **描述**:错误码注册表缺 ERR_RATE_LIMITED(server.js:107 手写内联响应)与授权拒绝码;README 错误码清单随之缺项。
-- **修复方案**:注册表补 ERR_RATE_LIMITED(http 429,消息与现内联完全一致)与 ERR_FORBIDDEN(http 403,D-06 使用);server 限流改经 AppError(对外字节不变);README 清单同步(D-46)。
-- **验证方式**:V-09(限流响应码) + V-02(403 码)+ errors.test.js 回归。
-- **状态**:已修复(注册表补 ERR_FORBIDDEN/ERR_RATE_LIMITED)
-
----
-
-## D-46(新发现)
-
-- **编号**:D-46
-- **来源**:阶段二新发现(域 H)
-- **严重度**:P2(文档可信度)
-- **位置**:`README.md`(多处)
-- **描述**:README 与实际不符——(1) 行数 4,132/6,976/8,771 vs 实测 4,335/7,110/8,905(基线即超支);(2) "cross-task, cross-identity and forged-header access are all rejected" 与 R-03/R-10/R-11 现状不符(修复后恢复为真);(3) "async task-queue abstraction selects Cloud Tasks" 在 D-22 移除后不成立;(4) 错误码清单缺 ERR_RATE_LIMITED/ERR_FORBIDDEN;(5) 测试数 34 需注明构成并在修复后更新。
-- **核实证据**:README 与实测/代码逐项对照。
-- **修复方案**:交付阶段(V-13)按修复后的最终实测逐项修订:行数三口径实测值、安全能力描述与修复后行为对齐、队列表述改为内联执行、错误码补全、测试数注明构成。
-- **验证方式**:V-13 文档对账。
-- **状态**:已修复(V-13 README 全面修订)
+- **ID**: D-42
+- **Source**: Phase 2 new finding (domain B)
+- **Severity**: P2
+- **Location**: `backend/src/services/pipeline.js:203`
+- **Description**: needsReview is taken from perDocRecords (the raw extraction objects; normalizeRecord returns new objects and uncertainty_level is written only to the latter) → the raw objects never have that field, so the document-level needs_review status is unreachable (the seven-state machine is missing one state; the P2 status icon never shows needs_review).
+- **Corroborating evidence**: Object-identity derivation + post-fix measurement of the demo task's document status distribution.
+- **Fix plan**: needsReview is now determined from the normalized recordsOut (the records actually produced for that document); the single-record processing failure path (processing_failed) also sets high uncertainty and is included as well.
+- **Verification method**: V-01/V-10 (P2 status presentation) + A-6 (demo end-to-end does not regress).
+- **Status**: Fixed (V-10 P2 status distribution)
 
 ---
 
-## D-47(新发现)
+## D-43 (newly found)
 
-- **编号**:D-47
-- **来源**:阶段二新发现(域 F,任务书 5.6.5 点名)
-- **严重度**:P3(仓库卫生)
-- **位置**:`scripts/golden/__pycache__/`(3 个 .pyc)
-- **描述**:编译缓存被 git 跟踪入库。
-- **核实证据**:git ls-files 确认 3 个 .pyc 被跟踪。
-- **修复方案**:`git rm --cached` 移除跟踪;.gitignore 增加 `__pycache__/` 规则(新增忽略规则,不属于"改忽略使文件入库"的反向违规)。
-- **验证方式**:git status 干净 + A-4/A-7。
-- **状态**:已修复(__pycache__ 移除跟踪 + 忽略)
-
----
-
-## D-48(新发现)
-
-- **编号**:D-48
-- **来源**:阶段二新发现(域 H)
-- **严重度**:P3
-- **位置**:`progress/PROGRESS_SUMMARY.md`
-- **描述**:进度摘要中的行数/测试数/能力表述将因本次修复变动;作为历史文档不回改结论,但需追加本次审查修复的增量记录,避免文档间矛盾。
-- **修复方案**:交付阶段在 progress 目录新增本次修复报告(中文),并在 PROGRESS_SUMMARY 顶部追加一行指针(不重写历史)。
-- **验证方式**:V-13/V-14。
-- **状态**:已修复(修复报告 + PROGRESS_SUMMARY 指针)
+- **ID**: D-43
+- **Source**: Phase 2 new finding (domain C)
+- **Severity**: P3
+- **Location**: `frontend/src/pages.jsx:77-78(P2 refresh)`
+- **Description**: The polling refresh has no catch; after the task is cleaned up (deleted from local-store), an unhandled Promise rejection occurs every 2.5s, and the UI stays on Documents (0) with no notice.
+- **Corroborating evidence**: Code review.
+- **Fix plan**: Add a catch to refresh; on failure, clear it and show a one-time error notice (aligning the behavior of each page when local storage points to a deleted task).
+- **Verification method**: V-10 walkthrough + evidence of P2 behavior after manually deleting the task.
+- **Status**: Fixed (P2 polling has a catch)
 
 ---
 
-## D-49(检查点 5.5.5:提示词注入面)
+## D-44 (newly found)
 
-- **编号**:D-49
-- **来源**:阶段二(域 E 检查点 5)
-- **严重度**:P2(攻击面记录)
-- **位置**:`backend/src/services/pipelineModelCalls.js:184(extraction 提示),211(boundary:JSON.stringify(record)),234(selection:candidateSummary)`;classification 输入为文件字节
-- **描述**:用户与模型可控文本(品名、地点、供应商名、单据打印内容)直接拼入提示词;恶意单据可携带指令文本影响模型输出(如诱导边界误判或因子选择)。既有缓解:全部输出经结构化 schema+闭集校验+重试(枚举外值拒收),因子选择强制候选闭集(AI-204),数值校验(D-15 后)拒非有限值——注入可及范围被压缩到"从合法枚举中选错值",且每步留痕 ai_traces 可审计。
-- **修复方案**:**有意保留(识别+文档化)**:本轮不加代码级隔离(如指令包裹标记/敏感指令过滤),因为任何提示词改动都需重跑真实适配器评估以证明抽取准确率不回归,超出最小修复范围;缓解建议(后续):输入文本加明确的"以下为不可信单据内容"包裹段与长度上限、对含指令关键词的单据加复核强制标记。记录于修复报告"未实施项"。
-- **验证方式**:本条即处置;A-6 评估不回归。
-- **状态**:有意保留(附缓解建议)
-
----
-
-## D-50(检查点 5.7.2:提交前密钥防线)
-
-- **编号**:D-50
-- **来源**:阶段二(域 G 检查点 2)
-- **严重度**:P3
-- **位置**:`scripts/scan-secrets.sh`
-- **描述**:密钥扫描只扫"已跟踪+未忽略"文件,方向正确(不误报本地合法 .env);但"误把 .env 加入暂存区"发生在 git add 时(.env 被 .gitignore 忽略时 add 会被拒,但 `git add -f` 或重命名副本无防线)。评估:.gitignore 已忽略 .env 与 .env.*,常规 add 不可入库,仅显式 -f 可绕过,属人为故意场景。
-- **修复方案**:**有意保留 + 文档化**:不引入 pre-commit hook(新增钩子属新工具链依赖,收益边际);在 README 密钥纪律节写明"严禁 git add -f 忽略文件"操作红线;scan-secrets 维持现状(其 git ls-files --others --exclude-standard 已覆盖"未忽略的新文件",改名副本若含密钥形态即被扫出)。
-- **验证方式**:A-4 + 登记留证。
-- **状态**:有意保留
+- **ID**: D-44
+- **Source**: Phase 2 new finding (domain A)
+- **Severity**: P3
+- **Location**: `backend/src/server.js:116-125`
+- **Description**: /factors with an empty q returns 400 + ERR_INTERNAL — pairing status code 400 with an internal error code is a semantic mismatch; after the frontend fix (D-31 removed the empty call) there is no caller.
+- **Fix plan**: **Intentionally retained** — changing the code is an external contract change (verify scripts may assert the current behavior) with low benefit; after the frontend removed the call that always 400s, this path is only reachable through manual mis-invocation.
+- **Verification method**: Recorded in the register as evidence.
+- **Status**: Intentionally retained
 
 ---
 
-## 登记册状态汇总(阶段二收口)
+## D-45 (newly found, merged into the D-06 related decision)
 
-- 待修复:P0×4(D-04/05/06/07)、P1×10(D-08/09/10/11/12/13/14/15/16/17/33/39/40,其中 D-33 升 P1)、P2×9(D-18/19/20/21/22/26/27/28/29/41/42/46)、P3 视预算执行。
-- 不成立:R-20 子点(解压放大)、R-22 子点(截断披露)、R-27 子点(查重时机)。
-- 有意保留:D-25、D-35、D-38(4)(5)、D-44、D-49、D-50、R-27 线性查找子点。
-- 基线缺陷:D-01(冒烟)、D-02(行数)、D-03(测试数口径)。
+- **ID**: D-45
+- **Source**: Phase 2 new finding (domain A/G)
+- **Severity**: P3
+- **Location**: `backend/src/errors.js`
+- **Description**: The error-code registry lacks ERR_RATE_LIMITED (server.js:107 writes an inline response by hand) and the authorization-denial code; the README error-code list is missing the same entries.
+- **Fix plan**: Add ERR_RATE_LIMITED (http 429, message identical to the current inline one) and ERR_FORBIDDEN (http 403, used by D-06) to the registry; server rate limiting now goes through AppError (external bytes unchanged); the README list is synchronized (D-46).
+- **Verification method**: V-09 (rate-limit response code) + V-02 (403 code) + errors.test.js regression.
+- **Status**: Fixed (registry gains ERR_FORBIDDEN/ERR_RATE_LIMITED)
+
+---
+
+## D-46 (newly found)
+
+- **ID**: D-46
+- **Source**: Phase 2 new finding (domain H)
+- **Severity**: P2 (documentation credibility)
+- **Location**: `README.md` (multiple places)
+- **Description**: The README does not match reality — (1) line counts 4,132/6,976/8,771 vs measured 4,335/7,110/8,905 (the baseline itself overruns); (2) "cross-task, cross-identity and forged-header access are all rejected" does not match the current R-03/R-10/R-11 state (it becomes true again after the fix); (3) "async task-queue abstraction selects Cloud Tasks" no longer holds after D-22 removed it; (4) the error-code list lacks ERR_RATE_LIMITED/ERR_FORBIDDEN; (5) the test count 34 needs its composition noted and updated after the fix.
+- **Corroborating evidence**: Item-by-item comparison of the README against measurements/code.
+- **Fix plan**: In the delivery phase (V-13), revise item by item per the final post-fix measurements: measured values for the three line-count definitions, security-capability descriptions aligned with post-fix behavior, the queue wording changed to inline execution, error codes completed, and the test count annotated with its composition.
+- **Verification method**: V-13 documentation reconciliation.
+- **Status**: Fixed (V-13 comprehensive README revision)
+
+---
+
+## D-47 (newly found)
+
+- **ID**: D-47
+- **Source**: Phase 2 new finding (domain F, named in task brief 5.6.5)
+- **Severity**: P3 (repository hygiene)
+- **Location**: `scripts/golden/__pycache__/` (3 .pyc files)
+- **Description**: Compiled caches are tracked and committed into git.
+- **Corroborating evidence**: git ls-files confirms 3 .pyc files are tracked.
+- **Fix plan**: `git rm --cached` to remove tracking; add a `__pycache__/` rule to .gitignore (adding a new ignore rule, not the reverse violation of "changing ignores to get files into the repository").
+- **Verification method**: git status clean + A-4/A-7.
+- **Status**: Fixed (__pycache__ untracked + ignored)
+
+---
+
+## D-48 (newly found)
+
+- **ID**: D-48
+- **Source**: Phase 2 new finding (domain H)
+- **Severity**: P3
+- **Location**: `progress/PROGRESS_SUMMARY.md`
+- **Description**: The line counts/test counts/capability statements in the progress summary will change because of this round of fixes; as a historical document its conclusions are not retroactively edited, but an incremental record of this review's fixes must be appended to avoid contradictions between documents.
+- **Fix plan**: In the delivery phase, add this round's fix report (in Chinese) under the progress directory, and append a one-line pointer at the top of PROGRESS_SUMMARY (without rewriting history).
+- **Verification method**: V-13/V-14.
+- **Status**: Fixed (fix report + PROGRESS_SUMMARY pointer)
+
+---
+
+## D-49 (checkpoint 5.5.5: prompt-injection surface)
+
+- **ID**: D-49
+- **Source**: Phase 2 (domain E checkpoint 5)
+- **Severity**: P2 (attack-surface record)
+- **Location**: `backend/src/services/pipelineModelCalls.js:184(extraction prompt),211(boundary:JSON.stringify(record)),234(selection:candidateSummary)`; classification input is file bytes
+- **Description**: User- and model-controllable text (item names, locations, supplier names, printed content on documents) is concatenated directly into prompts; a malicious document can carry instruction text that influences model output (e.g., inducing a boundary misjudgment or factor selection). Existing mitigations: all outputs pass structured schema + closed-set validation + retry (out-of-enumeration values are rejected), factor selection is forced to a closed candidate set (AI-204), and numeric validation (after D-15) rejects non-finite values — the reachable injection surface is compressed to "picking the wrong value from a legal enumeration", and every step leaves a trace in ai_traces for audit.
+- **Fix plan**: **Intentionally retained (identified + documented)**: no code-level isolation (such as instruction-wrapping markers / sensitive-instruction filtering) is added this round, because any prompt change requires re-running the real-adapter evaluation to prove extraction accuracy does not regress, which is beyond the minimal fix scope; mitigation suggestions (follow-up): wrap the input text in an explicit "the following is untrusted document content" segment with a length cap, and force a review flag on documents containing instruction keywords. Recorded under "not implemented items" in the fix report.
+- **Verification method**: This entry is the disposition itself; A-6 evaluation does not regress.
+- **Status**: Intentionally retained (with mitigation suggestions)
+
+---
+
+## D-50 (checkpoint 5.7.2: pre-commit secret defense)
+
+- **ID**: D-50
+- **Source**: Phase 2 (domain G checkpoint 2)
+- **Severity**: P3
+- **Location**: `scripts/scan-secrets.sh`
+- **Description**: The secret scan only scans "tracked + not ignored" files, which is the right direction (no false positives on a legitimate local .env); but "accidentally staging .env" happens at git add time (when .env is ignored by .gitignore, add is refused, but `git add -f` or a renamed copy has no defense). Assessment: .gitignore already ignores .env and .env.*, so a normal add cannot get them into the repository, and only an explicit -f can bypass it, which is a deliberate human scenario.
+- **Fix plan**: **Intentionally retained + documented**: no pre-commit hook is introduced (adding a hook is a new toolchain dependency with marginal benefit); the README secret-discipline section states the red line "never git add -f an ignored file"; scan-secrets stays as is (its git ls-files --others --exclude-standard already covers "new files that are not ignored", and a renamed copy containing secret patterns would be scanned out).
+- **Verification method**: A-4 + recorded in the register as evidence.
+- **Status**: Intentionally retained
+
+---
+
+## Defect register status summary (Phase 2 close-out)
+
+- To be fixed: P0×4 (D-04/05/06/07), P1×10 (D-08/09/10/11/12/13/14/15/16/17/33/39/40, of which D-33 was raised to P1), P2×9 (D-18/19/20/21/22/26/27/28/29/41/42/46), P3 executed as budget permits.
+- Not substantiated: R-20 sub-point (decompression amplification), R-22 sub-point (truncation disclosure), R-27 sub-point (deduplication timing).
+- Intentionally retained: D-25, D-35, D-38(4)(5), D-44, D-49, D-50, R-27 linear-search sub-point.
+- Baseline defects: D-01 (smoke), D-02 (line counts), D-03 (test-count definition).
 
 
 ---
 
-## D-51(阶段四 V-10 新发现)
+## D-51 (Phase 4 V-10 new finding)
 
-- **编号**:D-51
-- **来源**:阶段四 V-10 界面走查
-- **严重度**:P1(D-09 修复后暴露的第二层缺陷)
-- **位置**:`frontend/src/pages.jsx`(P4 候选获取);`backend/src/server.js`(新增候选接口)
-- **描述**:P4 标题为 "Candidates (recall channel output)",但实现用 `/factors?q=<前6个词逗号连接>`——该接口按 AND 语义要求每个词都命中,自由文本描述(如 "Refrigerant HFC-32 top-up for plant HVAC")必然返回 0 条,匹配查看器无候选可选、无法完成手动指定因子。原先 P4 读 `task.records` 完全不可达,掩盖了此问题。
-- **核实证据**:`/factors?q=refrigerant` → 98 条;`/factors?q=refrigerant,HVAC` → 0 条;界面实测候选表为空。
-- **修复方案**:新增 `GET /api/tasks/:taskId/records/:recordId/candidates`,走流水线同一 recall 通道(recallCandidates)返回该记录的真实候选;前端 P4 改用它。与页面自身标题一致。
-- **验证方式**:V-10(P4 候选非空并完成一次手动指定因子)。
-- **状态**:已修复
-
----
-
-## D-52(阶段四 V-10 新发现)
-
-- **编号**:D-52
-- **来源**:阶段四 V-10 视觉核验(vision 子智能体)
-- **严重度**:P1(交付报告中的事实性数值错误)
-- **位置**:`backend/src/services/reportService.js:123`
-- **描述**:报告第 2 章 "Share" 列算式 `s.value * 1000 / totalKg * 100`——s.value 与 totalKg 同为千克,多乘 1000,占比被放大一千倍(实测 Scope 1/2/3 显示 26240.4% / 34201.4% / 39558.2%,正确应为 26.24% / 34.20% / 39.56%)。与 R-07 同源(kg/t 混淆)但位置不同,故 R-07 修复未覆盖。
-- **核实证据**:V-10 P7 界面实测 + 算式推演;`scripts/verify_consistency.js` 只核对因子与排放值、未覆盖该百分比列。
-- **修复方案**:改为 `s.value / (totalKg || 1) * 100`(千克比千克)。
-- **验证方式**:新增回归断言(各 Scope 占比之和 ≈100% 且每项 ∈[0,100]);V-10 P7 复验。
-- **状态**:已修复
+- **ID**: D-51
+- **Source**: Phase 4 V-10 UI walkthrough
+- **Severity**: P1 (a second-layer defect exposed after the D-09 fix)
+- **Location**: `frontend/src/pages.jsx` (P4 candidate retrieval); `backend/src/server.js` (new candidates endpoint)
+- **Description**: P4 is titled "Candidates (recall channel output)", but the implementation uses `/factors?q=<first 6 words joined by commas>` — that endpoint requires every word to match under AND semantics, so a free-text description (such as "Refrigerant HFC-32 top-up for plant HVAC") necessarily returns 0 rows, leaving the match viewer with no candidates to select and making it impossible to complete a manual factor assignment. Previously P4 read `task.records`, which was entirely unreachable, masking this problem.
+- **Corroborating evidence**: `/factors?q=refrigerant` → 98 rows; `/factors?q=refrigerant,HVAC` → 0 rows; the candidate table is empty in the measured UI.
+- **Fix plan**: Add `GET /api/tasks/:taskId/records/:recordId/candidates`, using the same recall channel as the pipeline (recallCandidates) to return the record's real candidates; the frontend P4 now uses it. Consistent with the page's own title.
+- **Verification method**: V-10 (P4 candidates non-empty and one manual factor assignment completed).
+- **Status**: Fixed
 
 ---
 
-## D-53(阶段四 V-10 新发现)
+## D-52 (Phase 4 V-10 new finding)
 
-- **编号**:D-53
-- **来源**:阶段四 V-10 视觉核验
-- **严重度**:P3(界面列名与实际内容不符,误导复核)
-- **位置**:`frontend/src/pages.jsx`(P3 "Factor" 列)
-- **描述**:P3 表 "Factor" 列渲染 `r.match_id.replace('match_','')`,即记录 id(如 rec_1c09b706),而非实际选用的因子 id(EF-D26-…),列名与实际内容不符。
-- **核实证据**:V-10 P3 界面实测(该列显示 rec_1c09b706,而 P4 显示真实因子 id)。
-- **修复方案**:用仪表盘返回的 calcs 建立 record_id→factor_id 映射,该列改显真实因子 id,缺失时显示 —。
-- **验证方式**:V-10 P3 复验(该列显示 EF-D26-… 形态)。
-- **状态**:已修复
-
----
-
-## D-54(阶段四 V-10 新发现)
-
-- **编号**:D-54
-- **来源**:阶段四 V-10 视觉核验
-- **严重度**:P3(界面显示原始 null)
-- **位置**:`frontend/src/pages.jsx`(P3 记录详情逐字段表)
-- **描述**:详情表渲染 `typeof v === 'object' ? JSON.stringify(v) : String(v ?? '—')`;因 `typeof null === 'object'`,空值字段(origin_location、transport_mode 等)显示字面量 "null" 而非占位符。
-- **核实证据**:V-10 P3 界面实测显示 "null"。
-- **修复方案**:先判 null 再判 object:`v === null ? '—' : …`。
-- **验证方式**:V-10 P3 复验(空值显示 —)。
-- **状态**:已修复
+- **ID**: D-52
+- **Source**: Phase 4 V-10 visual verification (vision sub-agent)
+- **Severity**: P1 (factual numeric error in the delivery report)
+- **Location**: `backend/src/services/reportService.js:123`
+- **Description**: The formula for the "Share" column in Chapter 2 of the report is `s.value * 1000 / totalKg * 100` — s.value and totalKg are both in kilograms, so the extra ×1000 inflates the share by a factor of one thousand (measured Scope 1/2/3 show 26240.4% / 34201.4% / 39558.2%, whereas the correct values should be 26.24% / 34.20% / 39.56%). Same root cause as R-07 (kg/t confusion) but at a different location, so the R-07 fix did not cover it.
+- **Corroborating evidence**: V-10 P7 measured UI + formula derivation; `scripts/verify_consistency.js` only checks factors and emission values and does not cover this percentage column.
+- **Fix plan**: Change to `s.value / (totalKg || 1) * 100` (kilograms over kilograms).
+- **Verification method**: New regression assertion (the sum of the Scope shares ≈100% and each item ∈[0,100]); V-10 P7 re-verified.
+- **Status**: Fixed
 
 ---
 
-## D-55(阶段四 V-10 观察,mock 固有)
+## D-53 (Phase 4 V-10 new finding)
 
-- **编号**:D-55
-- **来源**:阶段四 V-10 视觉核验
-- **严重度**:不成立(非缺陷)
-- **位置**:`backend/src/services/pipelineModelCalls.js`(mockSelection)
-- **描述**:视觉核验发现若干记录的因子与活动语义不符(如 "Factory grid electricity" → EF-D26-BUSINESSTRAVELAIR-018)。
-- **核实证据**:该现象仅存在于 mock 适配器:mockSelection 为确定性关键词重叠启发式,按项目政策"accuracy metrics are only ever computed from real-adapter runs"、mock 仅用于离线开发与测试的管线连通性。真实适配器路径由模型+候选闭集校验(AI-204)决定,线上演示使用真实适配器。
-- **修复方案**:**不改**——修改 mock 启发式无收益且可能扰动既有评估证据;属预期行为。已在修复报告"mock 模式说明"中记录。
-- **状态**:不成立(附解释)
-
----
-
-## D-56(阶段四 V-10 观察,外观)
-
-- **编号**:D-56
-- **来源**:阶段四 V-10 视觉核验
-- **严重度**:P3(外观)
-- **位置**:`backend/src/services/calculation.js`(aggregate 的 scope 分组顺序)→ 报告第 2/4 章表格行序
-- **描述**:报告 Scope 表行序为 Scope 1、Scope 3、Scope 2(按记录处理顺序的插入序),非 1/2/3。
-- **核实证据**:aggregate 用 Map 按记录顺序分组;worker 池按文档序回并,故结果确定但未排序。
-- **修复方案**:**有意保留**——纯外观;排序会改变 displayConsistent 的最大余数分摊次序,可能扰动已通过验证的"聚合一致性"评估证据,收益不抵风险。记录为已知外观项。
-- **验证方式**:登记留证;A-6 聚合一致性不回归。
-- **状态**:有意保留(附理由)
+- **ID**: D-53
+- **Source**: Phase 4 V-10 visual verification
+- **Severity**: P3 (UI column name does not match actual content, misleading reviewers)
+- **Location**: `frontend/src/pages.jsx` (P3 "Factor" column)
+- **Description**: The "Factor" column in the P3 table renders `r.match_id.replace('match_','')`, i.e., the record id (such as rec_1c09b706) rather than the factor id actually selected (EF-D26-…), so the column name does not match the actual content.
+- **Corroborating evidence**: V-10 P3 measured UI (the column shows rec_1c09b706, while P4 shows the real factor id).
+- **Fix plan**: Build a record_id→factor_id mapping from the calcs returned by the dashboard, change the column to show the real factor id, and show — when it is missing.
+- **Verification method**: V-10 P3 re-verified (the column shows the EF-D26-… form).
+- **Status**: Fixed
 
 ---
 
-## D-57(阶段四 V-10 观察,mock 固有)
+## D-54 (Phase 4 V-10 new finding)
 
-- **编号**:D-57
-- **来源**:阶段四 V-10 视觉核验
-- **严重度**:不成立(非缺陷)
-- **位置**:`frontend/src/pages.jsx`(P3 详情表第三列 = per-field confidence)
-- **描述**:视觉核验指出 P3 "Fields & per-field confidence" 表未显示置信度数值。
-- **核实证据**:该列读 `r.field_confidence?.[k]`,mock 抽取的记录来自 demo 的 expected_records.json,本身不含 field_confidence,故 extractRecords 回退为空对象;真实适配器路径由 EXTRACTION_SCHEMA 强制输出 field_confidence(校验器还要求每个值 ∈[0,1])。
-- **修复方案**:**不改**——数据依赖,非代码缺陷;真实模式有值。记录为 mock 说明。
-- **状态**:不成立(附解释)
-
----
-
-## D-58(阶段四二次复查新发现)
-
-- **编号**:D-58
-- **来源**:阶段四二次复查
-- **严重度**:P2(证据完整性,与 R-23/D-28 同类)
-- **位置**:`scripts/verify_consistency.js`(证据写入处)
-- **描述**:该一致性守卫始终写 `progress/evidence/T-050/consistency.json`。以 `PUBLIC_BASE` 指向本地服务运行时(任务书 V-08 明确允许的做法),会用本地单任务结果**覆盖公网 3 任务的正式证据**——本次审查中实际发生,已恢复。
-- **核实证据**:`git diff progress/evidence/T-050/consistency.json` 显示 4 增 16 删;恢复后确认为公网 3 任务 PASS。
-- **修复方案**:仅在未覆盖 `PUBLIC_BASE`(即对默认公网目标运行)时写正式文件名;本地运行改写 `consistency-local.json` 并打印实际路径。
-- **验证方式**:本地运行确认 `consistency.json` 不再变动、`consistency-local.json` 生成;A-4/A-7 干净。
-- **状态**:已修复
+- **ID**: D-54
+- **Source**: Phase 4 V-10 visual verification
+- **Severity**: P3 (UI displays raw null)
+- **Location**: `frontend/src/pages.jsx` (P3 record-detail per-field table)
+- **Description**: The detail table renders `typeof v === 'object' ? JSON.stringify(v) : String(v ?? '—')`; because `typeof null === 'object'`, empty-value fields (origin_location, transport_mode, etc.) display the literal "null" instead of the placeholder.
+- **Corroborating evidence**: V-10 P3 measured UI shows "null".
+- **Fix plan**: Check for null before checking for object: `v === null ? '—' : …`.
+- **Verification method**: V-10 P3 re-verified (empty values show —).
+- **Status**: Fixed
 
 ---
 
-## D-59(阶段四自我回归,已修复)
+## D-55 (Phase 4 V-10 observation, inherent to mock)
 
-- **编号**:D-59
-- **来源**:阶段四 V-10 走查(P8 编辑失败)
-- **严重度**:P1(修复引入的回归)
-- **位置**:`backend/src/services/reviewQueue.js`(补丁校验)、`backend/test/regression.test.js`
-- **描述**:D-14 的补丁校验最初要求 quantity/amount 必须是 `number`,而复核界面(P8)的输入框提交的是字符串,导致 P8 编辑一律 422 失败(ERR_ENUM_INVALID),复核闭环不可用。
-- **核实证据**:V-10 P8 编辑实测 422;控制台 "Error: The model returned a value outside the allowed enumeration."
-- **修复方案**:改为 `normalizePatch`:数值字段接受 number 或数字字符串并强制转数,非有限值/越界仍拒绝(如 'abc'、Infinity、NaN、0、-3);落库必为 number。既保住 D-15 数值防线又兼容界面。
-- **验证方式**:回归断言(字符串 '5'→5 且 typeof number;'abc'/Infinity/NaN/0/-3 拒绝);V-10 P8 复验(quantity 21000 落库为 int,报告随之刷新)。
-- **状态**:已修复
-
----
-
-## 阶段四二次复查结论(7.4)
-
-**方法**:换视角按文件复核(server.js → 服务层 → 前端 → 脚本),专找修复自身引入的新问题、修复间相互作用、登记册外同类遗漏。
-
-**修复引入的新问题(已发现并闭环)**:
-- 修复期间发现 D-51(P4 候选为空)、D-52(报告 Share 列 1000×)、D-53(P3 因子列)、D-54(P3 空值显示 null)、D-58(证据覆盖),均已登记并修复。
-- **D-59(自我回归,已修复)**:D-14 的补丁校验最初要求 quantity/amount 为 `number`,而复核界面输入框提交字符串 → P8 编辑 422 失败。已改为"数字或数字字符串强制转数、非有限值拒绝",并加回归断言(字符串 '5' 转 5、'abc'/Infinity/0/-3 拒绝、落库为 number)。登记为 D-59。
-
-**修复间相互作用核对**:
-- D-06 属主校验 + 前端 D-39/D-40(审计与下载改带认证头):两者必须同批生效,否则有属主任务的审计/导出会失效——已同批修复并经 V-10 复验。
-- D-33 运行串行化 + D-05 情景隔离 + D-04 状态机:并发重跑不再产生半写台账,情景值不落库,多页文档不再中断——三者叠加后 V-08 一致性 PASS。
-- D-12 上传限制 + verify_upload.js 契约:超限从"逐文件错误"变为"中间件 413",属加强,已同步断言。
-- D-21 真实召回分 + D-15 数值防线:候选分数可能 >1(关键词+语义叠加),阈值比较仍成立;账本无非有限值。
-- D-26 pdf-lib 计数 + documentUnits 既有解析:ingest 与拆分各解析一次 PDF,存在重复解析的轻微开销,正确性优先,不视为缺陷。
-
-**登记册外同类遗漏核对**:
-- 逐一复查其余 verify_* 脚本的写入目标:`verify_public_faults.js`/`verify_public_perf.js`/`verify_acceptance.js` 面向公网目标,本轮未运行(红线:不对公网执行破坏性验证),其证据未被触碰。
-- 复查前端全部 `<a href>` 与裸 fetch:仅剩品牌链接与 hash 路由链接,无遗留未带认证头的 API 访问。
-- 复查后端全部 `store.put` 主键:情景路径已隔离;审计 ID 已加随机后缀;报告 ID 每任务唯一。
-- 复查全库 `Number(` 与算术入口:config、pipeline 并发、限流阈值、补丁数值、抽取数值、换算、核算基数均已加有限性防线。
+- **ID**: D-55
+- **Source**: Phase 4 V-10 visual verification
+- **Severity**: Not substantiated (not a defect)
+- **Location**: `backend/src/services/pipelineModelCalls.js` (mockSelection)
+- **Description**: Visual verification found that the factors for several records do not match the activity semantics (e.g., "Factory grid electricity" → EF-D26-BUSINESSTRAVELAIR-018).
+- **Corroborating evidence**: This phenomenon exists only in the mock adapter: mockSelection is a deterministic keyword-overlap heuristic; per the project policy "accuracy metrics are only ever computed from real-adapter runs", mock is used only for offline development and testing of pipeline connectivity. The real-adapter path is determined by the model plus closed-candidate-set validation (AI-204), and the online demo uses the real adapter.
+- **Fix plan**: **No change** — modifying the mock heuristic has no benefit and could disturb existing evaluation evidence; this is expected behavior. Recorded under "mock mode notes" in the fix report.
+- **Status**: Not substantiated (with explanation)
 
 ---
 
-# 二次复查(第二轮):独立复核新发现(D-60 至 D-66)
+## D-56 (Phase 4 V-10 observation, appearance)
 
-> 阶段四收口后,由独立复核者以"按文件、逐断言"视角重跑一遍(7.4 要求"直至零新增")。
-> 本轮**证伪了前一轮"零新增"的结论**:发现 7 项前一轮遗漏或未闭环的问题。
-> 全部先登记后修复,并各自配套回归断言。第一轮结论中"零悬空条目"的表述因此被本轮修正。
+- **ID**: D-56
+- **Source**: Phase 4 V-10 visual verification
+- **Severity**: P3 (appearance)
+- **Location**: `backend/src/services/calculation.js` (the scope grouping order of aggregate) → the table row order in Chapters 2/4 of the report
+- **Description**: The report's Scope table row order is Scope 1, Scope 3, Scope 2 (insertion order by record processing order), not 1/2/3.
+- **Corroborating evidence**: aggregate groups with a Map in record order; the worker pool merges back in document order, so the result is deterministic but unsorted.
+- **Fix plan**: **Intentionally retained** — purely cosmetic; sorting would change the largest-remainder allocation order of displayConsistent and could disturb the already-validated "aggregate consistency" evaluation evidence, so the benefit does not outweigh the risk. Recorded as a known cosmetic item.
+- **Verification method**: Recorded in the register as evidence; A-6 aggregate consistency does not regress.
+- **Status**: Intentionally retained (with rationale)
 
-## D-60(第二轮二次复查新发现)
+---
 
-- **编号**:D-60
-- **来源**:二次复查(第二轮独立复核)
-- **严重度**:P1(数据损毁 + 文档永久卡死;可由界面唯一运行入口触发)
-- **位置**:`backend/src/services/pipeline.js:74-84`(非 completed 文档的旧记录清理)与 `backend/src/services/fileService.js:133`(`TRANSITIONS.failed = ['queued']`)
-- **描述**:`processDocument` 对**所有非 completed 文档**先删除其既有 `activity_records`/`calculations`/`matches`/`review_items`,随后进入 `withStatus(...,'parsing',...)`,而该函数第一步就是 `setDocumentStatus(...,'parsing')`。转换表对 `failed` 只允许出边到 `queued`,故 `failed → parsing` 抛 `ERR_ENUM_INVALID`。后果有二:(1) **失败文档永不恢复**——全库无任何调用方会把 `failed` 重置为 `queued`(`POST /documents/:docId/status` 在 `frontend/src`、`scripts/`、`backend/test` 中零引用),该文档从此被静默排除出报告;(2) **数据损毁**——若该文档在失败前已落库过记录(如 `completed` 文档因复核重算失败转为 `failed`),重跑会先删掉这些记录、再抛错,记录不可恢复。触发条件:任一文档处于 `failed` 态时再次触发运行(界面唯一入口是 P6 情景页滑块)。违反任务书 6.3.3 明文要求"失败态可从队列态重试"。
-- **核实证据**:独立复核者实测:(a) 将某任务单文档强制置 `failed` 后重跑 → `records=0`,存储内 0 条记录;(b) 删除某 unit representation 文件使 run 2 在 `withStatus` 内抛 ENOENT → 既有 1 记录 + 1 核算被删除、文档置 `failed`;run 3 及之后 `records=0`、`calculations=0`、报告第 5 章 0 行、`total_kgco2e=0`。本人复核代码路径:`pipeline.js:76-83` 先删、`:84` 再设 `parsing`;`fileService.js` 转换表 `failed: ['queued']`。
-- **修复方案**:(1) `TRANSITIONS.failed` 增补 `'parsing'`(与既有注释"处理态可重入 parsing 以支持重跑"一致);(2) 把旧记录清理**移到重跑成功之后**执行,且只删除本次未重新产出的记录 id(记录 id 为每次随机生成 `rec_<uuid8>`,故该判据同时保证了不重复、不误删)。
-- **验证方式**:回归断言(置 failed → 重跑 → 记录数>0 且终态非 failed;重跑两次记录数不翻倍)。
-- **状态**:已修复
+## D-57 (Phase 4 V-10 observation, inherent to mock)
 
-## D-61(第二轮二次复查新发现)
+- **ID**: D-57
+- **Source**: Phase 4 V-10 visual verification
+- **Severity**: Not substantiated (not a defect)
+- **Location**: `frontend/src/pages.jsx` (P3 detail table third column = per-field confidence)
+- **Description**: Visual verification pointed out that the P3 "Fields & per-field confidence" table does not display confidence values.
+- **Corroborating evidence**: The column reads `r.field_confidence?.[k]`; records extracted by mock come from the demo's expected_records.json, which itself does not contain field_confidence, so extractRecords falls back to an empty object; the real-adapter path forces field_confidence to be output via EXTRACTION_SCHEMA (the validator additionally requires every value ∈[0,1]).
+- **Fix plan**: **No change** — a data dependency, not a code defect; real mode has values. Recorded as a mock note.
+- **Status**: Not substantiated (with explanation)
 
-- **编号**:D-61
-- **来源**:二次复查(第二轮独立复核)
-- **严重度**:P3(测试断言空洞,削弱回归护栏)
-- **位置**:`backend/test/regression.test.js:305`
-- **描述**:`assert.equal(malformed.status, 429 < malformed.status ? malformed.status : malformed.status, …)` 把值与自身比较,恒真,不构成任何断言;该行本意是"畸形 Origin 头不导致服务器错误"。
-- **核实证据**:表达式两侧恒等(三目分支返回同一变量)。
-- **修复方案**:改为有意义的断言 `assert.ok(malformed.status < 500, 'malformed origin never causes a server error')`。
-- **验证方式**:A-2(该断言在畸形头请求下可实际失败)。
-- **状态**:已修复
+---
 
-## D-62(第二轮二次复查新发现)
+## D-58 (Phase 4 second-review new finding)
 
-- **编号**:D-62
-- **来源**:二次复查(第二轮独立复核)
-- **严重度**:P3(复核动作校验不齐;D-14 声明"全部动作"校验实为"三个动作")
-- **位置**:`backend/src/services/reviewQueue.js:154-161`(`closeReviewItem`)
-- **描述**:`editRecordFields`/`assignFactorManually`/`excludeRecord` 均以 `getTaskRecord` 校验"记录属于该任务",唯独 `closeReviewItem` 不校验:对未知或跨任务的 recordId 调用 `action=close` 会返回 200 并写入一条 `review_closed` 审计行(无跨任务数据改写,因内部循环过滤 `item.task_id !== taskId`)。
-- **核实证据**:代码比对(三个动作调用 `getTaskRecord`,`close` 未调用)。
-- **修复方案**:`closeReviewItem` 开头补 `await getTaskRecord(store, taskId, recordId)`。
-- **验证方式**:回归断言(跨任务 recordId 调 close 抛 `ERR_TASK_NOT_FOUND`)。
-- **状态**:已修复
+- **ID**: D-58
+- **Source**: Phase 4 second review
+- **Severity**: P2 (evidence integrity, same class as R-23/D-28)
+- **Location**: `scripts/verify_consistency.js` (evidence write site)
+- **Description**: This consistency guard always writes `progress/evidence/T-050/consistency.json`. When `PUBLIC_BASE` points at a local service (an approach explicitly permitted by task brief V-08), it **overwrites the official evidence for the 3 public-network tasks** with local single-task results — this actually happened during this review and has been restored.
+- **Corroborating evidence**: `git diff progress/evidence/T-050/consistency.json` shows 4 insertions and 16 deletions; after restoration it was confirmed as PASS for the 3 public-network tasks.
+- **Fix plan**: Write the official filename only when `PUBLIC_BASE` is not overridden (i.e., when running against the default public-network target); local runs write `consistency-local.json` instead and print the actual path.
+- **Verification method**: A local run confirms `consistency.json` no longer changes and `consistency-local.json` is generated; A-4/A-7 clean.
+- **Status**: Fixed
 
-## D-63(第二轮二次复查新发现)
+---
 
-- **编号**:D-63
-- **来源**:二次复查(第二轮独立复核)
-- **严重度**:P3(配置健壮性:非法值被静默截断而非回退)
-- **位置**:`backend/src/config.js:97-101`(`coerce`)
-- **描述**:`Number.parseInt`/`Number.parseFloat` 接受部分合法前缀,故 `AI_TIMEOUT_SECONDS='60abc'`→60、`BATCH_SIZE='1e3'`→1、`AI_RETRY_COUNT='2.9'`→2、`CLASSIFICATION_CONFIDENCE_THRESHOLD='0.7junk'`→0.7 被静默采用,而非按 5.6.1 的意图回退默认值。
-- **核实证据**:以非法环境变量调用 `loadConfig` 实测上述四个值。
-- **修复方案**:`coerce` 对 int/float 要求整串(去空白后)为有限数值,否则返回 `NaN` 交由既有 range 守卫回退默认值。
-- **验证方式**:回归断言(`'60abc'`/`'1e3'`/`'2.9'` 分别回退默认 60/10/2)。
-- **状态**:已修复
+## D-59 (Phase 4 self-regression, fixed)
 
-## D-64(第二轮二次复查新发现)
+- **ID**: D-59
+- **Source**: Phase 4 V-10 walkthrough (P8 edit failure)
+- **Severity**: P1 (regression introduced by a fix)
+- **Location**: `backend/src/services/reviewQueue.js` (patch validation), `backend/test/regression.test.js`
+- **Description**: D-14's patch validation initially required quantity/amount to be `number`, but the review UI (P8) input boxes submit strings, so every P8 edit failed with 422 (ERR_ENUM_INVALID) and the review loop was unusable.
+- **Corroborating evidence**: V-10 P8 edit measured 422; console "Error: The model returned a value outside the allowed enumeration."
+- **Fix plan**: Change to `normalizePatch`: numeric fields accept a number or a numeric string and are coerced to a number, while non-finite/out-of-range values are still rejected (such as 'abc', Infinity, NaN, 0, -3); what is persisted is always a number. This preserves the D-15 numeric defense while remaining compatible with the UI.
+- **Verification method**: Regression assertions (string '5'→5 with typeof number; 'abc'/Infinity/NaN/0/-3 rejected); V-10 P8 re-verified (quantity 21000 persisted as int, and the report refreshes accordingly).
+- **Status**: Fixed
 
-- **编号**:D-64
-- **来源**:二次复查(第二轮独立复核)
-- **严重度**:P3(死代码;行数预算对冲候选)
-- **位置**:`backend/src/services/factorLibrary.js:84`、`backend/src/store/index.js:97`、`backend/src/services/classification.js:46`、`frontend/src/auth.js:74-78`
-- **描述**:四处确认零引用/不可达:(1) `export const FACTOR_LIBRARY_FILE = FACTOR_FILE` 全库仅此一行;(2) `export const STORE_COLLECTIONS = COLLECTIONS` 全库仅此一行;(3) `mockClassification` 规则表 `[/blurry|blank/, null]` 的 `type` 为 null,而消费循环以 `if (re.test(n) && type)` 过滤,该条永不生效,且 `/blurry/` 已在其后单独处理;(4) `export async function currentIdToken()` 全库零调用(前端直接读 `window.__idToken`)。
-- **核实证据**:`grep -rn` 全库引用扫描(两项导出仅命中定义行本身);规则表消费条件推演;对全部 `export function/const/class` 做了一次全库出现次数统计(唯一命中数为 1 的即死导出),结果仅 `currentIdToken` 一项。
-- **修复方案**:移除上述四处死代码(不可达规则删除后行为等价,因 `blank` 本就落到默认 `other`/0.55 分支)。
-- **验证方式**:A-2/A-6(行为不回归)。
-- **状态**:已修复
+---
 
-## D-65(第二轮二次复查新发现)
+## Phase 4 second-review conclusions (7.4)
 
-- **编号**:D-65
-- **来源**:二次复查(第二轮独立复核)
-- **严重度**:P3(数值防线不对称;当前数据不可达,属纵深防御)
-- **位置**:`backend/src/services/calculation.js:58,73`
-- **描述**:`computeEmission` 对 `basis.value` 有有限性守卫(D-15),但对 `factorValue`(含 GWP 折算后的 `co2+ch4+n2o`)与乘积 `emissionKg` 未校验即落库;若因子文件被覆盖或存储行被手工改写为非数值,`NaN` 会经 `calculations` 进入 `aggregate` 与报告。
-- **核实证据**:`data/factors/emission_factors.json` 743/743 因子 `value` 均为有限数值、`gas_breakdown` 无非法类型,故当前不可达;代码路径比对确认落库前无守卫。
-- **修复方案**:在 `emissionKg` 计算后、构造 `calc` 前加 `Number.isFinite(emissionKg)` 守卫并抛出可被管线降级为复核的错误。
-- **验证方式**:回归断言(非法 factorValue → 抛错;既有核算用例不回归)。
-- **状态**:已修复
+**Method**: Re-review by file from a different angle (server.js → service layer → frontend → scripts), specifically looking for new problems introduced by the fixes themselves, interactions between fixes, and same-class omissions outside the defect register.
 
-## D-66(第二轮二次复查新发现)
+**New problems introduced by fixes (found and closed)**:
+- During the fixes, D-51 (P4 candidates empty), D-52 (report Share column 1000×), D-53 (P3 factor column), D-54 (P3 null values displayed as null), and D-58 (evidence overwrite) were found, all registered and fixed.
+- **D-59 (self-regression, fixed)**: D-14's patch validation initially required quantity/amount to be `number`, while the review UI input boxes submit strings → P8 edits failed with 422. Changed to "coerce numbers or numeric strings to a number, reject non-finite values", and regression assertions were added (string '5' becomes 5, 'abc'/Infinity/0/-3 rejected, persisted as number). Registered as D-59.
 
-- **编号**:D-66
-- **来源**:二次复查(第二轮独立复核)
-- **严重度**:P3(嵌入响应形状校验不完整)
-- **位置**:`backend/src/ai/client.js:238-239,251`
-- **描述**:`embedTexts` 只校验 `parsed.embeddings.length === chunk.length`,不校验每个元素的 `values` 是否为非空数组;`recall.js:58` 按位置写入索引,`cosine` 对 `undefined` 会静默产出 NaN/-1 分数而非报错。
-- **核实证据**:代码路径比对;D-18 回归仅覆盖"数量不足"一种响应。
-- **修复方案**:在数量校验通过后,逐个校验 `values` 为非空数组,否则以 `ERR_MODEL_CALL_FAILED` 显式失败。
-- **验证方式**:回归断言(元素缺失/空数组 → 显式失败)。
-- **状态**:已修复
+**Cross-fix interaction check**:
+- D-06 owner validation + frontend D-39/D-40 (audit and download now carry auth headers): the two must take effect in the same batch, otherwise audit/export for tasks with an owner would fail — fixed in the same batch and re-verified via V-10.
+- D-33 run serialization + D-05 scenario isolation + D-04 state machine: concurrent re-runs no longer produce half-written ledgers, scenario values are not persisted, and multi-page documents no longer abort — with all three combined, V-08 consistency PASSes.
+- D-12 upload limits + verify_upload.js contract: exceeding the limit changed from "per-file error" to "middleware 413", which is a strengthening, and the assertions were synchronized.
+- D-21 real recall score + D-15 numeric defense: candidate scores may exceed 1 (keyword + semantic combined), yet the threshold comparison still holds; the ledger contains no non-finite values.
+- D-26 pdf-lib counting + documentUnits existing parsing: ingest and splitting each parse the PDF once, a minor overhead of duplicate parsing; correctness takes priority, so this is not considered a defect.
 
-## D-67(第二轮二次复查新发现)
+**Cross-check for similar omissions outside the defect register**:
+- Re-checked the write targets of the remaining verify_* scripts one by one: `verify_public_faults.js`/`verify_public_perf.js`/`verify_acceptance.js` target the public network and were not run this round (red line: do not perform destructive verification against the public network), so their evidence was left untouched.
+- Re-checked all frontend `<a href>` links and bare fetches: only brand links and hash-routed links remain; no leftover API access lacking the auth header.
+- Re-checked all backend `store.put` primary keys: scenario paths are already isolated; audit IDs have a random suffix appended; report IDs are unique per task.
+- Re-checked all `Number(` call sites and arithmetic entry points across the codebase: config, pipeline concurrency, rate-limit thresholds, patch values, extraction values, conversions, and calculation bases all have finiteness guards added.
 
-- **编号**:D-67
-- **来源**:二次复查(第二轮独立复核,API 级端到端复验)
-- **严重度**:P2(数据完整性:重跑可静默清空既有账本;mock 模式可由漏传标志的调用方直接触发,真实模式可由"软空抽取"触发)
-- **位置**:`backend/src/services/pipeline.js:74-90`(非 completed 文档的重跑替换逻辑)、`backend/src/server.js:228-241`(`/run` 的 mock 目录构造)
-- **描述**:重跑一个**非 completed** 文档时,流水线先按 `source_ref` 前缀找出该文档的既有记录并删除,再重新抽取。若本次重跑抽取产出为空(0 条),旧记录已被删除、新记录又没有 → 该文档的账本被清空,且任务终态仍报 `completed`、无任何错误。可触发路径有二:(1) **mock 模式**:`/run` 端点在请求体不含 `useMockCatalog` 时传入空 `Map`,mock 抽取器的唯一数据源即该目录,故必然产出 0 条;(2) **真实模式**:模型软性返回空记录集(不抛错)时同样触发。实测(本地 mock,一键演示 20 单据):重跑后存储内 `activity_records` 由 **20 条降为 2 条**、`calculations` 20→2、`matches` 20→2、`review_items` 18→0,报告随之只反映残存的 2 条,任务却显示成功。
-- **核实证据**:(a) 本地服务 + 一键演示 + 无 `useMockCatalog` 的重跑,直接读取 `STORE_ROOT` 下的集合文件计数得 20→2;(b) **归因测试**:用 `git checkout 12f1286 -- backend/src/services/pipeline.js backend/src/services/fileService.js` 取回 D-60 之前的版本重跑同一场景,同样 20→2 → 证实为**既有缺陷,非本轮修复引入**;(c) 服务端日志显示第二次运行完全没有 `recall_started` 事件,证明抽取阶段产出为空、未进入匹配阶段。
-- **影响面界定**:仓库内唯一调用方 `frontend/src/api.js:27` 已正确传 `useMockCatalog: !window.__REAL_AI__`,故界面路径不受影响;生产部署走真实适配器亦不受影响。但"重跑不得静默缩小账本"是 D-33/V-08 幂等重跑意图的底层不变式,且 V-08 的自动化证据(`verify_consistency.js` 只校验报告与**残存**账本自洽)对该情形存在盲区——本次记录该盲区。
-- **修复方案**:采用最保守口径——**重跑产出为空而该文档原有记录非空时,保留原有记录与核算、不删除,并记 `document_reprocess_empty` 告警**,而不是清空账本;仅当重跑确有产出时才执行"替换旧记录"。
-- **验证方式**:回归断言(D-67:无目录重跑后记录数仍为 2、存储计数为 2、总量 > 0)。
-- **状态**:已修复
+---
 
-## D-68(第二轮二次复查新发现)
+# Second re-review (round 2): newly found by independent re-verification (D-60 to D-66)
 
-- **编号**:D-68
-- **来源**:二次复查(第二轮独立复核,验证脚本退出码契约核查 5.7.5)
-- **严重度**:P2(验证链路正确性:脚本报 PASS 却以非 0 退出,消费退出码的调用方会把成功判为失败)
-- **位置**:`scripts/verify_consistency.js:109`、`scripts/verify_acceptance.js:369`、`scripts/verify_public_faults.js:241`、`scripts/verify_public_perf.js:209`
-- **描述**:这 4 个脚本先 `fetch` 再以 `process.exit(码)` 结束。在本项目声明的执行环境(Windows + Git Bash,Node v24)下,当进程内除 undici 的套接字外**没有其他活动句柄**时,`process.exit()` 会在 libuv 异步句柄关闭过程中触发断言 `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 76`,进程以 **127** 退出——而脚本本身已正确打印 `PASS`。即"结果正确、退出码错误",直接破坏任务书 5.7.5 要求核对的退出码契约(0/1/2),并会让任何按退出码判定的调用方把成功误判为失败。
-- **核实证据**:最小复现——`node -e "await fetch(URL).then(r=>r.json()); await fetch(URL).then(r=>r.json()); console.log('ok'); process.exit(0)"` → 打印 `ok` 后断言并以 127 退出;同一代码**去掉 `process.exit`** 则干净退出 0。实测 `PUBLIC_BASE=http://127.0.0.1:8134 node scripts/verify_consistency.js <task>` 打印 `PASS (20 rows, 0 mismatch(es))` 但 `exit=127`。对照:同样 fetch+`process.exit` 的 `scripts/verify_upload.js` 因持有 `app.listen()` 的活动句柄而未触发断言(三次实测均 exit=0),故仅"无其他句柄"的 4 个脚本受影响;`verify_upload` 不在改动范围。
-- **影响面界定**:`verify_consistency.js` 是 V-08 的证据脚本;`verify_acceptance.js`/`verify_public_faults.js`/`verify_public_perf.js` 面向公网目标,本次**未运行**(红线:不对公网执行验证),其受影响性由最小复现与"无活动句柄"这一共同成因推定。
-- **修复方案**:把 4 个脚本结尾的 `process.exit(码)` 改为 `process.exitCode = 码`,让进程在句柄自然关闭后以正确码退出(已确认这 4 个脚本除被 await 的 sleep 外无其他活动句柄,不会挂起)。`verify_consistency.js:30` 的早退 `process.exit(2)`(证据文件缺失路径,发生在任何 fetch 之前、无 undici 句柄)保留不动。
-- **验证方式**:`PUBLIC_BASE=http://127.0.0.1:<port> node scripts/verify_consistency.js <taskId>` → 打印 PASS 且 `exit=0`;A-1/A-2/A-3/A-4/A-6 不回归。
-- **状态**:已修复
+> After phase 4 closed out, an independent re-verifier re-ran everything from a "file-by-file, assertion-by-assertion" perspective (7.4 requires "until zero new additions").
+> This round **falsified the previous round's "zero new additions" conclusion**: 7 issues were found that the previous round had missed or left unclosed.
+> All were registered before being fixed, each with accompanying regression assertions. The "zero dangling entries" wording in the round-1 conclusion is therefore corrected by this round.
 
-## 第二轮二次复查结论
+## D-60 (newly found in the round-2 second re-review)
 
-- **本轮新增 9 条(D-60 至 D-68),全部已修复并配回归断言**;其中 D-60 为 P1(数据损毁 + 永久卡死),D-67、D-68 为 P2(重跑静默清空账本;验证脚本退出码契约被破坏),其余为 P3。
-- **对第一轮结论的修正**:第一轮"零悬空条目/零新增"的表述不成立——D-60 属于第一轮遗漏的同类问题(D-04 状态机族的"失败态重试"分支未被验证),D-61 属于第一轮自建回归测试的断言空洞,D-67 属于 D-33 幂等重跑意图未被端到端验证,D-68 属于 5.7.5 退出码契约在 Windows 上未被实测。本登记册以本轮结论为准。
-- **A-5 影响**:D-64 回收 8 行;其余修复净增行数,均并入 D-02 最终账(超支账目已按 2.6.2 记录并接受)。
+- **ID**: D-60
+- **Source**: second re-review (round-2 independent re-verification)
+- **Severity**: P1 (data destruction + document permanently stuck; triggerable from the UI's only run entry point)
+- **Location**: `backend/src/services/pipeline.js:74-84` (cleanup of old records for non-completed documents) and `backend/src/services/fileService.js:133` (`TRANSITIONS.failed = ['queued']`)
+- **Description**: For **all non-completed documents**, `processDocument` first deletes their existing `activity_records`/`calculations`/`matches`/`review_items`, then enters `withStatus(...,'parsing',...)`, whose very first step is `setDocumentStatus(...,'parsing')`. The transition table only allows an outbound edge from `failed` to `queued`, so `failed → parsing` throws `ERR_ENUM_INVALID`. There are two consequences: (1) **failed documents never recover** — no caller anywhere in the codebase resets `failed` back to `queued` (`POST /documents/:docId/status` has zero references in `frontend/src`, `scripts/`, and `backend/test`), so the document is silently excluded from reports from then on; (2) **data destruction** — if the document had already persisted records before failing (e.g. a `completed` document that became `failed` due to a re-verification recomputation failure), the rerun deletes those records first and then throws, leaving the records unrecoverable. Trigger condition: any document in `failed` state is run again (the only UI entry point is the P6 scenario page slider). This violates the explicit requirement in task specification 6.3.3 that "a failed state can be retried from the queued state".
+- **Verification evidence**: the independent re-verifier tested: (a) forcing a single-document task into `failed` and rerunning → `records=0`, 0 records in storage; (b) deleting a unit representation file so that run 2 throws ENOENT inside `withStatus` → the existing 1 record + 1 calculation are deleted and the document is set to `failed`; from run 3 onward, `records=0`, `calculations=0`, chapter 5 of the report has 0 rows, and `total_kgco2e=0`. I re-verified the code path: `pipeline.js:76-83` deletes first, `:84` then sets `parsing`; the transition table in `fileService.js` has `failed: ['queued']`.
+- **Fix**: (1) add `'parsing'` to `TRANSITIONS.failed` (consistent with the existing comment "processing states may re-enter parsing to support reruns"); (2) move the old-record cleanup to **after a successful rerun**, and delete only record ids not re-produced this time (record ids are randomly generated each time as `rec_<uuid8>`, so this criterion also guarantees no duplication and no accidental deletion).
+- **Verification method**: regression assertions (set failed → rerun → record count > 0 and terminal state is not failed; running twice does not double the record count).
+- **Status**: fixed
+
+## D-61 (newly found in the round-2 second re-review)
+
+- **ID**: D-61
+- **Source**: second re-review (round-2 independent re-verification)
+- **Severity**: P3 (hollow test assertion; weakens the regression guardrail)
+- **Location**: `backend/test/regression.test.js:305`
+- **Description**: `assert.equal(malformed.status, 429 < malformed.status ? malformed.status : malformed.status, …)` compares the value with itself, is always true, and constitutes no assertion at all; the line was intended to mean "a malformed Origin header does not cause a server error".
+- **Verification evidence**: both sides of the expression are identical (both ternary branches return the same variable).
+- **Fix**: replace with a meaningful assertion `assert.ok(malformed.status < 500, 'malformed origin never causes a server error')`.
+- **Verification method**: A-2 (the assertion can actually fail under a malformed-header request).
+- **Status**: fixed
+
+## D-62 (newly found in the round-2 second re-review)
+
+- **ID**: D-62
+- **Source**: second re-review (round-2 independent re-verification)
+- **Severity**: P3 (inconsistent validation across review actions; what D-14 declared as validation for "all actions" is actually "three actions")
+- **Location**: `backend/src/services/reviewQueue.js:154-161` (`closeReviewItem`)
+- **Description**: `editRecordFields`/`assignFactorManually`/`excludeRecord` all use `getTaskRecord` to validate that "the record belongs to this task", but `closeReviewItem` alone does not: calling `action=close` with an unknown or cross-task recordId returns 200 and writes a `review_closed` audit row (no cross-task data is modified, since the internal loop filters on `item.task_id !== taskId`).
+- **Verification evidence**: code comparison (the three actions call `getTaskRecord`; `close` does not).
+- **Fix**: add `await getTaskRecord(store, taskId, recordId)` at the start of `closeReviewItem`.
+- **Verification method**: regression assertion (calling close with a cross-task recordId throws `ERR_TASK_NOT_FOUND`).
+- **Status**: fixed
+
+## D-63 (newly found in the round-2 second re-review)
+
+- **ID**: D-63
+- **Source**: second re-review (round-2 independent re-verification)
+- **Severity**: P3 (config robustness: invalid values are silently truncated instead of falling back)
+- **Location**: `backend/src/config.js:97-101` (`coerce`)
+- **Description**: `Number.parseInt`/`Number.parseFloat` accept partial valid prefixes, so `AI_TIMEOUT_SECONDS='60abc'`→60, `BATCH_SIZE='1e3'`→1, `AI_RETRY_COUNT='2.9'`→2, and `CLASSIFICATION_CONFIDENCE_THRESHOLD='0.7junk'`→0.7 are silently adopted, rather than falling back to the default values as intended by 5.6.1.
+- **Verification evidence**: called `loadConfig` with invalid environment variables and measured the four values above.
+- **Fix**: for int/float, `coerce` now requires the entire string (after trimming whitespace) to be a finite number; otherwise it returns `NaN` and lets the existing range guard fall back to the default value.
+- **Verification method**: regression assertions (`'60abc'`/`'1e3'`/`'2.9'` fall back to the defaults 60/10/2 respectively).
+- **Status**: fixed
+
+## D-64 (newly found in the round-2 second re-review)
+
+- **ID**: D-64
+- **Source**: second re-review (round-2 independent re-verification)
+- **Severity**: P3 (dead code; candidate for line-count budget offsetting)
+- **Location**: `backend/src/services/factorLibrary.js:84`, `backend/src/store/index.js:97`, `backend/src/services/classification.js:46`, `frontend/src/auth.js:74-78`
+- **Description**: four places confirmed as zero-reference/unreachable: (1) `export const FACTOR_LIBRARY_FILE = FACTOR_FILE` appears only on that one line in the whole codebase; (2) `export const STORE_COLLECTIONS = COLLECTIONS` appears only on that one line; (3) the `type` of the `[/blurry|blank/, null]` entry in the `mockClassification` rule table is null, while the consuming loop filters with `if (re.test(n) && type)`, so that entry never takes effect, and `/blurry/` is already handled separately later; (4) `export async function currentIdToken()` has zero calls anywhere (the frontend reads `window.__idToken` directly).
+- **Verification evidence**: a codebase-wide reference scan with `grep -rn` (both exports match only their own definition line); reasoning through the rule table's consumption conditions; a codebase-wide occurrence count over all `export function/const/class` (any export whose only match count is 1 is a dead export), which yielded only `currentIdToken`.
+- **Fix**: removed the four pieces of dead code above (removing the unreachable rule is behavior-equivalent, since `blank` already falls into the default `other`/0.55 branch).
+- **Verification method**: A-2/A-6 (no behavioral regression).
+- **Status**: fixed
+
+## D-65 (newly found in the round-2 second re-review)
+
+- **ID**: D-65
+- **Source**: second re-review (round-2 independent re-verification)
+- **Severity**: P3 (asymmetric numeric guard; currently unreachable with existing data, defense in depth)
+- **Location**: `backend/src/services/calculation.js:58,73`
+- **Description**: `computeEmission` has a finiteness guard for `basis.value` (D-15), but `factorValue` (including the GWP-converted `co2+ch4+n2o`) and the product `emissionKg` are persisted without validation; if a factor file is overwritten or a storage row is manually rewritten to a non-numeric value, `NaN` will flow through `calculations` into `aggregate` and the report.
+- **Verification evidence**: all 743/743 factors in `data/factors/emission_factors.json` have finite numeric `value`, and `gas_breakdown` has no invalid types, so it is currently unreachable; code path comparison confirms there is no guard before persistence.
+- **Fix**: after computing `emissionKg` and before constructing `calc`, add a `Number.isFinite(emissionKg)` guard that throws an error the pipeline can downgrade to review.
+- **Verification method**: regression assertions (invalid factorValue → throws; existing calculation cases do not regress).
+- **Status**: fixed
+
+## D-66 (newly found in the round-2 second re-review)
+
+- **ID**: D-66
+- **Source**: second re-review (round-2 independent re-verification)
+- **Severity**: P3 (incomplete shape validation of embedding responses)
+- **Location**: `backend/src/ai/client.js:238-239,251`
+- **Description**: `embedTexts` only validates `parsed.embeddings.length === chunk.length` and does not validate whether each element's `values` is a non-empty array; `recall.js:58` writes into the index by position, and `cosine` silently produces NaN/-1 scores for `undefined` instead of raising an error.
+- **Verification evidence**: code path comparison; the D-18 regression covers only one response shape, "insufficient count".
+- **Fix**: after the count check passes, validate each `values` entry as a non-empty array, otherwise fail explicitly with `ERR_MODEL_CALL_FAILED`.
+- **Verification method**: regression assertions (missing element/empty array → explicit failure).
+- **Status**: fixed
+
+## D-67 (newly found in the round-2 second re-review)
+
+- **ID**: D-67
+- **Source**: second re-review (round-2 independent re-verification, API-level end-to-end re-verification)
+- **Severity**: P2 (data integrity: a rerun can silently empty the existing ledger; in mock mode it can be triggered directly by a caller that omits the flag, and in real mode it can be triggered by a "soft empty extraction")
+- **Location**: `backend/src/services/pipeline.js:74-90` (rerun replacement logic for non-completed documents), `backend/src/server.js:228-241` (mock catalog construction for `/run`)
+- **Description**: when rerunning a **non-completed** document, the pipeline first finds the document's existing records by `source_ref` prefix and deletes them, then re-extracts. If this rerun's extraction produces nothing (0 records), the old records have been deleted and there are no new ones → the document's ledger is emptied, yet the task still reports `completed` with no error at all. There are two triggerable paths: (1) **mock mode**: when the request body does not contain `useMockCatalog`, the `/run` endpoint passes an empty `Map`; that catalog is the mock extractor's only data source, so 0 records are guaranteed; (2) **real mode**: the same happens when the model softly returns an empty record set (without throwing). Measured (local mock, one-click demo with 20 documents): after the rerun, `activity_records` in storage drops **from 20 records to 2**, `calculations` 20→2, `matches` 20→2, `review_items` 18→0, the report then reflects only the 2 surviving records, yet the task shows as successful.
+- **Verification evidence**: (a) local service + one-click demo + a rerun without `useMockCatalog`, reading the collection files under `STORE_ROOT` directly gives counts of 20→2; (b) **attribution test**: using `git checkout 12f1286 -- backend/src/services/pipeline.js backend/src/services/fileService.js` to restore the version before D-60 and rerunning the same scenario also gives 20→2 → confirming it is a **pre-existing defect, not introduced by this round's fixes**; (c) server logs show no `recall_started` event at all in the second run, proving the extraction stage produced nothing and never reached the matching stage.
+- **Scope of impact**: the only caller in the repository, `frontend/src/api.js:27`, already passes `useMockCatalog: !window.__REAL_AI__` correctly, so the UI path is unaffected; production deployments using the real adapter are also unaffected. However, "a rerun must not silently shrink the ledger" is the underlying invariant of the idempotent-rerun intent in D-33/V-08, and V-08's automated evidence (`verify_consistency.js` only checks that the report is self-consistent with the **surviving** ledger) is blind to this case — this blind spot is recorded here.
+- **Fix**: adopt the most conservative stance — **when the rerun produces nothing while the document's existing records are non-empty, keep the existing records and calculations rather than deleting them, and log a `document_reprocess_empty` warning**, instead of emptying the ledger; only replace old records when the rerun actually produces output.
+- **Verification method**: regression assertions (D-67: after a rerun with no catalog, the record count remains 2, the storage count is 2, and the total is > 0).
+- **Status**: fixed
+
+## D-68 (newly found in the round-2 second re-review)
+
+- **ID**: D-68
+- **Source**: second re-review (round-2 independent re-verification, exit-code contract check of verification scripts per 5.7.5)
+- **Severity**: P2 (verification-chain correctness: the script reports PASS yet exits non-zero, so any caller that consumes the exit code treats success as failure)
+- **Location**: `scripts/verify_consistency.js:109`, `scripts/verify_acceptance.js:369`, `scripts/verify_public_faults.js:241`, `scripts/verify_public_perf.js:209`
+- **Description**: these 4 scripts `fetch` first and then end with `process.exit(code)`. In this project's declared execution environment (Windows + Git Bash, Node v24), when the process has **no other active handles** besides undici's sockets, `process.exit()` triggers the assertion `Assertion failed: !(handle->flags & UV_HANDLE_CLOSING), file src\win\async.c, line 76` during libuv's asynchronous handle-closing process, and the process exits with **127** — even though the script itself has already correctly printed `PASS`. That is, "the result is correct but the exit code is wrong", which directly breaks the exit-code contract (0/1/2) that task specification 5.7.5 requires to be checked, and makes any caller that judges by exit code misjudge success as failure.
+- **Verification evidence**: minimal reproduction — `node -e "await fetch(URL).then(r=>r.json()); await fetch(URL).then(r=>r.json()); console.log('ok'); process.exit(0)"` → after printing `ok`, the assertion fires and it exits with 127; the same code **without `process.exit`** exits cleanly with 0. Measured: `PUBLIC_BASE=http://127.0.0.1:8134 node scripts/verify_consistency.js <task>` prints `PASS (20 rows, 0 mismatch(es))` but `exit=127`. Control: `scripts/verify_upload.js`, which also does fetch + `process.exit`, does not trigger the assertion because it holds an active handle from `app.listen()` (three measured runs all exited 0), so only the 4 scripts with "no other handles" are affected; `verify_upload` is out of scope for changes.
+- **Scope of impact**: `verify_consistency.js` is the evidence script for V-08; `verify_acceptance.js`/`verify_public_faults.js`/`verify_public_perf.js` target the public network and were **not run** this time (red line: do not perform verification against the public network), and their affectedness is inferred from the minimal reproduction and the shared root cause of "no active handles".
+- **Fix**: change the trailing `process.exit(code)` in the 4 scripts to `process.exitCode = code`, letting the process exit with the correct code after handles close naturally (it has been confirmed that these 4 scripts have no active handles other than awaited sleeps, so they will not hang). The early-exit `process.exit(2)` at `verify_consistency.js:30` (the missing-evidence-file path, which occurs before any fetch and has no undici handles) is left untouched.
+- **Verification method**: `PUBLIC_BASE=http://127.0.0.1:<port> node scripts/verify_consistency.js <taskId>` → prints PASS with `exit=0`; A-1/A-2/A-3/A-4/A-6 do not regress.
+- **Status**: fixed
+
+## Round-2 second re-review conclusion
+
+- **This round added 9 entries (D-60 to D-68), all fixed with accompanying regression assertions**; among them D-60 is P1 (data destruction + permanent lock-up), D-67 and D-68 are P2 (rerun silently empties the ledger; verification-script exit-code contract broken), and the rest are P3.
+- **Correction to the round-1 conclusion**: the round-1 wording "zero dangling entries / zero new additions" is not substantiated — D-60 is a same-class issue missed by round 1 (the "failed-state retry" branch of the D-04 state-machine family was not verified), D-61 is a hollow assertion in round 1's own regression tests, D-67 is the D-33 idempotent-rerun intent never having been verified end to end, and D-68 is the 5.7.5 exit-code contract never having been measured on Windows. This defect register takes this round's conclusion as authoritative.
+- **A-5 impact**: D-64 reclaims 8 lines; the remaining fixes are net line additions, all folded into the D-02 final account (the over-budget line items have been recorded and accepted per 2.6.2).

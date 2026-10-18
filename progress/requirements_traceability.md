@@ -3,7 +3,7 @@
 This is the authoritative traceability list required by Implementation Plan T-001.
 Source of truth: PRD v1.2 (2026-10-12). Plan: IMPLEMENTATION_PLAN.md (T-001..T-051).
 
-Status values: `not_started` (未开始) / `in_progress` (进行中) / `verified` (已验证).
+Status values: `not_started` / `in_progress` / `verified`.
 Final delivery requires every FR / NFR / AI row to be `verified`.
 
 Counts (must match): FR = 57, NFR = 21, AI = 13, EV = 6, M = 5, D = 5, L = 3.
@@ -119,7 +119,7 @@ Counts (must match): FR = 57, NFR = 21, AI = 13, EV = 6, M = 5, D = 5, L = 3.
 | ID | Requirement summary | Verification task | Status |
 |---|---|---|---|
 | EV-1 | Single complete table: metric, target, measured, pass/fail columns | T-004 | verified |
-| EV-2 | Pass column only 达标/未达标-style binary values (PASS/FAIL) | T-004 | verified |
+| EV-2 | Pass column only met/not-met-style binary values (PASS/FAIL) | T-004 | verified |
 | EV-3 | Summary row: passed count, failed count, overall PASS/FAIL verdict | T-004 | verified |
 | EV-4 | Non-zero invalid references ⇒ overall FAIL (veto) | T-004 | verified |
 | EV-5 | Run-all or run-single-metric-group modes | T-004 | verified |

@@ -285,7 +285,7 @@ const figureC = Number(/C\. B \+ offline Python dataset toolchain:\s+(\d+)/.exec
 // The 2026-10 frontend enrichment (T-052) was applied with the NFR-504 budget
 // explicitly waived by the maintainer; the waiver is recorded in the execution
 // log, which this check reads back so the deviation stays auditable.
-const sizeWaived = /解除 NFR-504 行数约束/.test(readFileSync(join(ROOT, 'progress/execution_log.md'), 'utf8'));
+const sizeWaived = /解除 NFR-504 行数约束|NFR-504 budget waiver/.test(readFileSync(join(ROOT, 'progress/execution_log.md'), 'utf8'));
 check('C4', 'engineering', 'Self-developed code is within the 7,000-line target and never touches the 10,000-line hard cap (NFR-504 waived for the T-052 frontend enrichment, recorded in progress/execution_log.md)', (figureB <= 7000 && figureC <= 10000) || sizeWaived,
   `application + JS tooling: ${figureB} lines; including the offline Python dataset toolchain: ${figureC} lines. ${sizeWaived ? 'NFR-504 waived by maintainer decision for the T-052 frontend enrichment — deviation recorded in progress/execution_log.md.' : 'Within the 7,000 target and the 10,000 hard cap.'} Method and full breakdown in scripts/count_lines.sh`);
 

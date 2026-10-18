@@ -1,36 +1,36 @@
-# 基线快照（第二轮全面审查）— 2026-10-15
+# Baseline Snapshot (Second Round of Comprehensive Review) — 2026-10-15
 
-> 任务书：`AUDIT_FIX_PROMPT.md`（与 2026-10-14 第一轮同源）。本轮针对 HEAD `7635e44`
-> （第一轮收口后又有三个提交：T-052 前端丰富化+后端增量接口、生产环境迁移
-> us-central1、全站去中国化+P1 表单 UI 修复）。
-> 环境：Node v24.12.0 / npm 11.6.2 / Git Bash (win32)。全程 mock 模式，零外部 API 调用。
+> The audit brief: `AUDIT_FIX_PROMPT.md` (same source as the first round on 2026-10-14). This round targets HEAD `7635e44`
+> (three more commits after the first round was closed out: T-052 frontend enrichment + backend incremental APIs, production environment migration
+> to us-central1, and site-wide de-Sinicization + P1 form UI fixes).
+> Environment: Node v24.12.0 / npm 11.6.2 / Git Bash (win32). Mock mode throughout, zero external API calls.
 
-## 基线命令结果（B-1 ~ B-8）
+## Baseline Command Results (B-1 ~ B-8)
 
-| 序号 | 命令 | 结果 | 关键记录 |
+| No. | Command | Result | Key Notes |
 |---|---|---|---|
-| B-1 | `npm install` | 通过 | 0 漏洞、无高危告警 |
-| B-2 | `npm run build` | 通过 | 前端 37 模块，dist 产物 3 个文件；后端语法检查 OK |
-| B-3 | `npm test` | **失败** | 总计 48 项（backend 46 过 1 败 + upload 1 过）。失败项：`D-07/V-03 traversal filenames…`（regression.test.js:154），见 D-101 |
-| B-4 | `npm run smoke` | 通过 | health 200、结构化日志含 server_started、关停后端口不响应 |
-| B-5 | `npm run scan-secrets` | 通过 | 0 命中，退出码 0 |
-| B-6 | `bash scripts/count_lines.sh` | 脚本判定 FAIL | A=5,791 / B=8,978 / C=10,780（Python 1,802）。B 超 7,000 目标、C 超 10,000 上限；系 T-052 维护者豁免所致（README 与第一轮登记册 D-02 有记录），见 D-102 |
-| B-7 | 启动 server + 健康检查 + 关停 | 通过 | `/healthz` 与 `/config` 均 200；端口释放干净。注：Git Bash 无法向 Windows 原生进程投递 SIGINT（平台特性），SIGTERM 关停已由 B-4 smoke 验证 |
-| B-8 | `node eval/run.js` | 通过 | 11 组指标全部 PASS，结果文件生成于 `eval/results/run/`（仅汇总既有文件，未覆写） |
+| B-1 | `npm install` | Passed | 0 vulnerabilities, no high-severity warnings |
+| B-2 | `npm run build` | Passed | 37 frontend modules, 3 dist output files; backend syntax check OK |
+| B-3 | `npm test` | **Failed** | 48 items in total (backend: 46 passed, 1 failed + upload: 1 passed). Failed item: `D-07/V-03 traversal filenames…` (regression.test.js:154), see D-101 |
+| B-4 | `npm run smoke` | Passed | health 200, structured logs contain server_started, port unresponsive after shutdown |
+| B-5 | `npm run scan-secrets` | Passed | 0 hits, exit code 0 |
+| B-6 | `bash scripts/count_lines.sh` | Script verdict: FAIL | A=5,791 / B=8,978 / C=10,780 (Python 1,802). B exceeds the 7,000 target and C exceeds the 10,000 cap; caused by the T-052 maintainer exemption (recorded in the README and the first-round register D-02), see D-102 |
+| B-7 | Start server + health check + shutdown | Passed | `/healthz` and `/config` both return 200; port released cleanly. Note: Git Bash cannot deliver SIGINT to Windows native processes (platform characteristic); SIGTERM shutdown has already been verified by the B-4 smoke |
+| B-8 | `node eval/run.js` | Passed | All 11 metric groups PASS; result files generated in `eval/results/run/` (summary of existing files only, no overwrite) |
 
-## 与任务书预期的差异
+## Differences from the Audit Brief's Expectations
 
-1. **测试数口径**：任务书预期“README 声称 34 / 实测 33”。当前 README 声称 48、实测 48，
-   一致，不构成文档缺陷（任务书信息基于第一轮之前的旧状态）。
-2. **行数预算**：任务书写“B=6,976、上限 7,000、余量 24 行”。实际 B=8,978：T-052 提交时
-   维护者已书面豁免 NFR-504（README 217-222 行 + 第一轮登记册 D-02）。本轮按“豁免已
-   记录在案”处理，不视作新缺陷；但新增代码仍需登记最终增减（见 D-102）。
-3. **B-3 基线失败**：D-07/V-03 回归测试失败，根因是测试隔离缺陷（非真实路径穿越），
-   登记 D-101，阶段三优先修复以恢复绿色基线。
+1. **Test count basis**: the brief expected "README claims 34 / measured 33". The current README claims 48 and the measured value is 48,
+   consistent, so this does not constitute a documentation defect (the brief's information is based on the older state before the first round).
+2. **Line count budget**: the brief states "B=6,976, cap 7,000, margin of 24 lines". The actual B=8,978: when the T-052 commit was made the
+   maintainer granted a written exemption for NFR-504 (README lines 217-222 + first-round register D-02). This round treats it as an "exemption
+   already on record" rather than a new defect; however, the final net change of newly added code must still be registered (see D-102).
+3. **B-3 baseline failure**: the D-07/V-03 regression test failed; the root cause is a test isolation defect (not a real path traversal),
+   registered as D-101; it will be fixed with priority in Phase 3 to restore a green baseline.
 
-## 基线参照值（后续不回归判断的锚点）
+## Baseline Reference Values (anchors for subsequent non-regression checks)
 
-- 自动化测试：48 项（47 过 / 1 败），修复 D-101 后应为 48 项全过；本轮新增回归测试后总数只增不减。
-- 行数：A=5,791 / B=8,978 / C=10,780。
-- 评估：11 组指标 PASS；`evaluation.json` 明细为 mock/既有证据文件汇总。
-- 演示数据集（mock 端到端）记录数、章节数：以阶段二复测值为准（见验收记录 V-10）。
+- Automated tests: 48 items (47 passed / 1 failed); after fixing D-101 all 48 should pass; after this round's new regression tests the total will only increase.
+- Line counts: A=5,791 / B=8,978 / C=10,780.
+- Evaluation: 11 metric groups PASS; the `evaluation.json` details are a summary of mock/existing evidence files.
+- Demo dataset (mock end-to-end) record count and section count: subject to the Phase 2 re-test values (see acceptance record V-10).

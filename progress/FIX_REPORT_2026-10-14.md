@@ -1,192 +1,192 @@
-# CarbonLedger 全面审查与修复报告(2026-10-14)
+# CarbonLedger Comprehensive Review and Fix Report (2026-10-14)
 
-> 依据 `AUDIT_FIX_PROMPT.md` 执行。配套文件:缺陷登记册 `progress/DEFECT_REGISTER_2026-10-14.md`、阶段二记录 `progress/REVIEW_PHASE2_NOTES_2026-10-14.md`、基线快照 `progress/BASELINE_SNAPSHOT_2026-10-14.md`、验收记录 `progress/ACCEPTANCE_RECORD_2026-10-14.md`。
-> 全程 mock 模式,未使用任何真实密钥,未对公网部署执行任何破坏性验证,未执行任何部署命令。
-
----
-
-## 一、审查范围与方法
-
-**范围**:全仓库,按任务书第五章八个域推进——A 安全、B 业务正确性、C 前端功能、D 数据存储与适配器、E 并发容错与 AI 客户端、F 配置与部署、G 测试与验证体系、H 文档与仓库卫生。
-
-**方法**:
-1. 阶段一建立基线(B-1 至 B-8),记录测试数、三口径行数、构建/冒烟/密钥扫描/离线评估结果。
-2. 阶段二逐域通读全部文件 → 逐条核对检查点 → 逐条核实附录 A 的 R-01 至 R-33(代码推理 + 可执行复现),全部结论登记。
-3. 阶段三按 P0→P1→P2→P3 修复,每项配套回归验证,先登记后修复。
-4. 阶段四执行自动验收电池 + 定向场景 V-01 至 V-14 + 二次复查。
-5. 阶段五汇总交付。
-
-**核实手段示例**:构造两页 PDF 实测多页状态机;构造恶意文件名实测遍历;本地跑基线与情景比对落库核算;以模拟短响应实测嵌入批次;浏览器走查九页并由独立视觉子智能体核验截图;对标准数据集 9 份 PDF 实测页数正则偏差。
+> Executed in accordance with `AUDIT_FIX_PROMPT.md`. Companion files: defect register `progress/DEFECT_REGISTER_2026-10-14.md`, phase two notes `progress/REVIEW_PHASE2_NOTES_2026-10-14.md`, baseline snapshot `progress/BASELINE_SNAPSHOT_2026-10-14.md`, acceptance record `progress/ACCEPTANCE_RECORD_2026-10-14.md`.
+> Mock mode was used throughout; no real keys were used, no destructive verification was performed against the public deployment, and no deployment commands were executed.
 
 ---
 
-## 二、缺陷统计
+## 1. Scope and Methodology
 
-共 **58 条**登记(含基线缺陷与新发现),全部闭环。
+**Scope**: The entire repository, advanced across the eight domains of Chapter 5 of the audit brief — A Security, B Business Correctness, C Frontend Functionality, D Data Storage and Adapters, E Concurrency/Fault Tolerance and AI Client, F Configuration and Deployment, G Testing and Verification System, H Documentation and Repository Hygiene.
 
-**按严重度**:
+**Methodology**:
+1. Phase one established a baseline (B-1 through B-8), recording test counts, line counts under three counting rules, and build/smoke/key-scan/offline evaluation results.
+2. Phase two read all files domain by domain → checked every checkpoint item by item → verified R-01 through R-33 of Appendix A one by one (code reasoning plus executable reproduction), with all conclusions registered.
+3. Phase three applied fixes in the order P0→P1→P2→P3, each accompanied by regression verification, registering before fixing.
+4. Phase four executed the automated acceptance battery + targeted scenarios V-01 through V-14 + a second-pass re-review.
+5. Phase five consolidated the delivery.
 
-| 严重度 | 数量 | 说明 |
+**Examples of verification means**: constructed a two-page PDF to test the multi-page state machine empirically; constructed a malicious filename to test traversal; ran a baseline-vs-scenario comparison locally for persisted calculation accounting; used simulated short responses to test embedding batches empirically; browser walkthrough of nine pages with screenshots verified by an independent visual sub-agent; measured page-count regex deviation empirically against nine PDFs from the standard dataset.
+
+---
+
+## 2. Defect Statistics
+
+A total of **58** items were registered (including baseline defects and newly discovered ones), all closed out.
+
+**By severity**:
+
+| Severity | Count | Notes |
 |---|---|---|
-| P0(安全漏洞/数据损毁) | 4 | 多页状态机崩溃、情景污染账本、任务属主缺失、路径遍历 |
-| P1(严重功能缺陷) | 18 | 含属主收口后暴露的前端认证回归、报告 Share 列 1000× 错、修复自我回归等 |
-| P2(健壮性与质量) | 17 | 追踪数据暴露、嵌入批次、存储原子性、报告/导出健壮性、真实脚本守卫等 |
-| P3(卫生与低风险) | 19 | 前端请求层、任务字段校验、死代码回收、仓库卫生、文档对账等 |
-| 不成立(核实证伪) | 2 | mock 固有现象(D-55/D-57) |
+| P0 (security vulnerability / data corruption) | 4 | multi-page state machine crash, scenario-polluted ledger, missing task ownership check, path traversal |
+| P1 (serious functional defect) | 18 | includes frontend auth regression exposed after the ownership lockdown, report Share column 1000× error, fix-induced self-regression, etc. |
+| P2 (robustness and quality) | 17 | trace data exposure, embedding batch, storage atomicity, report/export robustness, real-script guards, etc. |
+| P3 (hygiene and low risk) | 19 | frontend request layer, task field validation, dead code reclamation, repository hygiene, documentation reconciliation, etc. |
+| Not established (disproved on verification) | 2 | phenomena inherent to mock (D-55/D-57) |
 
-**按域**(含跨域条目重复计一次):
+**By domain** (cross-domain items counted once):
 
-| 域 | 条目 |
+| Domain | Items |
 |---|---|
-| A 安全 | D-06、D-07、D-08、D-11、D-12、D-13、D-14、D-37、D-39、D-40、D-44、D-45、D-58 |
-| B 业务正确性 | D-04、D-05、D-10、D-15、D-19、D-21、D-24、D-26、D-27、D-33、D-34、D-36、D-41、D-42、D-52 |
-| C 前端功能 | D-09、D-30、D-31、D-38、D-43、D-51、D-53、D-54 |
-| D 数据存储与适配器 | D-20、D-22、D-35 |
-| E 并发/容错/AI 客户端 | D-16、D-17、D-18、D-49 |
-| F 配置与部署 | D-25、D-29、D-47 |
-| G 测试与验证体系 | D-01、D-28、D-50、D-59 |
-| H 文档与仓库卫生 | D-02、D-03、D-46、D-48 |
-| 基线缺陷 | D-01(冒烟)、D-02(行数)、D-03(测试数口径) |
+| A Security | D-06, D-07, D-08, D-11, D-12, D-13, D-14, D-37, D-39, D-40, D-44, D-45, D-58 |
+| B Business Correctness | D-04, D-05, D-10, D-15, D-19, D-21, D-24, D-26, D-27, D-33, D-34, D-36, D-41, D-42, D-52 |
+| C Frontend Functionality | D-09, D-30, D-31, D-38, D-43, D-51, D-53, D-54 |
+| D Data Storage and Adapters | D-20, D-22, D-35 |
+| E Concurrency / Fault Tolerance / AI Client | D-16, D-17, D-18, D-49 |
+| F Configuration and Deployment | D-25, D-29, D-47 |
+| G Testing and Verification System | D-01, D-28, D-50, D-59 |
+| H Documentation and Repository Hygiene | D-02, D-03, D-46, D-48 |
+| Baseline defects | D-01 (smoke), D-02 (line count), D-03 (test-count rule) |
 
 ---
 
-## 三、修复摘要(按严重度)
+## 3. Fix Summary (by Severity)
 
 ### P0
 
-- **D-04 多页文档状态机崩溃**:`setDocumentStatus('extracting')` 原在单元循环内逐单元调用,而转换表无自环,多页 PDF 第二页即抛 `ERR_ENUM_INVALID`、整文档置 failed、全部页面记录丢失。修复:进入抽取态移出循环(每文档一次);转换表允许处理态重入 `parsing` 以支持中断/复核后重跑;重跑前清理该文档旧记录保证幂等。回归:两页 PDF 全流程 + 重跑完整性。
-- **D-05 情景重算污染正式账本**:情景复用会落库的 `computeEmission`,以相同 `calc_<record_id>` 主键覆盖基线核算与审计。修复:核算函数增加 `persist` 开关,情景路径 `persist:false`(只算不落库),正式路径行为不变。回归:情景后落库核算与审计行数不变。
-- **D-06 任务属主校验缺失**:除文件下载外全部任务级路由无属主校验。修复:新增可注入的令牌校验器 + `requireTaskOwner` 条件强制中间件(任务有属主时非属主一律 403 `ERR_FORBIDDEN`;无属主任务保持开放以兼容脚本与一键演示),挂载到全部 15 处任务级路由;复核动作同时补"记录属于该任务"校验。回归:三身份 × 全接口矩阵。
-- **D-07 路径遍历**:上传文件名未规范化即拼入存储键,本地适配器无包含性校验。修复:文件名规范化(取 basename、字符白名单、长度截断)+ 本地存储 resolve 后包含性校验(越界抛 `ERR_STORAGE_ACCESS`)。回归:穿越/反斜杠/绝对路径上传后目录树比对。
+- **D-04 Multi-page document state machine crash**: `setDocumentStatus('extracting')` was originally called per-unit inside the unit loop, while the transition table has no self-loop, so the second page of a multi-page PDF immediately threw `ERR_ENUM_INVALID`, the whole document was set to failed, and all page records were lost. Fix: moving into the extracting state was taken out of the loop (once per document); the transition table allows re-entry into `parsing` from the processing state to support re-runs after interruption/review; old records of the document are cleared before a re-run to guarantee idempotence. Regression: full flow on a two-page PDF + re-run integrity.
+- **D-05 Scenario recompute polluting the official ledger**: scenario reuse invoked the persisting `computeEmission`, overwriting baseline accounting and audit under the same `calc_<record_id>` primary key. Fix: a `persist` switch was added to the accounting function, with scenario paths using `persist:false` (compute only, no persistence) and official path behavior unchanged. Regression: post-scenario persisted accounting and audit row counts unchanged.
+- **D-06 Missing task ownership check**: all task-level routes except file download lacked an ownership check. Fix: added an injectable token validator + `requireTaskOwner` conditional enforcement middleware (when a task has an owner, any non-owner gets a 403 `ERR_FORBIDDEN`; ownerless tasks stay open for script and one-click demo compatibility), mounted on all 15 task-level routes; review actions also gained a "record belongs to the task" check. Regression: three identities × full endpoint matrix.
+- **D-07 Path traversal**: uploaded filenames were concatenated into storage keys without normalization, and the local adapter lacked a containment check. Fix: filename normalization (basename extraction, character whitelist, length truncation) + containment check after local storage resolve (out-of-bounds throws `ERR_STORAGE_ACCESS`). Regression: directory tree comparison after traversal/backslash/absolute-path uploads.
 
-### P1(择要)
+### P1 (Selected)
 
-- **D-52 报告 Share 列 1000× 错**(阶段四视觉核验发现):第 2 章占比算式 `s.value * 1000 / totalKg * 100`,s.value 与 totalKg 同为千克,多乘 1000,显示 26240% 级占比。修复:改为千克比千克。回归:占比之和 ≈100% 且每项 ∈[0,100]。
-- **D-51 P4 候选恒空**(阶段四走查发现):P4 标题为"recall channel output"却用 AND 语义的 `/factors?q=` 多词查询,自由文本必得 0 条,手动指定因子不可达。修复:新增基于 recall 通道的候选接口,前端改用它。
-- **D-59 修复自我回归**(阶段四发现):D-14 补丁校验最初只收 number,而复核界面提交字符串 → P8 编辑一律 422。修复:数值字段接受数字或数字字符串并强制转数,非有限值仍拒绝。
-- **D-10 报告锚点 1000× 错**:范围分解锚点传值方向错,吨值放大千倍。修复:传千克,由锚点统一换算。
-- **D-11 CSV 公式注入**:以 =、+、-、@、制表符、回车开头的单元格原样输出。修复:前置单引号中和(数值列保持数值)。
-- **D-12 上传资源消耗**:multer 无限制,大小校验在全量入内存之后。修复:中间件 `limits`(单文件 10MB、50 文件),错误映射为 413/422。
-- **D-13 限流与来源**:限流键取可伪造的转发头、桶无上限、畸形 Origin 抛异常;**并发现跨切面中间件注册在早期路由之后,`/config`、`/factors` 完全未受限流与 CORS 覆盖**。修复:中间件前置;默认按 socket 地址计键(仅 `TRUST_PROXY=1` 时采信转发头);桶上限;Origin 精确字符串比较;阈值非法回退 60。
-- **D-14 复核动作越权与补丁无校验**:assign/exclude 缺跨任务校验,补丁值无类型/范围校验。修复:统一 `getTaskRecord` + `normalizePatch`。
-- **D-15 数量全链路无有限性防线**:抽取校验、换算、核算基数均可被 NaN/Infinity 穿透并污染聚合、排序、报告。修复:全数值字段 `Number.isFinite` 校验 + 换算与核算基数守卫。
-- **D-16/D-17 配置与重试**:非法并发数致流水线静默空跑、非法重试数致空值抛错;致命错误被无谓重试。修复:配置数值越界回退默认并告警;并发数有限性守卫;`fatal` 错误立即终止;重试间指数退避。
-- **D-33 重跑/并发报告不完整**:已完成文档重跑被跳过但返回空累积;同任务并发双跑第二跑报告不完整(V-08 必挂)。修复:completed 文档重跑时从存储重载其记录与核算;同任务运行串行排队。
-- **D-39/D-40 属主收口的前端回归**:审计视图裸 fetch、导出与源文档为裸 `<a>`,D-06 生效后对有属主任务会 403。修复:改走带认证头的 api 层与 blob 下载助手。
-- **D-01 冒烟在 Git Bash 下必然失败**(基线):`mktemp` 返回 MSYS 路径,原生 Windows Python 无法打开。修复:日志经 stdin 传入 Python。
-- **D-02 行数预算**(基线):见第四节。
-- **D-08 追踪数据暴露**:追踪记录含上传文档 base64 片段与上游错误响应体。修复:`inline_data` 摘要为 omitted;上游响应体不再进入错误消息。
-- **D-09 P3/P4 数据源错误**:两页读不存在的 `task.records`,永远为空。修复:改用仪表盘接口的记录。
+- **D-52 Report Share column 1000× error** (found during phase four visual verification): the Chapter 2 proportion formula `s.value * 1000 / totalKg * 100` multiplied by an extra 1000 even though s.value and totalKg are both in kilograms, displaying proportions at the 26240% level. Fix: changed to kilograms divided by kilograms. Regression: proportions sum to ≈100% and each item ∈[0,100].
+- **D-51 P4 candidates always empty** (found during phase four walkthrough): the P4 heading was "recall channel output" yet it used the AND-semantics `/factors?q=` multi-word query, which necessarily returned zero items for free text, making manually specified factors unreachable. Fix: added a candidate interface based on the recall channel, and the frontend was changed to use it.
+- **D-59 Fix-induced self-regression** (found in phase four): the D-14 patch validation initially accepted only number, while the review UI submitted strings → P8 edits uniformly returned 422. Fix: numeric fields accept numbers or numeric strings and are coerced, while non-finite values are still rejected.
+- **D-10 Report anchor 1000× error**: the scope-decomposition anchor passed the value in the wrong direction, amplifying ton values a thousandfold. Fix: pass kilograms, with the anchor performing the conversion uniformly.
+- **D-11 CSV formula injection**: cells starting with =, +, -, @, tab, or carriage return were output verbatim. Fix: neutralized by a leading single quote (numeric columns remain numeric).
+- **D-12 Upload resource consumption**: multer was unbounded, with the size check applied only after the full body was in memory. Fix: middleware `limits` (10MB per file, 50 files), with errors mapped to 413/422.
+- **D-13 Rate limiting and origin**: the rate-limit key used a forgeable forwarding header, buckets had no upper bound, and malformed Origin values threw exceptions; **it was also found that cross-cutting middleware was registered after early routes, leaving `/config` and `/factors` entirely outside rate limiting and CORS coverage**. Fix: middleware hoisted to the front; keys default to socket address (forwarding headers trusted only when `TRUST_PROXY=1`); bucket upper bound; exact string comparison for Origin; illegal thresholds fall back to 60.
+- **D-14 Review action privilege escalation and unvalidated patches**: assign/exclude lacked cross-task checks, and patch values had no type/range validation. Fix: unified `getTaskRecord` + `normalizePatch`.
+- **D-15 No finiteness defense anywhere in the quantity pipeline**: NaN/Infinity could penetrate extraction validation, conversion, and accounting bases, polluting aggregation, sorting, and reports. Fix: `Number.isFinite` validation across all numeric fields plus conversion and accounting-base guards.
+- **D-16/D-17 Configuration and retry**: illegal concurrency caused the pipeline to silently run empty, and illegal retry counts caused empty-value throws; fatal errors were needlessly retried. Fix: out-of-bounds config values fall back to defaults with a warning; a finiteness guard on concurrency; `fatal` errors terminate immediately; exponential backoff between retries.
+- **D-33 Incomplete reports on re-run/concurrency**: completed documents were skipped on re-run but returned empty accumulations; a concurrent second run of the same task produced an incomplete report (V-08 would necessarily fail). Fix: completed documents reload their records and accounting from storage on re-run; runs of the same task are serialized in a queue.
+- **D-39/D-40 Frontend regression from the ownership lockdown**: the audit view used bare fetch, and exports and source documents were bare `<a>` elements, which would return 403 for tasks with owners once D-06 took effect. Fix: rerouted through the authenticated-header api layer and a blob download helper.
+- **D-01 Smoke test necessarily fails under Git Bash** (baseline): `mktemp` returned an MSYS path that native Windows Python could not open. Fix: the log is passed to Python via stdin.
+- **D-02 Line-count budget** (baseline): see Section 4.
+- **D-08 Trace data exposure**: trace records contained base64 fragments of uploaded documents and upstream error response bodies. Fix: `inline_data` is summarized as omitted; upstream response bodies no longer enter error messages.
+- **D-09 P3/P4 data source error**: both pages read a nonexistent `task.records`, always empty. Fix: switched to the records from the dashboard interface.
 
-### P2 / P3(择要)
+### P2 / P3 (Selected)
 
-- **D-18 嵌入批次**:无超时无重试、向量数不足静默错位写索引 → 补超时、向量数严格校验、失败显式报错。
-- **D-19 情景锚点免检**:`includes('_S-')` 旁路使伪情景锚点免存在性校验 → 删除旁路。
-- **D-20 本地存储**:解析失败静默清空、整文件非原子重写 → 加告警 + 写临时文件后 rename。
-- **D-21 置信度硬编码 0.5**:使"无高置信因子"信号恒真、失去区分度;分布统计产生 NaN 键 → 传真实召回分;分布缺省并入 medium。
-- **D-22 队列抽象**:未被服务端引用且存在双派发缺陷 → 按 5.4.3 授权移除(回收行数)。
-- **D-24 币种识别顺序**:`¥jp` 永不可达、裸 `¥` 恒判 CNY → 重排为无歧义优先。
-- **D-26 PDF 页数**:字节正则对压缩对象流 PDF 欠计 → 改用 pdf-lib 精确计数并附带真损坏检测。
-- **D-27 导出健壮性**:PDF 生成异常致请求悬挂、空表头除零/TypeError → 加 error 拒绝与空表头守卫。
-- **D-28 真实脚本守卫**:四个真实适配器脚本无密钥守卫会以 mock 覆写正式指标;收集器盲信 pass → 补守卫;结果文件盖 `adapter` 字段,收集器拒 mock 证据。
-- **D-29 容器与托管**:无 HEALTHCHECK;托管缺安全响应头 → 补健康检查与 CSP/HSTS/帧保护/嗅探保护等。
-- **D-30 P6 滑块死功能**:比例未传后端却触发整条流水线重跑 → 透传 ratio(实测 50% 后情景节约精确减半)。
-- **D-31 开发代理与空查询**:代理未覆盖 `/factors`、P4 挂载发空查询必 400 → 补代理、删空调用。
-- **D-34 任务字段校验**:实体名可为任意结构、日期无类型/顺序校验 → 补字段级校验。
-- **D-36 死代码**:报告空循环、traceability 死分支、前端死函数、未用导出 → 移除(对冲行数)。
-- **D-37 CORS 过宽**:任意 Firebase 域名通配放行 → 收敛为显式白名单。
-- **D-38 前端请求层**:上传不查响应状态、请求头可被覆盖、无超时 → 补齐;刷新令牌本地存储与会话错位保留并文档化。
-- **D-41/D-42**:pending_duplicate 文档进流水线产生错误风暴;文档级 needs_review 不可达 → 过滤旁路态;按归一化后记录判定。
-- **D-43 P2 轮询未捕获**:任务被清理后每 2.5s 一次未处理拒绝 → 加 catch。
-- **D-45 错误码注册表**:缺 ERR_RATE_LIMITED(内联手写)与授权拒绝码 → 收编并补 ERR_FORBIDDEN。
-- **D-47 仓库卫生**:`scripts/golden/__pycache__` 3 个 .pyc 被跟踪 → 移除跟踪并加入忽略。
-- **D-53/D-54 前端显示**:P3 因子列显示记录 id 而非因子 id;空值因 `typeof null === 'object'` 显示字面量 "null" → 均修正。
-- **D-58 证据覆盖**(二次复查):一致性脚本本地运行会覆盖公网正式证据 → 本地运行改写独立文件名。
+- **D-18 Embedding batch**: no timeout and no retry, with insufficient vector counts silently misaligned when writing indexes → added timeout, strict vector-count validation, and explicit error reporting on failure.
+- **D-19 Scenario anchor bypassed validation**: the `includes('_S-')` bypass exempted forged scenario anchors from existence checks → the bypass was removed.
+- **D-20 Local storage**: parse failures silently cleared data, and whole files were rewritten non-atomically → added a warning plus a write-to-temp-file-then-rename approach.
+- **D-21 Hardcoded confidence 0.5**: made the "no high-confidence factor" signal always true, destroying discrimination, and produced NaN keys in distribution statistics → passes the real recall score; distribution defaults merge into medium.
+- **D-22 Queue abstraction**: not referenced by the server and had a double-dispatch defect → removed under 5.4.3 authorization (line-count reclamation).
+- **D-24 Currency recognition order**: `¥jp` was never reachable and bare `¥` always judged CNY → reordered as unambiguous-first.
+- **D-26 PDF page count**: the byte regex undercounted compressed-object-stream PDFs → switched to pdf-lib precise counting, along with genuine corruption detection.
+- **D-27 Export robustness**: PDF generation exceptions left requests hanging, and empty table headers caused divide-by-zero/TypeError → added error rejection and an empty-table-header guard.
+- **D-28 Real-script guard**: four real adapter scripts lacked key guards and would overwrite official metrics with mock values; the collector blindly trusted pass → guards added; result files stamped with an `adapter` field, and the collector rejects mock evidence.
+- **D-29 Container and hosting**: no HEALTHCHECK; hosting lacked security response headers → added a health check plus CSP/HSTS/frame protection/sniffing protection.
+- **D-30 P6 slider dead feature**: the ratio was not passed to the backend yet triggered a full pipeline re-run → passes ratio through (measured: after 50%, the scenario saving is exactly halved).
+- **D-31 Dev proxy and empty query**: the proxy did not cover `/factors`, and P4 mounting issued an empty query that necessarily returned 400 → proxy added, empty call removed.
+- **D-34 Task field validation**: entity names could be arbitrary structures, and dates lacked type/order checks → added field-level validation.
+- **D-36 Dead code**: an empty report loop, a traceability dead branch, a frontend dead function, unused exports → removed (line-count offset).
+- **D-37 Overly broad CORS**: any Firebase domain was wildcard-allowed → narrowed to an explicit whitelist.
+- **D-38 Frontend request layer**: uploads did not check response status, request headers could be overwritten, and there was no timeout → all remedied; refresh-token local storage and session misalignment intentionally retained and documented.
+- **D-41/D-42**: pending_duplicate documents entered the pipeline producing an error storm; document-level needs_review was unreachable → filtered bypass states; judged by normalized records.
+- **D-43 P2 polling uncaught**: after a task was cleaned up, an unhandled rejection occurred every 2.5s → catch added.
+- **D-45 Error-code registry**: missing ERR_RATE_LIMITED (hand-written inline) and the authorization denial code → incorporated and added ERR_FORBIDDEN.
+- **D-47 Repository hygiene**: three tracked `.pyc` files under `scripts/golden/__pycache__` → untracked and added to ignore.
+- **D-53/D-54 Frontend display**: the P3 factor column displayed record ids instead of factor ids; empty values displayed the literal "null" because `typeof null === 'object'` → both corrected.
+- **D-58 Evidence coverage** (second-pass re-review): running the consistency script locally would overwrite official public evidence → local runs write to an independent filename.
 
 ---
 
-## 四、行数预算对冲说明(NFR-504)
+## 4. Line-Count Budget Offset Notes (NFR-504)
 
-| 项 | 行数 |
+| Item | Lines |
 |---|---|
-| 审查前实测口径 B(基线) | 7,110(已超目标 110) |
-| 回收死代码(queue 抽象 124 + 报告/traceability/前端/taskRuns/calculation/BASE_UNITS 共 15) | −139 |
-| 新增:强制回归电池 `regression.test.js`(任务书 7.2 明文要求自动化) | +330 |
-| 新增:安全与正确性修复最小实现 | +305 |
-| **审查后口径 B** | **7,606**(超支 606) |
-| 口径 C(含 Python 工具链) | 9,401(< 10,000 硬顶,达标) |
+| Measured pre-review rule B (baseline) | 7,110 (already 110 over target) |
+| Reclaimed dead code (queue abstraction 124 + report/traceability/frontend/taskRuns/calculation/BASE_UNITS totaling 15) | −139 |
+| Added: mandatory regression battery `regression.test.js` (explicitly required to be automated by section 7.2 of the audit brief) | +330 |
+| Added: minimal implementation of security and correctness fixes | +305 |
+| **Post-review rule B** | **7,606** (606 over) |
+| Rule C (including the Python toolchain) | 9,401 (< 10,000 hard ceiling, met) |
 
-**结论**:超支按任务书 2.6.2 条款书面记录并接受。理由:(1) 基线即已超支;(2) 净增中 330 行为任务书强制的回归测试,其余为 P0/P1 修复的最小实现,二者不可删减;(3) 已回收全部可确认无引用的死代码(全库导出扫描仅 `BASE_UNITS` 零引用,已移除),无更多可回收项;(4) 口径 C 满足硬性上限;(5) **未修改统计脚本口径**(红线 4)。`count_lines.sh` 仍打印 FAIL,如实呈现,不作粉饰。
+**Conclusion**: The overrun is recorded in writing and accepted per clause 2.6.2 of the audit brief. Rationale: (1) the baseline was already over budget; (2) of the net increase, 330 lines are regression tests mandated by the audit brief, and the remainder is the minimal implementation of P0/P1 fixes — neither can be removed; (3) all confirmable unreferenced dead code has been reclaimed (a whole-repo export scan found `BASE_UNITS` alone at zero references, now removed), with nothing further to reclaim; (4) rule C meets the hard ceiling; (5) **the statistics script's counting rule was not modified** (red line 4). `count_lines.sh` still prints FAIL, presented truthfully without cosmetic cover-up.
 
 ---
 
-## 五、未实施项及理由
+## 5. Items Not Implemented and Their Rationale
 
-| 项 | 理由 |
+| Item | Rationale |
 |---|---|
-| R-20 XLSX 解压放大防线 | 本服务不解压 XLSX(以 inline_data 原样交模型),本地无资源消耗面;10MB 中间件上限约束输入。已文档化(D-25) |
-| R-30 适配器行为差异 | 未定义值查询、文档顺序、分页差异;当前无触发路径、顺序敏感读取已有显式排序、任务级数据量可控。已列差异表(D-35) |
-| R-33(4)(5) 刷新令牌本地存储 / 刷新失败换新身份 | 匿名身份无 PII、令牌价值低;换新身份是"尽力保持可用"的既定取舍;后端会话/HttpOnly cookie 属架构变更,超出最小修复范围。已文档化改进路径(D-38) |
-| R-27 线性查找(平方复杂度) | 任务级 n 小,无实测瓶颈;不改(D-32) |
-| 提示词注入代码级缓解 | 既有缓解(结构化输出 + 闭集校验 + 因子候选闭集 + 数值防线)已将注入可及范围压缩为"从合法枚举中选错值",且每步留痕可审计;任何提示词改动需重跑真实适配器评估以证明抽取准确率不回归,超出最小修复范围。已记录攻击面与缓解建议(D-49) |
-| 提交前密钥防线(pre-commit 钩子) | 常规 `git add` 已被 `.gitignore` 拦截,仅 `git add -f` 可绕过(人为故意);引入钩子属新工具链依赖,收益边际。已文档化操作红线(D-50) |
-| 报告 Scope 表行序(1/3/2) | 纯外观;排序会改变最大余数分摊次序,可能扰动已通过验证的聚合一致性证据。有意保留(D-56) |
-| 单模型策略 | 未改动 `AI_MODEL_ALLOWLIST`,未引入第二个生成式模型 |
-| 生产部署 | 未执行任何部署命令(红线 1) |
+| R-20 XLSX decompression amplification defense | This service does not decompress XLSX (it passes it verbatim to the model as inline_data), so there is no local resource-consumption surface; the 10MB middleware cap bounds the input. Documented (D-25) |
+| R-30 Adapter behavioral differences | Undefined value lookup, document ordering, pagination differences; there is currently no trigger path, order-sensitive reads already have explicit sorting, and task-level data volume is controllable. Difference table listed (D-35) |
+| R-33(4)(5) Refresh-token local storage / refreshing with a new identity on failure | The anonymous identity carries no PII and the token has low value; switching to a new identity is an established best-effort-availability trade-off; a backend session/HttpOnly cookie is an architectural change beyond the minimal-fix scope. Improvement path documented (D-38) |
+| R-27 Linear lookup (quadratic complexity) | Task-level n is small, with no measured bottleneck; unchanged (D-32) |
+| Code-level mitigation of prompt injection | Existing mitigations (structured output + closed-set validation + closed-set factor candidates + numeric defenses) have compressed the injection-reachable range to "picking a wrong value from a legal enumeration", and every step is logged and auditable; any prompt change would require re-running real adapter evaluations to prove extraction accuracy does not regress, beyond the minimal-fix scope. Attack surface and mitigation suggestions recorded (D-49) |
+| Pre-commit key defense (pre-commit hooks) | Ordinary `git add` is already intercepted by `.gitignore`, and only `git add -f` can bypass it (a deliberate human act); introducing hooks is a new toolchain dependency with marginal benefit. Operational red line documented (D-50) |
+| Report Scope table row order (1/3/2) | Purely cosmetic; sorting would change the largest-remainder allocation order and could disturb already-passed aggregation-consistency evidence. Intentionally retained (D-56) |
+| Single-model strategy | `AI_MODEL_ALLOWLIST` was not modified, and no second generative model was introduced |
+| Production deployment | No deployment commands were executed (red line 1) |
 
 ---
 
-## 六、对生产的部署注意事项(仅说明,不执行)
+## 6. Production Deployment Notes (Explanatory Only, Not Executed)
 
-1. **新增错误码**:`ERR_FORBIDDEN`(403)、`ERR_RATE_LIMITED`(429)已进入注册表;前端与调用方如做错误码分支需知悉。
-2. **属主语义**:有属主任务对非属主(含匿名)请求返回 403(原为 200)。无属主任务(脚本/离线/一键演示)行为不变。客户端必须携带 ID token 才能访问自己创建的任务——前端已改走带认证头的 api 层。
-3. **限流键**:默认按连接 socket 地址计键。生产位于反向代理/负载均衡之后时,须设 `TRUST_PROXY=1` 才会采信 `x-forwarded-for`,否则所有请求会按代理地址共用同一限流桶。
-4. **CORS 白名单**:默认包含 `http://localhost:5173`、`http://127.0.0.1:5173`、`https://myproject-dc19d.web.app`;自定义域名须经 `CORS_ORIGINS` 显式加入。
-5. **上传限制**:中间件强制单文件 10MB、单请求 50 文件,超限在缓冲前以 413/422 拒绝。
-6. **容器**:Dockerfile 新增 HEALTHCHECK(基于 `/healthz`);Firebase Hosting 新增 CSP/HSTS 等安全头。CSP 的 `connect-src` 已含 Google API 与 Firebase 域;若前端接入新的第三方端点,需同步放宽。
-7. **情景隔离**:情景重算不再写正式账本。**被旧版本情景污染过的历史数据不做迁移**(演示环境数据可重建);生产若曾受影响,建议按任务重跑流水线以重建账本与报告。
-8. **证据文件**:`scripts/verify_consistency.js` 对非默认目标运行时改写入 `consistency-local.json`,不再覆盖公网正式证据。
-9. **密钥注入**:仍以运行时环境变量注入(明文);改进路径为 Secret Manager,本次未实施(任务书 5.6.4 仅要求文档化)。
-
----
-
-## 七、交付物清单
-
-1. 缺陷登记册:`progress/DEFECT_REGISTER_2026-10-14.md`(65 条闭环)
-2. 本修复报告:`progress/FIX_REPORT_2026-10-14.md`
-3. 基线快照:`progress/BASELINE_SNAPSHOT_2026-10-14.md`
-4. 阶段二审查记录:`progress/REVIEW_PHASE2_NOTES_2026-10-14.md`
-5. 验收记录:`progress/ACCEPTANCE_RECORD_2026-10-14.md`
-6. 更新后的 `README.md`;`progress/DEFECT_REPORT_T050.md` 加 Addendum
-7. 回归测试:`backend/test/regression.test.js`(16 例;测试总数 47)
-8. 验收证据:`progress/evidence/audit-2026-10-14/`(V-10 九页截图、PDF/CSV 导出件、本地一致性结果)
+1. **New error codes**: `ERR_FORBIDDEN` (403) and `ERR_RATE_LIMITED` (429) have entered the registry; frontends and callers that branch on error codes need to be aware.
+2. **Ownership semantics**: tasks with owners return 403 to non-owner (including anonymous) requests (previously 200). Ownerless tasks (scripts/offline/one-click demo) behave unchanged. Clients must carry an ID token to access tasks they created — the frontend has been rerouted through the authenticated-header api layer.
+3. **Rate-limit key**: keys are computed from the connection socket address by default. In production behind a reverse proxy/load balancer, `TRUST_PROXY=1` must be set for `x-forwarded-for` to be trusted; otherwise all requests share the same rate-limit bucket keyed on the proxy address.
+4. **CORS whitelist**: defaults include `http://localhost:5173`, `http://127.0.0.1:5173`, and `https://myproject-dc19d.web.app`; custom domains must be added explicitly via `CORS_ORIGINS`.
+5. **Upload limits**: the middleware enforces 10MB per file and 50 files per request, rejecting over-limit requests with 413/422 before buffering.
+6. **Container**: the Dockerfile adds HEALTHCHECK (based on `/healthz`); Firebase Hosting adds security headers such as CSP/HSTS. The CSP `connect-src` already includes Google API and Firebase domains; if the frontend integrates new third-party endpoints, it must be relaxed accordingly.
+7. **Scenario isolation**: scenario recomputation no longer writes to the official ledger. **Historical data polluted by old-version scenarios is not migrated** (demo environment data can be rebuilt); if production was ever affected, it is recommended to re-run the pipeline per task to rebuild the ledger and reports.
+8. **Evidence files**: `scripts/verify_consistency.js` writes to `consistency-local.json` when run against a non-default target, no longer overwriting official public evidence.
+9. **Key injection**: still injected at runtime via environment variables (plaintext); the improvement path is Secret Manager, not implemented this time (section 5.6.4 of the audit brief only requires documentation).
 
 ---
 
-## 八、第二轮复核追加(2026-10-14,收口后独立复核)
+## 7. Deliverables List
 
-**背景**:阶段四第一轮收口时宣称"二次复查完成、零悬空条目"。随后由独立复核者以"按文件、逐断言"的另一种视角重跑,专门寻找修复自身引入的新问题、修复间相互作用与登记册外同类遗漏。**该轮结论被证伪**:新发现 9 项缺陷(D-60 至 D-68),已全部登记、修复并配回归断言。其中 D-67 由 API 级端到端复验发现——既有缺陷(已用旧版本代码归因确认),第一轮与 V-08 自动证据均未覆盖。
+1. Defect register: `progress/DEFECT_REGISTER_2026-10-14.md` (65 items closed out)
+2. This fix report: `progress/FIX_REPORT_2026-10-14.md`
+3. Baseline snapshot: `progress/BASELINE_SNAPSHOT_2026-10-14.md`
+4. Phase two review notes: `progress/REVIEW_PHASE2_NOTES_2026-10-14.md`
+5. Acceptance record: `progress/ACCEPTANCE_RECORD_2026-10-14.md`
+6. Updated `README.md`; `progress/DEFECT_REPORT_T050.md` with an Addendum added
+7. Regression tests: `backend/test/regression.test.js` (16 cases; 47 tests in total)
+8. Acceptance evidence: `progress/evidence/audit-2026-10-14/` (V-10 nine-page screenshots, PDF/CSV exports, local consistency results)
 
-| 编号 | 严重度 | 摘要 | 验证 |
+---
+
+## 8. Second-Pass Re-Review Additions (2026-10-14, independent re-review after closure)
+
+**Background**: When the phase four first pass closed, it claimed "second-pass re-review complete, zero dangling items". An independent reviewer then re-ran the review from a different perspective — "by file, assertion by assertion" — specifically looking for new problems introduced by the fixes themselves, interactions between fixes, and similar omissions outside the register. **That round's conclusion was disproved**: nine new defects were found (D-60 through D-68), all registered, fixed, and covered by regression assertions. Among them, D-67 was found through API-level end-to-end re-verification — a pre-existing defect (attributed via old-version code confirmation) that neither the first pass nor the V-08 automated evidence had covered.
+
+| ID | Severity | Summary | Verification |
 |---|---|---|---|
-| D-60 | **P1** | `failed` 文档不可重试且重跑会先删后抛,销毁既有记录并永久卡死(违反 6.3.3"失败态可从队列态重试") | 回归测试(置 failed → 重跑 → 记录数 2、终态非 failed、不重复) |
-| D-61 | P3 | 自建回归测试中一行恒真断言(值与自身比较),不构成断言 | 改为 `status < 500` 的真实断言 |
-| D-62 | P3 | 复核 `close` 动作缺"记录属于该任务"校验(D-14 声称覆盖全部动作) | 跨任务 close → `ERR_TASK_NOT_FOUND` |
-| D-63 | P3 | 配置数值解析接受数字前缀(`'60abc'`→60、`'7.5'`→7),非法值被静默采用 | `'7.5'`/`'5x'`/`'0.6junk'` 均回退默认 |
-| D-64 | P3 | 4 处死代码(3 个零引用导出 + 1 条不可达分类规则) | A-2/A-6 不回归;回收 8 行 |
-| D-65 | P3 | 核算乘积侧无有限性守卫(因子侧损坏时 NaN 可入账) | 非有限因子值 → 抛错且不落库 |
-| D-66 | P3 | 嵌入响应只校验数量、不校验元素形状,空向量会被静默索引 | 元素缺 `values` → `ERR_MODEL_CALL_FAILED` |
-| D-67 | **P2** | 重跑非 completed 文档时先删旧记录,若本次抽取产出为空则账本被静默清空(实测一键演示 20→2 条),任务仍报成功;mock 模式由漏传 `useMockCatalog` 触发,真实模式由软空抽取触发 | 回归测试(无目录重跑后记录数仍为 2、存储计数 2、总量>0)+ API 级复验(20 条保持) |
-| D-68 | **P2** | 4 个"先 fetch 后 process.exit"的验证脚本在 Windows 上触发 libuv 断言,报 PASS 却以 127 退出,破坏 5.7.5 退出码契约 | 改为 `process.exitCode`;实测 `verify_consistency.js` 打印 PASS 且 exit=0(三次) |
+| D-60 | **P1** | `failed` documents could not be retried, and a re-run would delete-then-throw, destroying existing records and permanently deadlocking (violating 6.3.3 "failed state can be retried from the queued state") | Regression test (set failed → re-run → 2 records, terminal state not failed, no duplication) |
+| D-61 | P3 | A tautological assertion in the self-built regression test (value compared with itself), which does not constitute an assertion | Changed to a real assertion of `status < 500` |
+| D-62 | P3 | The review `close` action lacked a "record belongs to the task" check (D-14 claimed to cover all actions) | Cross-task close → `ERR_TASK_NOT_FOUND` |
+| D-63 | P3 | Config value parsing accepted numeric prefixes (`'60abc'`→60, `'7.5'`→7), with illegal values silently adopted | `'7.5'`/`'5x'`/`'0.6junk'` all fall back to defaults |
+| D-64 | P3 | 4 pieces of dead code (3 zero-reference exports + 1 unreachable classification rule) | A-2/A-6 do not regress; 8 lines reclaimed |
+| D-65 | P3 | No finiteness guard on the accounting product side (NaN could enter the ledger when the factor side was corrupted) | Non-finite factor value → throws error and does not persist |
+| D-66 | P3 | The embedding response validated only the count, not element shape, so empty vectors would be silently indexed | Element missing `values` → `ERR_MODEL_CALL_FAILED` |
+| D-67 | **P2** | When re-running a non-completed document, old records were deleted first; if this extraction produced nothing, the ledger would be silently emptied (measured one-click demo 20→2 records), yet the task still reported success; in mock mode this was triggered by an omitted `useMockCatalog`, and in real mode by a soft-empty extraction | Regression test (after re-run with no catalog, record count still 2, storage count 2, total > 0) + API-level re-verification (20 records preserved) |
+| D-68 | **P2** | Four verification scripts doing "fetch first, then process.exit" triggered a libuv assertion on Windows, reporting PASS yet exiting 127, breaking the 5.7.5 exit-code contract | Changed to `process.exitCode`; measured `verify_consistency.js` printing PASS with exit=0 (three times) |
 
-**D-67 为何重要**:V-08 的自动化证据(`verify_consistency.js`)只校验「报告与**残存**账本自洽」,因此账本被清空后仍判定通过——该盲区已记录;D-67 的修复使「重跑不得静默缩小账本」成为硬不变式。
+**Why D-67 matters**: V-08's automated evidence (`verify_consistency.js`) only checks that "the report is self-consistent with the **surviving** ledger", so it still passed after the ledger was emptied — that blind spot has been recorded; the D-67 fix makes "a re-run must not silently shrink the ledger" a hard invariant.
 
-**D-60 为何重要**:任务书 6.3.3 把"失败态可从队列态重试"列为状态机修复的硬要求,第一轮只验证了"多次重跑幂等"(completed 早返回)与"多页文档不再中断",未覆盖失败分支。该缺陷可由界面唯一运行入口(P6 情景滑块)触发,后果是数据损毁与文档永久退出报告。
+**Why D-60 matters**: Section 6.3.3 of the audit brief lists "the failed state can be retried from the queued state" as a hard requirement of the state-machine fix; the first pass only verified "multiple re-runs are idempotent" (completed returns early) and "multi-page documents no longer break", without covering the failure branch. This defect could be triggered through the UI's only run entry point (the P6 scenario slider), with consequences of data corruption and the document permanently exiting reports.
 
-**对交付物的影响**:
-- 测试数 44 → **48**(全部通过);回归电池 13 → 17 例。
-- 行数三口径:应用 4,513→**4,544**;含 JS 工具 7,606→**7,708**;含 Python 工具链 9,401→**9,503**(硬顶 10,000 仍达标)。超支性质与第一轮相同,接受结论不变(见登记册 D-02"最终账"第二轮追加)。
-- 登记册 58 → **67** 条,全部闭环。
-- README 已同步测试数与三口径行数。
+**Impact on deliverables**:
+- Test count 44 → **48** (all passing); regression battery 13 → 17 cases.
+- Line counts under three rules: app 4,513→**4,544**; including JS tooling 7,606→**7,708**; including the Python toolchain 9,401→**9,503** (the 10,000 hard ceiling is still met). The nature of the overrun is the same as the first pass, and the acceptance conclusion is unchanged (see the register's D-02 "final account" second-pass additions).
+- Register 58 → **67** items, all closed out.
+- README has been synchronized with the test count and the three-rule line counts.
 
-**结论**:第二轮复核确认第一轮"零新增"的表述不成立,已按 7.4 要求闭环至零新增;D-60 使失败文档恢复可重试且重跑不再销毁既有记录,D-67 使重跑在抽取产出为空时保留既有账本。
+**Conclusion**: The second-pass re-review confirms that the first pass's "zero additions" statement does not hold, and it has been closed out to zero new additions per section 7.4; D-60 makes failed documents recoverable and retriable with re-runs no longer destroying existing records, and D-67 makes a re-run preserve the existing ledger when the extraction output is empty.

@@ -1,414 +1,414 @@
-# CarbonLedger 项目全面审查与修复任务书
+# CarbonLedger Project Comprehensive Review and Remediation Audit Brief
 
-> **接收对象**:AI 开发者(独立执行,默认无本项目先验上下文)
-> **项目**:CarbonLedger — Scope 3 碳核算与披露智能体(AI Builder Cup 2026 参赛项目)
-> **总目标**:对整个代码库进行一次系统性的全面审查,找出并修复全部 bug、安全漏洞与其他应解决的问题;修复不得引入任何回归;最终必须逐项通过本文档第九章的全部验收核对,并交付完整的审查与修复记录。
-> **执行方式**:严格按本任务书的阶段与步骤顺序执行,不得跳步、不得省略记录、不得在验收未全绿时提前结束。
+> **Recipient**: AI developer (executes independently, no prior context on this project by default)
+> **Project**: CarbonLedger — a Scope 3 carbon accounting and disclosure agent (an entry in the AI Builder Cup 2026)
+> **Overall goal**: perform a systematic, comprehensive review of the entire codebase, find and fix all bugs, security vulnerabilities, and other issues that should be resolved; the fixes must not introduce any regressions; in the end every acceptance check in Chapter 9 of this document must pass item by item, and a complete record of the review and remediation must be delivered.
+> **Execution**: follow the phases and steps of this audit brief strictly in order; do not skip steps, do not omit records, and do not stop early while acceptance is not fully green.
 
 ---
 
-## 一、任务总览与执行流程
+## 1. Task Overview and Execution Flow
 
-整个任务分五个阶段,顺序执行,每个阶段有明确的进入条件、产出物和完成标准:
+The task has five phases, executed in sequence, each with clear entry conditions, deliverables, and completion criteria:
 
-| 阶段 | 名称 | 核心动作 | 产出物 |
+| Phase | Name | Core actions | Deliverables |
 |---|---|---|---|
-| 阶段一 | 环境准备与基线建立 | 装依赖、跑通全部现有命令、记录基线数据 | 基线记录(测试数、行数、各命令结果) |
-| 阶段二 | 分域系统审查 | 按八个领域逐文件、逐接口审查,核实附录 A 全部疑点,登记全部缺陷 | 缺陷登记册(含新增发现) |
-| 阶段三 | 修复执行 | 按优先级逐项修复,每项修复配套回归验证 | 代码修复 + 新增回归测试 |
-| 阶段四 | 验收 | 执行自动验收电池 + 定向验收场景 + 二次复查 | 验收记录(逐项结果) |
-| 阶段五 | 交付 | 汇总报告、更新文档与进度日志 | 修复报告、更新后的 README 与 progress 日志 |
+| Phase 1 | Environment preparation and baseline establishment | Install dependencies, get every existing command working, record baseline data | Baseline record (test count, line counts, results of each command) |
+| Phase 2 | Domain-by-domain systematic review | Review every file and every interface across the eight domains, verify all open questions in Appendix A, register all defects | Defect register (including newly found issues) |
+| Phase 3 | Remediation | Fix items one by one by priority, each fix paired with regression verification | Code fixes + new regression tests |
+| Phase 4 | Acceptance | Run the automated acceptance battery + targeted acceptance scenarios + a second review pass | Acceptance record (item-by-item results) |
+| Phase 5 | Delivery | Consolidate the report, update documentation and the progress log | Remediation report, updated README and progress log |
 
-**三条贯穿全程的铁律**:
+**Three iron rules that apply throughout the entire process**:
 
-1. **先登记,后修复**:任何缺陷在动手修改代码之前,必须先写入缺陷登记册(格式见 2.1),未登记的缺陷不得直接修改代码。
-2. **每修必验**:每一项修复必须同时给出可重复执行的验证方式(新增回归测试、验证脚本或手工操作步骤),只有修复无法用自动化验证时才允许手工验证,且必须在登记册中留证。
-3. **验收不通过不算完成**:第九章核对单中任何一项未通过,视为整个任务未完成,必须回到阶段二或阶段三继续处理,禁止以"已知问题"的名义带病通过。
-
----
-
-## 二、项目速览(执行前必读)
-
-### 2.1 项目定位
-
-CarbonLedger 把企业 Scope 3 碳排放报告的生产成本从"3 万元 + 3 周"压缩到"1 小时 + 近零边际成本"。用户上传混合格式的凭证(PDF 含扫描件、照片、XLSX、CSV),智能体完成页面分类、活动数据抽取、单位与地点归一化、GHG Protocol 边界判定、公开排放因子语义匹配、不确定度分级、Scope 1/2/3 核算、三个减排情景构建,最终产出十章英文报告(PDF/CSV 导出)与完整审计链路。
-
-### 2.2 架构与运行形态
-
-- **前端**:React(Vite)单页应用,九个页面(P1 任务、P2 上传、P3 活动记录、P4 匹配查看器、P5 仪表盘、P6 情景、P7 报告阅读、P8 复核队列、P9 AI 追踪),hash 路由,部署于 Firebase Hosting。
-- **后端**:Node.js(Express),部署于 Cloud Run(CPU 常驻、可缩容至零)。存储抽象层在生产环境选 Firebase Storage + Firestore,在开发/测试/离线评估选本地适配器;任务队列抽象层目前只有进程内实现,云端队列适配器仍是一个被调用即显式报错的部署期占位,且当前服务端实际以内联方式执行流水线,整个队列抽象未被服务端使用(对应疑点 R-17)。
-- **AI 层**:所有生成式调用走统一封装,强制结构化输出、闭集校验带重试、超时与重试次数由配置驱动,并把每次调用(输入/输出摘要、时延、token、成本)写入 ai_traces 集合。
-- **身份**:进入站点自动完成 Firebase 匿名登录,SPA 每次请求携带 ID token,后端校验后以 uid 作为任务属主。**无 token 的请求被允许但任务无属主**——这是有意设计,用于脚本与离线运行,安全修复时必须保留该语义(详见 6.3 节设计决策)。
-- **因子库**:741 条公开来源因子,静态 JSON 文件加载,双通道召回(关键词 + 语义向量)。
-- **模型政策**:单模型强制政策,生成式任务只允许 `gemini-3.5-flash-lite`,嵌入只允许 `gemini-embedding-001`,由 `AI_MODEL_ALLOWLIST` 在请求发出前拦截。
-
-### 2.3 目录地图
-
-- `backend/src` — 后端全部源码:入口 `server.js`;`config.js` 配置中枢;`errors.js` 错误码注册表;`ai/client.js` AI 统一客户端;`services/` 十八个业务模块(流水线、分类、抽取、归一化、边界、召回、核算、情景、报告、复核、导出、文件、任务、追踪等);`store/` 本地/Firestore 数据适配器;`storage/` 本地/Firebase 对象存储适配器;`queue/` 任务队列抽象。
-- `backend/test` — 十一个测试文件,当前共 33 个测试用例。
-- `frontend/src` — 前端全部源码:`App.jsx` 路由、`pages.jsx` 九页、`api.js` 请求封装、`auth.js` 匿名认证。
-- `data/factors` — 741 条因子库与来源说明;`data/golden` — 30 份标注文档 + 40 个匹配案例的标准数据集;`data/demo` — 一键演示数据集(20 份文档);`data/sources` — 因子库构建原料。
-- `scripts/` — 构建/测试/冒烟/密钥扫描/行数统计脚本,以及若干验证脚本(verify_ 系列)。
-- `eval/` — 离线评估工具,11 组指标。
-- `progress/` — 执行日志与证据(工作语言中文);`deploy/` — 部署说明(当前仅一个 README 占位)。
-- 根目录 `IMPLEMENTATION_PLAN.md`(任务编号 T-001…T-051,关卡 G0…G6)与 `PRD_CarbonLedger_Scope3_Carbon_Agent.md`(需求编号 FR-/NFR-/AI-/EV-,验收清单在 PRD 第 10.3 节)。
-
-### 2.4 常用命令(在仓库根目录、Git Bash 环境下执行;Node 版本不低于 20)
-
-- 安装依赖:`npm install`
-- 构建(前端构建 + 后端语法检查):`npm run build`
-- 全部自动化测试:`npm test`
-- 冒烟(启动、健康检查、优雅关停):`npm run smoke`
-- 密钥扫描:`npm run scan-secrets`
-- 代码行数统计(NFR-504 预算):`bash scripts/count_lines.sh`
-- 启动本地 API(默认 8080 端口):`node backend/src/server.js`
-- 启动前端开发服务(默认 5173 端口,代理 /api 到 8080):在 `frontend` 目录执行 `npm run dev`
-- 离线评估(无密钥时自动走 mock 适配器):`node eval/run.js`
-
-### 2.5 核心业务流水线(理解缺陷时的主线)
-
-上传校验与去重 → PDF 按页拆为处理单元 → 分类(七类闭集) → 抽取活动记录(结构化输出) → 单位/地点/币种归一化 → 边界判定(Scope 1/2/3 与类别) → 因子召回(关键词+语义) → 因子选择(带理由与次优) → 不确定度评估 → 核算(含 GWP 折算) → 审计链落库 → 情景模拟(S-1/S-2/S-3) → 十章报告组装与引用锚点 → 复核队列人工干预 → 导出(PDF/CSV)。文档状态机为七态:queued、parsing、extracting、matching、completed、needs_review、failed,另有 pending_duplicate 与 discarded 两个旁路态。
-
-### 2.6 必须遵守的项目既有政策
-
-1. **单模型政策不得放宽**:`AI_MODEL_ALLOWLIST` 不得扩大,不得引入第二个生成式模型。
-2. **代码行数预算(NFR-504)**:统计口径 B(应用代码 + 全部一方 JS 工具,含 backend/test)当前为 6,976 行,上限 7,000 行,**余量仅约 24 行**。新增代码(含回归测试)必须通过删除死代码、重复代码来对冲;若确实无法对冲,必须在缺陷登记册中书面记录超支行数与理由,并保持统计口径 C(含 Python 工具链)不超过 10,000 行。严禁通过修改统计脚本口径来"达标"。
-3. **密钥纪律**:根目录 `.env` 与 `frontend/.env` 含真实密钥(前者为 Gemini API Key,后者为 Firebase Web 公钥)。**严禁**在任何输出、日志、文档、提交中打印、复制或提交这两个文件的内容;严禁把密钥改名为其他变量绕过扫描。仓库 `.gitignore` 已正确忽略它们,不得改动忽略规则使密钥入库。
-4. **mock 模式**:无 `GEMINI_API_KEY` 时 AI 层自动降级为确定性 mock 适配器,全流水线可离线运行;审查与修复的默认工作形态就是 mock 模式,不依赖任何外部凭证。
-5. **标准数据不可擅改**:`data/golden`、`data/factors`、`data/demo` 是评估基准,除非证明数据本身有误,否则不得修改。
-6. **风格保持**:代码注释为英文,风格与现有代码一致;progress 目录工作语言为中文;不做与本任务无关的重构。
+1. **Register before fixing**: before modifying any code for a defect, the defect must first be written into the defect register (format in 2.1); defects that are not registered must not be fixed directly in code.
+2. **Every fix must be verified**: every fix must come with a repeatable verification method (a new regression test, a verification script, or manual steps); manual verification is allowed only when a fix cannot be verified automatically, and evidence must be left in the register.
+3. **Failing acceptance does not count as complete**: if any item in the Chapter 9 checklist does not pass, the entire task is considered incomplete; you must return to Phase 2 or Phase 3 and continue. Passing with known defects under the label of "known issue" is forbidden.
 
 ---
 
-## 三、执行纪律(全程生效)
+## 2. Project Quick Start (must be read before execution)
 
-### 3.1 缺陷登记册
+### 2.1 Project positioning
 
-在 `progress/` 下新建缺陷登记册文件(建议命名含本次审查日期),每一个缺陷一条记录,字段如下(以文字表单方式记录,不限定具体文件格式):
+CarbonLedger compresses the production cost of a corporate Scope 3 carbon emissions report from "RMB 30,000 + 3 weeks" to "1 hour + near-zero marginal cost". Users upload mixed-format evidence documents (PDFs including scanned pages, photos, XLSX, CSV), and the agent performs page classification, activity data extraction, unit and location normalization, GHG Protocol boundary determination, semantic matching of public emission factors, uncertainty grading, Scope 1/2/3 accounting, and construction of three reduction scenarios, ultimately producing a ten-chapter English report (PDF/CSV export) and a complete audit trail.
 
-- **编号**:D-01 起,顺序递增。
-- **来源**:附录 A 预审疑点编号(如 R-03),或"阶段二新发现"。
-- **严重度**:P0(安全漏洞 / 数据损毁或严重错误)/ P1(严重功能缺陷)/ P2(健壮性与质量缺陷)/ P3(卫生与低风险问题)。
-- **位置**:文件路径与行号(修复后行号变化时以修复前行号登记并注明)。
-- **描述**:问题是什么、影响是什么、触发条件是什么。
-- **核实证据**:复现步骤或推理依据(疑点必须先核实;核实证伪的登记为"不成立"并保留核实过程,不得删除)。
-- **修复方案**:一句话说明改什么、为什么这样改。
-- **验证方式**:对应的回归测试名或验收场景编号(第七章 V-xx)。
-- **状态**:待修复 / 已修复 / 不成立 / 有意保留(需附理由)。
+### 2.2 Architecture and runtime shape
 
-### 3.2 修复原则
+- **Frontend**: a React (Vite) single-page application with nine pages (P1 Tasks, P2 Upload, P3 Activity Records, P4 Match Viewer, P5 Dashboard, P6 Scenarios, P7 Report Reading, P8 Review Queue, P9 AI Traces), hash routing, deployed on Firebase Hosting.
+- **Backend**: Node.js (Express), deployed on Cloud Run (CPU always on, can scale to zero). The storage abstraction layer selects Firebase Storage + Firestore in production, and local adapters in development/testing/offline evaluation; the task queue abstraction currently has only an in-process implementation, the cloud queue adapter is still a deployment-time placeholder that reports an explicit error when called, and the server currently actually executes the pipeline inline, so the entire queue abstraction is unused by the server (corresponds to open question R-17).
+- **AI layer**: all generative calls go through a unified wrapper that enforces structured output, closed-set validation with retries, and configuration-driven timeouts and retry counts, and writes every call (input/output summary, latency, token, cost) into the ai_traces collection.
+- **Identity**: entering the site automatically completes a Firebase anonymous sign-in; the SPA carries an ID token on every request, and the backend uses the uid as the task owner after validation. **Requests without a token are allowed but the task has no owner** — this is intentional, for scripts and offline runs, and this semantics must be preserved during security fixes (see the design decision in 6.3).
+- **Factor library**: 741 factors from public sources, loaded from a static JSON file, with dual-channel recall (keyword + semantic vector).
+- **Model policy**: a mandatory single-model policy: generative tasks may only use `gemini-3.5-flash-lite`, embeddings may only use `gemini-embedding-001`, intercepted by `AI_MODEL_ALLOWLIST` before requests are sent.
 
-- 最小改动:只改与缺陷直接相关的代码,不顺手重构、不重命名、不调整格式。
-- 行为保持:修复缺陷行为本身,不改变既有正确行为的对外契约(接口路径、响应结构、错误码语义保持不变;确需变更的,必须作为独立缺陷登记并说明兼容性处理)。
-- 一个缺陷一次提交,提交信息引用缺陷编号。
-- 每次修复后立即运行 `npm test`,确保既有 33 个用例不失败,再继续下一项。
+### 2.3 Directory map
 
-### 3.3 提交规范
+- `backend/src` — all backend source code: entry point `server.js`; `config.js` the configuration hub; `errors.js` the error code registry; `ai/client.js` the unified AI client; `services/` eighteen business modules (pipeline, classification, extraction, normalization, boundary, recall, accounting, scenarios, report, review, export, files, tasks, tracing, etc.); `store/` local/Firestore data adapters; `storage/` local/Firebase object storage adapters; `queue/` the task queue abstraction.
+- `backend/test` — eleven test files, 33 test cases in total at present.
+- `frontend/src` — all frontend source code: `App.jsx` routing, `pages.jsx` the nine pages, `api.js` the request wrapper, `auth.js` anonymous authentication.
+- `data/factors` — the 741-factor library and source notes; `data/golden` — the standard dataset of 30 annotated documents + 40 matching cases; `data/demo` — the one-click demo dataset (20 documents); `data/sources` — raw material for building the factor library.
+- `scripts/` — build/test/smoke/secret scanning/line count scripts, plus several verification scripts (the verify_ family).
+- `eval/` — offline evaluation tool, 11 metric groups.
+- `progress/` — execution log and evidence (working language Chinese); `deploy/` — deployment notes (currently just one README placeholder).
+- In the root directory, `IMPLEMENTATION_PLAN.md` (task numbers T-001…T-051, gates G0…G6) and `PRD_CarbonLedger_Scope3_Carbon_Agent.md` (requirement numbers FR-/NFR-/AI-/EV-, with the acceptance checklist in PRD section 10.3).
 
-- 每完成一个阶段或一批同类修复做一次 git 提交,提交信息格式:阶段或缺陷编号 + 简述(例如"D-03/D-11: 补齐任务属主校验并新增越权回归测试")。
-- 提交前必须确认 `git status` 中不包含 `.env`、`frontend/.env`、`frontend/dist`、`data/.local-store`、`data/.uploads`、`.firebase` 等忽略路径。
+### 2.4 Common commands (run in the repository root under Git Bash; Node version 20 or higher)
 
-### 3.4 红线清单(任何一条违反即视为任务失败)
+- Install dependencies: `npm install`
+- Build (frontend build + backend syntax check): `npm run build`
+- All automated tests: `npm test`
+- Smoke (startup, health check, graceful shutdown): `npm run smoke`
+- Secret scanning: `npm run scan-secrets`
+- Line count statistics (NFR-504 budget): `bash scripts/count_lines.sh`
+- Start the local API (default port 8080): `node backend/src/server.js`
+- Start the frontend dev server (default port 5173, proxies /api to 8080): run `npm run dev` in the `frontend` directory
+- Offline evaluation (automatically uses the mock adapter when no key is present): `node eval/run.js`
 
-1. 不执行任何生产部署命令(gcloud run deploy、firebase deploy 等);生产环境验证仅在用户明确提供凭证并要求时进行。
-2. 不打印、传输、提交任何密钥内容;不访问与任务无关的外部服务。
-3. 不删除、不跳过、不弱化任何既有测试与验证脚本的断言来"让测试通过"。
-4. 不修改统计脚本口径、评估指标目标值或验收脚本的判定逻辑来制造通过假象。
-5. 不放宽模型允许清单,不引入新的运行时依赖(确需引入的,必须作为独立决策项记录理由并评估体积与安全影响)。
-6. 不修改 `.gitignore` 使被忽略的敏感或生成文件入库。
-7. 验收记录必须如实反映执行结果,失败就是失败,禁止编造。
+### 2.5 Core business pipeline (the main thread for understanding defects)
+
+Upload validation and deduplication → PDF split by page into processing units → classification (seven-class closed set) → extraction of activity records (structured output) → unit/location/currency normalization → boundary determination (Scope 1/2/3 and categories) → factor recall (keyword + semantic) → factor selection (with rationale and runner-up) → uncertainty assessment → accounting (including GWP conversion) → audit chain persisted → scenario simulation (S-1/S-2/S-3) → ten-chapter report assembly and citation anchors → manual intervention in the review queue → export (PDF/CSV). The document state machine has seven states: queued, parsing, extracting, matching, completed, needs_review, failed, plus two bypass states: pending_duplicate and discarded.
+
+### 2.6 Existing project policies that must be observed
+
+1. **The single-model policy must not be relaxed**: `AI_MODEL_ALLOWLIST` must not be expanded, and no second generative model may be introduced.
+2. **Line count budget (NFR-504)**: measurement basis B (application code + all first-party JS tooling, including backend/test) is currently 6,976 lines against a cap of 7,000 lines, **leaving only about 24 lines of headroom**. New code (including regression tests) must be offset by deleting dead code and duplicated code; if offsetting is genuinely impossible, the over-budget line count and the reason must be recorded in writing in the defect register, and measurement basis C (including the Python toolchain) must be kept under 10,000 lines. Rigging the measurement basis of the statistics script to "pass" is strictly forbidden.
+3. **Secret discipline**: the root `.env` and `frontend/.env` contain real secrets (the former a Gemini API Key, the latter a Firebase Web public key). It is **strictly forbidden** to print, copy, or commit the contents of these two files in any output, log, document, or commit; renaming secrets to other variables to bypass scanning is also strictly forbidden. The repository `.gitignore` already ignores them correctly; the ignore rules must not be changed in a way that lets secrets into the repository.
+4. **mock mode**: when `GEMINI_API_KEY` is absent, the AI layer automatically degrades to a deterministic mock adapter and the full pipeline can run offline; the default working mode for the review and remediation is mock mode, which depends on no external credentials.
+5. **Standard data must not be modified without cause**: `data/golden`, `data/factors`, and `data/demo` are the evaluation baseline and must not be modified unless the data itself is proven wrong.
+6. **Style continuity**: code comments are in English, with a style consistent with existing code; the working language of the progress directory is Chinese; no refactoring unrelated to this task.
 
 ---
 
-## 四、阶段一:环境准备与基线建立
+## 3. Execution discipline (in effect throughout)
 
-### 4.1 环境要求
+### 3.1 Defect register
 
-- Node 不低于 20,npm 可用;命令在 Git Bash 下执行(仓库脚本均为 bash 脚本)。
-- 确认根目录存在 `.env`(内容不要查看、不要输出),前端构建配置文件按需存在;两者缺失时以 mock 形态工作,不影响本任务。
+Create a new defect register file under `progress/` (the name is recommended to include the date of this review), with one record per defect and the following fields (recorded as a text form; no specific file format is required):
 
-### 4.2 基线命令(逐条执行并记录结果)
+- **ID**: starting at D-01, incremented sequentially.
+- **Source**: the pre-review open question number from Appendix A (e.g. R-03), or "newly found in Phase 2".
+- **Severity**: P0 (security vulnerability / data corruption or severe error) / P1 (severe functional defect) / P2 (robustness and quality defect) / P3 (hygiene and low-risk issue).
+- **Location**: file path and line number (when line numbers change after the fix, register the pre-fix line number and note this).
+- **Description**: what the problem is, what its impact is, and what triggers it.
+- **Verification evidence**: reproduction steps or the basis of reasoning (open questions must be verified first; those disproved by verification are registered as "not applicable" and the verification process is retained, not deleted).
+- **Fix plan**: one sentence on what to change and why.
+- **Verification method**: the corresponding regression test name or acceptance scenario number (Chapter 7, V-xx).
+- **Status**: pending fix / fixed / not applicable / intentionally retained (reason required).
 
-| 序号 | 命令 | 预期结果 | 记录内容 |
+### 3.2 Remediation principles
+
+- Minimal change: only modify code directly related to the defect; no opportunistic refactoring, no renaming, no reformatting.
+- Behavior preservation: fix the defective behavior itself without changing the external contract of existing correct behavior (interface paths, response structures, and error code semantics remain unchanged; if a change is genuinely required, it must be registered as a separate defect with an explanation of how compatibility is handled).
+- One commit per defect, with the commit message referencing the defect ID.
+- Run `npm test` immediately after each fix to ensure the existing 33 cases do not fail, then continue to the next item.
+
+### 3.3 Commit conventions
+
+- Make one git commit after completing each phase or batch of similar fixes, with the commit message format: phase or defect number + brief description (e.g. "D-03/D-11: Add missing task ownership validation and new unauthorized-access regression tests").
+- Before committing, confirm that `git status` does not contain ignored paths such as `.env`, `frontend/.env`, `frontend/dist`, `data/.local-store`, `data/.uploads`, and `.firebase`.
+
+### 3.4 Red lines (violating any one of these is considered task failure)
+
+1. Do not execute any production deployment commands (gcloud run deploy, firebase deploy, etc.); production environment verification is performed only when the user explicitly provides credentials and requests it.
+2. Do not print, transmit, or commit any secret content; do not access external services unrelated to the task.
+3. Do not delete, skip, or weaken any assertion in existing tests or verification scripts in order to "make tests pass".
+4. Do not modify the measurement basis of statistics scripts, the target values of evaluation metrics, or the decision logic of acceptance scripts to create a false pass.
+5. Do not relax the model allowlist, and do not introduce new runtime dependencies (if one is genuinely needed, it must be recorded as a separate decision item with the reason and an assessment of size and security impact).
+6. Do not modify `.gitignore` in a way that lets ignored sensitive or generated files into the repository.
+7. Acceptance records must truthfully reflect the execution results; a failure is a failure, and fabrication is forbidden.
+
+---
+
+## 4. Phase 1: Environment preparation and baseline establishment
+
+### 4.1 Environment requirements
+
+- Node 20 or higher, npm available; commands are executed under Git Bash (all repository scripts are bash scripts).
+- Confirm that `.env` exists in the root directory (do not view or output its contents) and that the frontend build configuration file exists as needed; when either is missing, work in mock form, which does not affect this task.
+
+### 4.2 Baseline commands (execute and record the result of each one)
+
+| No. | Command | Expected result | What to record |
 |---|---|---|---|
-| B-1 | `npm install` | 成功 | 是否有告警或漏洞报告 |
-| B-2 | `npm run build` | 成功 | 前后端构建输出摘要 |
-| B-3 | `npm test` | 全部通过 | **实际用例总数、通过数、失败数**(注意:README 声称 34 项,实际源码统计为 33 项,以实测为准并把差异登记为文档缺陷) |
-| B-4 | `npm run smoke` | 输出冒烟成功标志 | 启动与关停日志要点 |
-| B-5 | `npm run scan-secrets` | 零命中、退出码 0 | 命中数 |
-| B-6 | `bash scripts/count_lines.sh` | NFR-504 判定 PASS | 三个口径的行数(记下口径 B 的数值,这是后续新增代码的预算余额) |
-| B-7 | `node backend/src/server.js` 后另开终端访问健康检查接口,再 Ctrl+C | 返回正常、进程干净退出 | 端口与结果 |
-| B-8 | `node eval/run.js` | mock 模式下 11 组指标收集完整(数值与线上实测不同属正常) | 各组指标结果文件是否生成 |
+| B-1 | `npm install` | Success | Whether there are warnings or vulnerability reports |
+| B-2 | `npm run build` | Success | Summary of frontend and backend build output |
+| B-3 | `npm test` | All pass | **Actual total number of cases, number passed, number failed** (note: the README claims 34 items, the actual source count is 33, so trust the measured value and register the difference as a documentation defect) |
+| B-4 | `npm run smoke` | Outputs the smoke success flag | Key points of the startup and shutdown logs |
+| B-5 | `npm run scan-secrets` | Zero hits, exit code 0 | Number of hits |
+| B-6 | `bash scripts/count_lines.sh` | NFR-504 verdict PASS | Line counts for the three bases (note the basis B value, which is the remaining budget for later new code) |
+| B-7 | `node backend/src/server.js`, then open another terminal to access the health check endpoint, then Ctrl+C | Normal response, clean process exit | Port and result |
+| B-8 | `node eval/run.js` | In mock mode, all 11 metric groups collected completely (values differing from live measurements is normal) | Whether the result file for each metric group was generated |
 
-任何基线命令失败:先登记为缺陷再继续(基线失败说明仓库当前就带病,不允许把失败当成"环境就这样"跳过)。
+If any baseline command fails: register it as a defect first, then continue (a baseline failure means the repository is already in a broken state; it is not permitted to skip a failure by treating it as "the environment is just like this").
 
-**补充禁令(基线与全程生效)**:在未设置真实模型密钥的环境下,严禁运行五个真实适配器验证脚本(分类、抽取、边界、因子选择、报告)——其中四个没有密钥前置守卫,运行会以 mock 结果覆写正式指标证据文件(对应疑点 R-23)。离线评估入口本身只汇总既有结果文件、不覆写它们,可以安全运行。
+**Additional prohibition (in effect for the baseline and throughout)**: in an environment where no real model key is set, it is strictly forbidden to run the five real-adapter verification scripts (classification, extraction, boundary, factor selection, report) — four of them have no key precondition guard, and running them will overwrite the official metric evidence files with mock results (corresponds to open question R-23). The offline evaluation entry point itself only aggregates existing result files and does not overwrite them, so it can be run safely.
 
-### 4.3 基线快照
+### 4.3 Baseline snapshot
 
-把 B-1 至 B-8 的结果整理为基线快照,存入 progress 目录;后续所有"不回归"判断都以这份快照为参照。
-
----
-
-## 五、阶段二:分域系统审查
-
-**通用要求**:每个域先通读该域全部文件,再逐条核对检查点,最后逐条核实附录 A 中归属该域的疑点。审查产出全部进入缺陷登记册。检查点清单是"最低覆盖",审查不得止步于清单——清单之外发现的问题同样登记。
-
-### 5.1 域 A:安全审查(最高优先级)
-
-**范围**:`backend/src/server.js`、`backend/src/services/fileService.js`、`backend/src/services/reviewQueue.js`、`backend/src/services/taskService.js`、`backend/src/storage/index.js`、`backend/src/ai/client.js`、`backend/src/services/exportService.js`、`frontend/src/auth.js`、`frontend/src/api.js`。
-
-**检查点**:
-
-1. **属主与越权(对应 NFR-301)**:对每一个 HTTP 接口逐一回答"谁能调用它、它能读/写谁的数据"。重点:任务详情、文档列表、文档下载、重复决议、状态修改、触发运行、仪表盘、报告读取、报告导出、复核全部动作、审计查看、AI 追踪查询——逐个确认是否存在属主校验;不存在的,按 6.3 节设计决策确定修复口径。核对疑点 R-03、R-11。
-2. **路径遍历**:追踪上传文件名从 HTTP 多部分表单到存储键的全链路,确认 `../` 与反斜杠变体、绝对路径、特殊字符都无法逃逸存储根目录;本地存储适配器的读写路径必须做包含性校验。核对 R-04。
-3. **上传资源消耗**:上传中间件是否配置了单文件大小、单请求文件数、总请求体的上限;超大文件是否在完整缓冲进内存之前被拒绝;解析炸弹(PDF 解压放大、XLSX 即 ZIP 炸弹)有无防线或至少有无危险度记录。核对 R-09、R-20。
-4. **注入类**:CSV 导出的公式注入(以等号、加号、减号、@ 开头的单元格值在表格软件中被执行)必须中和;确认无命令执行、无动态代码求值;HTML 前端确认无任何直接注入 DOM 的渲染路径。核对 R-08。
-5. **AI 追踪的数据暴露**:追踪记录中的输入摘要是否包含上传文档的 base64 片段、错误信息是否包含上游服务返回体;该接口叠加越权问题后等于公开原始文档片段。核对 R-05。
-6. **CORS 与限流**:来源白名单是否过宽(任意 Firebase 域名都放行是否合理);畸形 Origin 头是否会导致未捕获异常;限流的键取自客户端可伪造的转发头意味着什么,桶字典是否无上限增长;限流阈值配置为非法值时是禁用还是崩溃。核对 R-10、R-32。
-7. **认证实现**:前端令牌的存储位置与生命周期(长期刷新令牌放本地存储的风险)、刷新失败静默降级为新匿名身份的影响;后端令牌校验失败仅告警放行的策略与属主校验缺失叠加后的综合风险,统一在 R-03 的修复中收口。
-8. **响应头与缓存**:动态 API 无缓存头是否覆盖全部路由;静态托管是否缺安全响应头(见域 F)。
-9. **信息泄露**:错误响应是否外泄内部细节;日志是否打印敏感值;配置查询接口是否只回显非密配置(现状正确,确认不被破坏)。
-
-### 5.2 域 B:业务正确性审查
-
-**范围**:`backend/src/services/` 全部模块,重点 pipeline.js、pipelineModelCalls.js、calculation.js、scenarios.js、reportService.js、normalization.js、uncertainty.js、documentUnits.js、reviewQueue.js。
-
-**检查点**:
-
-1. **文档状态机**:七态转换表与全部调用点交叉对照,找出非法转换(尤其是循环内重复设置同一状态、并发重跑、复核后重算的路径)。核对 R-01。
-2. **多页文档全流程**:当前演示集与多数测试只用单页文档,多页 PDF 是最大的未测路径;追踪多单元文档从拆分到逐单元处理再到状态推进的每一步。核对 R-01。
-3. **数值健壮性**:全链路搜索非有限数值(非数字、无穷、字符串数字)进入数量的可能入口:模型抽取校验、归一化换算、复核编辑补丁、核算基数;一旦进入会在聚合、排序、报告中如何扩散。核对 R-12、R-16。
-4. **情景与正式账本的隔离**:情景重算是否复用了会落库的核算函数,从而覆盖基线核算记录与审计记录;报告懒生成、导出、复核后重建报告是否会把情景值当基线值读出。核对 R-02、R-28。
-5. **报告数值与引用锚点**:锚点值单位换算(千克与吨)逐处核对;引用扫描对情景类锚点是否做了存在性校验,还是仅凭标识符形态判断有效。核对 R-07、R-14。
-6. **聚合与舍入一致性**:显示一致分摊算法的边界(空集、单元素、负值、极端值);汇总与明细在复核改动后是否总会重建;已排除记录的陈旧核算结果是否残留。核对 R-28。
-7. **归一化规则**:币种识别的正则顺序与互斥性、已归一化输入的再校验、换算对非法类型的防御。核对 R-19。
-8. **重复检测**:内容哈希查重的并发窗口、查重发生在归一化之前导致同义不同写漏判的影响评估。核对 R-27。
-9. **文档计数与解析**:PDF 页数统计用原始字节正则的准确性,以及它被用于哪些下游判断。核对 R-21。
-10. **导出**:PDF 生成的错误路径(生成器异常是否导致请求悬挂)、表格行数截断是否有披露、表头为空时的除零。核对 R-22。
-11. **任务创建入参校验**:任务实体名、报告期起止等字段的类型、长度与先后顺序校验(当前仅有浅校验)。核对 R-29。
-12. **死代码与死分支**:报告服务中的空循环、追踪服务中的死分支、未被使用的队列抽象等,逐一确认无引用后登记,作为行数预算对冲的回收候选。核对 R-17、R-31。
-
-### 5.3 域 C:前端功能审查
-
-**范围**:`frontend/src` 全部五个源码文件(应用入口、路由、页面集合、请求封装、认证模块)与样式文件。
-
-**检查点**:
-
-1. **P3 活动记录页与 P4 匹配查看器的数据源**:两页从任务详情接口取记录列表所用的字段名,与后端该接口实际返回结构是否一致(注意后端返回的是任务与文档列表,不含记录字段);不一致则这两页永远为空,这是当前最严重的功能性 UI 缺陷。核对 R-06。
-2. **P6 情景页**:替换比例滑块的值是否真的传到了后端;失焦即触发整条流水线重跑是否合理。核对 R-25。
-3. **请求层与认证存储**:上传路径是否检查响应状态;请求头覆盖问题;全部接口无超时控制的影响;错误被静默吞掉导致 UI 无反馈的页面逐个排查;长期刷新令牌的本地存储位置与刷新失败静默降级为新匿名身份的会话错位风险。核对 R-33。
-4. **URL 构造**:把数据库标识符直接拼进链接与查询串时是否编码;本地开发代理未覆盖因子查询接口的问题。核对 R-26。
-5. **交互完整性**:P1 建任务 → P2 上传/一键演示 → P3 到 P9 逐页走查(第七章 V-10 有完整脚本),记录所有与后端契约不匹配、空态误导、错误不可见的问题。
-6. **本地存储**:任务标识与认证信息的本地存储键、生命周期、异常恢复(标识指向已被清理的任务时各页表现)。
-
-### 5.4 域 D:数据存储与适配器审查
-
-**范围**:`backend/src/store/index.js`、`backend/src/store/firestore.js`、`backend/src/storage/index.js`、`backend/src/queue/index.js`。
-
-**检查点**:
-
-1. 本地文件存储的持久化原子性(写一半崩溃、并发整文件重写、最后写赢)、集合文件解析失败静默重置为空的风险与告警缺失。核对 R-15。
-2. 本地适配器与生产适配器行为差异:未定义值查询、文档顺序、分页;差异导致"本地测试全绿、生产行为不同"的具体清单。核对 R-30。
-3. 队列抽象当前未被服务端使用:确认后决定"修复其双派发缺陷"还是"作为死代码移除"(移除可回收行数预算),二选一并登记决策。
-4. 存储键的合法字符集与包含性校验(与域 A 路径遍历联动)。
-
-### 5.5 域 E:并发、容错与 AI 客户端审查
-
-**范围**:`backend/src/ai/client.js`、`backend/src/services/pipeline.js`、`backend/src/services/taskRuns.js`、`backend/src/services/recall.js`。
-
-**检查点**:
-
-1. 模型调用重试策略:致命错误(如鉴权失败、请求非法)是否被无谓重试;退避与抖动缺失的影响;重试次数配置为非法值时的行为。核对 R-13。
-2. 嵌入批量调用:无超时、无重试、响应向量数量少于输入数量时静默接受并写入坏索引的后果。核对 R-18。
-3. 流水线并发参数:非法环境变量值导致并发数为零、流水线静默空跑的问题;同任务两次触发运行的并发语义(单飞等待是否足够)。核对 R-13。
-4. 抽取结果校验器:数量字段的类型与有限性校验漏洞。核对 R-12。
-5. 提示词注入面:用户与模型可控文本(品名、地点、供应商名)直接拼入提示词的风险至少完成"识别 + 文档化"处置(以文字在登记册记录攻击面与缓解建议;若做代码缓解须保持抽取准确率不回归)。
-6. 后台任务失败的可观测性:流水线异步失败后任务与文档状态的最终一致性(失败是否总落盘为可读状态)。
-
-### 5.6 域 F:配置与部署审查
-
-**范围**:`backend/src/config.js`、`Dockerfile`、`firebase.json`、`.firebaserc`、`.gcloudignore`、`.gitignore`、`deploy/`。
-
-**检查点**:
-
-1. 配置解析:整型与浮点项对非法值(非数字、负数、零、超范围)无校验即生效的清单及后果。核对 R-13。
-2. 容器:健康检查指令缺失;镜像内是否混入了仅离线工具需要的数据目录(评估体积与攻击面);以非 root 运行的现状保持。
-3. 托管配置:安全响应头(内容安全策略、严格传输安全、帧保护、嗅探保护)缺失;API 路径重写与健康检查路径的关系;缓存策略与 API 无缓存头的一致性。核对 R-24。
-4. 密钥注入方式:以明文环境变量注入运行时密钥的做法与密钥管理服务的差距,至少文档化改进路径(不要求本次实施,除非零风险)。
-5. 忽略规则:.gcloudignore 与 .gitignore 对敏感文件与生成物的覆盖是否有漏洞;`scripts/golden/__pycache__` 下三个编译缓存文件已被 git 跟踪,属仓库卫生问题,应移除跟踪并确保忽略规则生效(编译缓存不计入行数统计,该修复属于目录卫生,不改变预算余额)。
-6. `deploy/` 目录占位内容与实际部署方式的一致性。
-
-### 5.7 域 G:测试与验证体系审查
-
-**范围**:`backend/test/` 全部、`scripts/verify_*.js`、`scripts/test.sh`、`eval/`。
-
-**检查点**:
-
-1. 五个依赖真实密钥的验证脚本(分类、抽取、边界、因子选择、报告)中,有四个缺少"无密钥即拒绝执行"的前置守卫(仅分类脚本有),无密钥运行会以 mock 结果覆写正式指标证据文件;评估收集器对结果文件"通过"字段盲信、不校验适配器来源。核对 R-23。
-2. 密钥扫描只扫版本库跟踪文件——这对"防止密钥入库"是对的,但要确认提交前防线完整(例如是否存在能拦住"误把 .env 加入暂存区"的机制),改进不得导致本地合法密钥文件误报。
-3. 测试覆盖缺口对照第二阶段发现:多页文档、情景隔离、接口属主、路径遍历、公式注入、报告锚点数值、非有限数值防线——这些缺陷修复时必须补齐对应回归测试(计入行数预算,见 2.6)。
-4. 测试数量与 README 声称数量(34 对 33)的出入,作为文档缺陷登记。
-5. 各验证脚本的退出码契约(0/1/2)是否被调用方正确消费。
-
-### 5.8 域 H:文档与仓库卫生审查
-
-**范围**:`README.md`、`progress/PROGRESS_SUMMARY.md`、`progress/DEFECT_REPORT_T050.md`、`eval/README.md`、`data/README.md`、`deploy/README.md`。
-
-**检查点**:
-
-1. README 中的命令、环境变量表、错误码清单、指标表与修复后的实际行为逐一对账(测试数、行数、指标口径都会因本次修复变动,README 必须同步且不得虚报)。
-2. 现有缺陷报告(T-050)声明已修复的一致性问题,确认其修复方案在本次修复(尤其情景隔离)后仍然成立。
-3. 仓库卫生:被跟踪的编译缓存、空目录占位、遗留生成物。
+Organize the results of B-1 through B-8 into a baseline snapshot and store it in the progress directory; all subsequent "no regression" judgments use this snapshot as the reference.
 
 ---
 
-## 六、阶段三:修复执行
+## 5. Phase 2: Domain-by-domain systematic review
 
-### 6.1 优先级与顺序
+**General requirements**: for each domain, first read all files in that domain, then check each checkpoint item one by one, and finally verify each open question assigned to that domain in Appendix A. All review output goes into the defect register. The checkpoint list is "minimum coverage"; the review must not stop at the list — problems found outside the list are registered as well.
 
-按登记册严重度排序执行:P0 全部 → P1 全部 → P2 全部 → P3 视预算与时间执行(P3 允许登记为"有意保留"并附理由,但每一条都必须显式决策,不得遗漏不表)。同一严重度内,先修会阻塞其他修复的(例如属主中间件先于各接口回归测试)。
+### 5.1 Domain A: Security review (highest priority)
 
-### 6.2 每个缺陷的处理闭环
+**Scope**: `backend/src/server.js`, `backend/src/services/fileService.js`, `backend/src/services/reviewQueue.js`, `backend/src/services/taskService.js`, `backend/src/storage/index.js`, `backend/src/ai/client.js`, `backend/src/services/exportService.js`, `frontend/src/auth.js`, `frontend/src/api.js`.
 
-核实(复现或推理证明)→ 登记册定稿描述与方案 → 实施最小修复 → 新增或调整回归验证 → 运行 `npm test` 与 `npm run build` → 更新登记册状态。**禁止**在同一提交里混合多个不相关缺陷的修复。
+**Checkpoints**:
 
-### 6.3 关键设计决策(修复时的既定口径,不得另行发明)
+1. **Ownership and unauthorized access (corresponds to NFR-301)**: for each HTTP interface, answer one by one "who can call it and whose data it can read/write". Focus: task details, document list, document download, duplicate resolution, status modification, triggering a run, dashboard, report reading, report export, all review actions, audit viewing, AI trace query — confirm one by one whether an ownership check exists; where it does not, determine the fix approach according to the design decision in 6.3. Verify open questions R-03, R-11.
+2. **Path traversal**: trace the full chain of the uploaded file name from the HTTP multipart form to the storage key, confirming that `../` and backslash variants, absolute paths, and special characters cannot escape the storage root directory; the read/write paths of the local storage adapter must perform containment validation. Verify R-04.
+3. **Upload resource consumption**: whether the upload middleware is configured with limits on single file size, number of files per request, and total request body; whether oversized files are rejected before being fully buffered into memory; whether there are defenses against parsing bombs (PDF decompression amplification, XLSX as a ZIP bomb), or at least a record of the danger level. Verify R-09, R-20.
+4. **Injection**: formula injection in CSV export (cell values starting with an equals sign, plus sign, minus sign, or @ are executed in spreadsheet software) must be neutralized; confirm there is no command execution and no dynamic code evaluation; confirm the HTML frontend has no rendering path that injects directly into the DOM. Verify R-08.
+5. **Data exposure in AI traces**: whether the input summaries in trace records contain base64 fragments of uploaded documents, and whether error messages contain upstream service response bodies; combined with the unauthorized access problem, this interface amounts to exposing raw document fragments publicly. Verify R-05.
+6. **CORS and rate limiting**: whether the origin allowlist is too broad (is it reasonable to allow any Firebase domain); whether a malformed Origin header causes an uncaught exception; what it means that the rate limiting key is taken from a client-forgeable forwarding header, and whether the bucket dictionary grows without bound; whether an illegally configured rate limit threshold disables the limiter or makes it crash. Verify R-10, R-32.
+7. **Authentication implementation**: the storage location and lifecycle of frontend tokens (the risk of a long-lived refresh token in local storage), and the impact of silently degrading to a new anonymous identity on refresh failure; the combined risk of the backend's alert-and-allow strategy on token validation failure combined with missing ownership checks, all to be closed out in the R-03 fix.
+8. **Response headers and caching**: whether no-cache headers for dynamic APIs cover all routes; whether static hosting lacks security response headers (see Domain F).
+9. **Information disclosure**: whether error responses leak internal details; whether logs print sensitive values; whether the configuration query interface only echoes non-secret configuration (currently correct, confirm it is not broken).
 
-1. **属主校验的兼容口径(R-03 类)**:项目有意允许"无 token 请求访问无属主任务"(脚本、离线评估、公开演示都依赖此语义)。因此修复口径是**条件强制**:当且仅当任务记录存在属主时,非该属主的请求(无论带错 token 还是不带 token)一律拒绝;无属主任务保持现状开放。`progress/evidence` 里公开的任务标识全部来自无属主的一键演示任务,收口后这些脚本必须依然可用——这是修复正确性的直接检验。复核队列各动作(改字段、指定因子、排除、关闭)同样补齐"记录属于该任务 + 任务属主"双重校验。令牌校验组件必须以可替换方式实现,使单元测试能在不依赖真实 Firebase 凭证的前提下注入模拟身份;本地无凭证时"校验失败降级为匿名"的现状保留,但它与条件强制组合后的语义(有属主任务对匿名请求拒绝)必须有测试覆盖。
-2. **情景隔离口径(R-02 类)**:情景重算不得写正式账本。修复方向是让核算函数支持"只算不落库"的模式供情景复用,正式路径行为不变;被情景污染过的历史数据不做迁移(演示环境数据可重建),但必须在修复说明中写明。
-3. **状态机口径(R-01 类)**:多单元文档处理中,状态推进以"文档级"为粒度——进入抽取态只允许发生一次,修复可以采用允许自环、或将状态设置移出单元循环、或先计数后统一推进任一方案,但必须保证:多次重跑幂等、失败态可从队列态重试、复核后重算路径不触发非法转换。
-4. **行数预算对冲**:候选回收项包括未被使用的队列抽象、报告服务中的空循环与死分支、追踪服务中的死代码、其他阶段二确认的死代码;回收必须以"确认无引用"为前提。
-5. **新增安全回归测试**优先放进既有测试文件(共享既有夹具与导入,行数最省),测试命名与缺陷编号对应,便于追溯。
+### 5.2 Domain B: Business correctness review
+
+**Scope**: all modules in `backend/src/services/`, with emphasis on pipeline.js, pipelineModelCalls.js, calculation.js, scenarios.js, reportService.js, normalization.js, uncertainty.js, documentUnits.js, and reviewQueue.js.
+
+**Checkpoints**:
+
+1. **Document state machine**: cross-check the seven-state transition table against all call sites and find illegal transitions (especially repeatedly setting the same state inside a loop, concurrent re-runs, and the recalculation path after review). Verify R-01.
+2. **Multi-page document full flow**: the current demo set and most tests use only single-page documents, so multi-page PDFs are the largest untested path; trace every step of a multi-unit document from splitting to per-unit processing to state advancement. Verify R-01.
+3. **Numeric robustness**: search the whole chain for possible entry points where non-finite values (non-numeric, infinite, numeric strings) enter quantities: model extraction validation, normalization conversion, review edit patches, accounting bases; once they enter, how they spread in aggregation, sorting, and reports. Verify R-12, R-16.
+4. **Isolation of scenarios from the official ledger**: whether scenario recalculation reuses accounting functions that persist to the database, thereby overwriting baseline accounting records and audit records; whether report lazy generation, export, and report rebuilding after review read scenario values as baseline values. Verify R-02, R-28.
+5. **Report values and citation anchors**: verify the unit conversion of anchor values (kilograms and tonnes) in each place; whether the citation scan performs an existence check on scenario-type anchors or judges validity purely by the shape of the identifier. Verify R-07, R-14.
+6. **Aggregation and rounding consistency**: the boundaries of the display-consistent allocation algorithm (empty set, single element, negative values, extreme values); whether totals and details are always rebuilt after a review change; whether stale accounting results of excluded records remain. Verify R-28.
+7. **Normalization rules**: the order and mutual exclusivity of currency recognition regexes, re-validation of already normalized input, and the defense of conversions against illegal types. Verify R-19.
+8. **Duplicate detection**: the concurrency window of content-hash deduplication, and an impact assessment of missed detection when deduplication occurs before normalization, causing synonymous but differently written entries to slip through. Verify R-27.
+9. **Document counting and parsing**: the accuracy of PDF page counting with a raw byte regex, and which downstream judgments use it. Verify R-21.
+10. **Export**: error paths in PDF generation (whether a generator exception causes the request to hang), whether table row truncation is disclosed, and division by zero when the header is empty. Verify R-22.
+11. **Task creation input validation**: type, length, and ordering validation of fields such as the task entity name and reporting period start and end (currently only shallow validation). Verify R-29.
+12. **Dead code and dead branches**: empty loops in the report service, dead branches in the tracing service, the unused queue abstraction, etc.; confirm one by one that there are no references, then register them as recovery candidates for offsetting the line count budget. Verify R-17, R-31.
+
+### 5.3 Domain C: Frontend functionality review
+
+**Scope**: all five source files in `frontend/src` (application entry, routing, page collection, request wrapper, authentication module) and the style files.
+
+**Checkpoints**:
+
+1. **Data sources of the P3 Activity Records page and the P4 Match Viewer**: whether the field names used by the two pages to fetch the record list from the task details interface match the actual response structure of that interface (note that the backend returns a task and document list, with no record fields); if they do not match, these two pages will always be empty, which is currently the most severe functional UI defect. Verify R-06.
+2. **P6 Scenarios page**: whether the replacement ratio slider value is actually passed to the backend; whether it is reasonable to trigger a full pipeline re-run on blur. Verify R-25.
+3. **Request layer and authentication storage**: whether the upload path checks the response status; the request header override issue; the impact of no timeout control on all interfaces; go through the pages one by one where errors are silently swallowed, causing no UI feedback; the local storage location of the long-lived refresh token and the session mismatch risk of silently degrading to a new anonymous identity on refresh failure. Verify R-33.
+4. **URL construction**: whether database identifiers are encoded when directly concatenated into links and query strings; the issue that the local development proxy does not cover the factor query interface. Verify R-26.
+5. **Interaction completeness**: P1 create task → P2 upload/one-click demo → walk through P3 to P9 page by page (Chapter 7, V-10, has the complete script), and record all problems of backend contract mismatches, misleading empty states, and invisible errors.
+6. **Local storage**: the local storage keys, lifecycle, and error recovery for task identifiers and authentication information (the behavior of each page when an identifier points to a task that has already been cleaned up).
+
+### 5.4 Domain D: Data storage and adapter review
+
+**Scope**: `backend/src/store/index.js`, `backend/src/store/firestore.js`, `backend/src/storage/index.js`, `backend/src/queue/index.js`.
+
+**Checkpoints**:
+
+1. Persistence atomicity of local file storage (crash halfway through a write, concurrent whole-file rewrites, last write wins), and the risk and missing warning of silently resetting a collection file to empty when parsing fails. Verify R-15.
+2. Behavioral differences between the local adapter and the production adapter: undefined value queries, document ordering, pagination; a concrete list of differences leading to "all local tests pass, but production behavior differs". Verify R-30.
+3. The queue abstraction is currently unused by the server: after confirming this, decide between "fixing its double-dispatch defect" and "removing it as dead code" (removal can recover line count budget); choose one and register the decision.
+4. The valid character set and containment validation of storage keys (coordinated with path traversal in Domain A).
+
+### 5.5 Domain E: Concurrency, fault tolerance, and AI client review
+
+**Scope**: `backend/src/ai/client.js`, `backend/src/services/pipeline.js`, `backend/src/services/taskRuns.js`, `backend/src/services/recall.js`.
+
+**Checkpoints**:
+
+1. Model call retry strategy: whether fatal errors (such as authentication failure, illegal request) are retried needlessly; the impact of missing backoff and jitter; the behavior when the retry count is configured to an illegal value. Verify R-13.
+2. Embedding batch calls: the consequences of having no timeout, no retries, and silently accepting and writing bad indexes when the number of response vectors is fewer than the number of inputs. Verify R-18.
+3. Pipeline concurrency parameters: the problem that illegal environment variable values lead to a concurrency of zero and the pipeline silently running empty; the concurrency semantics of triggering two runs for the same task (whether single-flight waiting is sufficient). Verify R-13.
+4. Extraction result validator: type and finiteness validation gaps in quantity fields. Verify R-12.
+5. Prompt injection surface: the risk of user- and model-controllable text (product names, locations, supplier names) being directly concatenated into prompts must at least be handled with "identify + document" (record the attack surface and mitigation suggestions in text in the register; if a code mitigation is made, extraction accuracy must not regress).
+6. Observability of background task failures: the eventual consistency of task and document statuses after an asynchronous pipeline failure (whether a failure always ends up persisted as a readable status).
+
+### 5.6 Domain F: Configuration and deployment review
+
+**Scope**: `backend/src/config.js`, `Dockerfile`, `firebase.json`, `.firebaserc`, `.gcloudignore`, `.gitignore`, `deploy/`.
+
+**Checkpoints**:
+
+1. Configuration parsing: a list of integer and float items that take effect without validation for illegal values (non-numeric, negative, zero, out of range), and the consequences. Verify R-13.
+2. Container: missing health check instruction; whether data directories needed only by offline tools have been mixed into the image (assess size and attack surface); keep the current state of running as non-root.
+3. Hosting configuration: missing security response headers (content security policy, strict transport security, frame protection, sniffing protection); the relationship between API path rewrites and the health check path; the consistency between the cache policy and the API no-cache headers. Verify R-24.
+4. Secret injection method: the gap between injecting runtime secrets as plaintext environment variables and using a secret management service; at minimum, document the improvement path (implementation is not required this time unless it is zero risk).
+5. Ignore rules: whether `.gcloudignore` and `.gitignore` have gaps in covering sensitive files and generated artifacts; three compiled cache files under `scripts/golden/__pycache__` are already tracked by git, which is a repository hygiene issue — tracking should be removed and the ignore rules made effective (compiled caches are not counted in line count statistics; this fix is directory hygiene and does not change the budget balance).
+6. The consistency of the `deploy/` directory placeholder content with the actual deployment method.
+
+### 5.7 Domain G: Test and verification system review
+
+**Scope**: all of `backend/test/`, `scripts/verify_*.js`, `scripts/test.sh`, `eval/`.
+
+**Checkpoints**:
+
+1. Of the five verification scripts that depend on a real key (classification, extraction, boundary, factor selection, report), four lack the precondition guard of "refuse to execute without a key" (only the classification script has one), and running without a key will overwrite the official metric evidence files with mock results; the evaluation collector blindly trusts the "pass" field of result files and does not validate the adapter source. Verify R-23.
+2. Secret scanning only scans repository tracked files — this is correct for "preventing secrets from entering the repository", but it must be confirmed that the pre-commit defenses are complete (for example, whether there is a mechanism that can stop "accidentally adding .env to the staging area"); improvements must not cause false positives on legitimate local secret files.
+3. Test coverage gaps against Phase 2 findings: multi-page documents, scenario isolation, interface ownership, path traversal, formula injection, report anchor values, non-finite value defenses — when fixing these defects, the corresponding regression tests must be added (counted against the line count budget, see 2.6).
+4. The discrepancy between the actual test count and the count claimed in the README (34 vs 33) is registered as a documentation defect.
+5. Whether the exit-code contract (0/1/2) of each verification script is correctly consumed by its callers.
+
+### 5.8 Domain H: Documentation and Repository Hygiene Review
+
+**Scope**: `README.md`, `progress/PROGRESS_SUMMARY.md`, `progress/DEFECT_REPORT_T050.md`, `eval/README.md`, `data/README.md`, `deploy/README.md`.
+
+**Checkpoints**:
+
+1. Reconcile the commands, environment-variable table, error-code list, and metrics table in the README one by one against the actual post-fix behavior (test counts, line counts, and metric definitions will change because of this fix round; the README must be updated accordingly and must not overstate).
+2. For the consistency issues that the existing defect report (T-050) claims are already fixed, confirm that its fix approach still holds after this fix round (especially scenario isolation).
+3. Repository hygiene: tracked compilation caches, empty-directory placeholders, leftover generated artifacts.
 
 ---
 
-## 七、阶段四:验收(必须全部通过后才能进入阶段五)
+## 6. Phase Three: Fix Execution
 
-### 7.1 自动验收电池(逐条执行,结果逐条记录)
+### 6.1 Priority and Order
 
-| 序号 | 命令/动作 | 通过标准 |
+Execute in order of registry severity: all P0 → all P1 → all P2 → P3 as budget and time permit (P3 items may be registered as "intentionally retained" with justification, but every one must receive an explicit decision and none may be omitted from the record). Within the same severity, fix first whatever blocks other fixes (for example, owner middleware before the per-endpoint regression tests).
+
+### 6.2 Closed Loop for Each Defect
+
+Verify (reproduce or prove by reasoning) → finalize the registry description and approach → implement the minimal fix → add or adjust regression verification → run `npm test` and `npm run build` → update the registry status. Mixing fixes for multiple unrelated defects in the same commit is **forbidden**.
+
+### 6.3 Key Design Decisions (established positions for the fix; do not invent alternatives)
+
+1. **Compatibility position for owner verification (R-03 class)**: The project intentionally allows "tokenless requests to access ownerless tasks" (scripts, offline evaluation, and public demos all depend on this semantics). The fix position is therefore **conditional enforcement**: if and only if the task record has an owner, any request that is not from that owner (whether carrying a wrong token or no token) is rejected; ownerless tasks stay open as before. The task identifiers exposed in `progress/evidence` all come from ownerless one-click demo tasks, and these scripts must remain usable after the tightening — this is a direct test of fix correctness. The review-queue actions (edit field, assign factor, exclude, close) must likewise gain the dual check of "the record belongs to this task + the task's owner". The token verification component must be implemented in a replaceable way so that unit tests can inject a mock identity without depending on real Firebase credentials; the current behavior of "verification failure degrades to anonymous" when no credentials exist locally is retained, but its semantics when combined with conditional enforcement (owner-bearing tasks reject anonymous requests) must be covered by tests.
+2. **Scenario isolation position (R-02 class)**: Scenario recalculation must not write to the official ledger. The fix direction is to let the calculation function support a "compute-only, no persistence" mode for scenario reuse, leaving the official path's behavior unchanged; historical data polluted by scenarios will not be migrated (demo-environment data can be rebuilt), but this must be stated explicitly in the fix notes.
+3. **State-machine position (R-01 class)**: In multi-unit document processing, state advancement is at "document level" — entry into the extraction state may happen only once. The fix may adopt any of the following: allow self-transitions, move the state assignment out of the unit loop, or count first and advance once; but it must guarantee idempotent repeated runs, retry from the queue state after failure, and no illegal transition triggered by the post-review recalculation path.
+4. **Line-budget offset**: Candidate items for reclamation include the unused queue abstraction, the empty loop and dead branches in the report service, the dead code in the traceability service, and other dead code confirmed in Phase Two; reclamation must be premised on "confirmed no references".
+5. **New security regression tests** should preferentially go into existing test files (sharing existing fixtures and imports, saving the most lines), with test names corresponding to defect IDs for traceability.
+
+---
+
+## 7. Phase Four: Acceptance (all items must pass before entering Phase Five)
+
+### 7.1 Automated Acceptance Battery (execute item by item, record results item by item)
+
+| No. | Command/Action | Pass Criteria |
 |---|---|---|
-| A-1 | `npm run build` | 成功,无错误 |
-| A-2 | `npm test` | 全部通过;用例数不少于基线 B-3 的数量,且含本次新增回归测试 |
-| A-3 | `npm run smoke` | 冒烟成功标志出现 |
-| A-4 | `npm run scan-secrets` | 退出码 0,零命中 |
-| A-5 | `bash scripts/count_lines.sh` | NFR-504 判定 PASS(口径 B 不超 7,000;超支必须已在登记册书面记录并被接受) |
-| A-6 | `node eval/run.js` | mock 模式 11 组指标收集完整,无异常中断;与基线 B-8 对比无指标口径变化 |
-| A-7 | `git status` | 干净;无敏感文件或生成物入暂存区 |
+| A-1 | `npm run build` | Succeeds, no errors |
+| A-2 | `npm test` | All pass; test-case count no less than the baseline B-3 count, and includes the regression tests added this round |
+| A-3 | `npm run smoke` | Smoke-success marker appears |
+| A-4 | `npm run scan-secrets` | Exit code 0, zero hits |
+| A-5 | `bash scripts/count_lines.sh` | NFR-504 verdict PASS (count basis B not over 7,000; any overage must already be documented in writing in the registry and accepted) |
+| A-6 | `node eval/run.js` | All 11 metric groups collected completely in mock mode, with no abnormal interruption; compared with baseline B-8, no change in metric definitions |
+| A-7 | `git status` | Clean; no sensitive files or generated artifacts in the staging area |
 
-### 7.2 定向验收场景(逐条执行并留证;每条都要在本地服务以 mock 模式运行的前提下执行,涉及界面的手工项在浏览器完成。**所有场景默认只针对本地服务执行;严禁对公网部署执行注入、遍历、限流、损坏文件等破坏性验证**,公网验证仅在用户明确要求时进行)
+### 7.2 Targeted Acceptance Scenarios (execute item by item and retain evidence; each must be run with the local service running in mock mode, and manual items involving the UI are completed in a browser. **All scenarios are by default executed only against the local service; it is strictly forbidden to perform destructive verification such as injection, traversal, rate-limit testing, or corrupted files against the public deployment**; public-deployment verification is performed only when the user explicitly requests it)
 
-- **V-01 多页文档全流程**:获取或构造一份多页 PDF(标准数据集中已含多页文档,例如四页的 GD-09,可直接使用;也可用仓库自带的数据集生成工具另行构造),上传并运行流水线;通过标准:文档最终状态为 completed(或因低置信进入 needs_review,但不得是 failed),每一页的活动记录都存在,无因状态机非法转换导致的整文档失败。此场景必须同时固化为自动化回归测试。
-- **V-02 越权矩阵**:对全部任务级接口(任务详情、文档列表、文件下载、报告读取、报告导出、仪表盘、复核四类动作、审计查看、AI 追踪、触发运行)逐一验证三种身份:无 token、错误 token、正确属主 token,对**有属主**的任务访问;通过标准:前两种全部拒绝且错误码符合语义,第三种全部成功;另验证**无属主**任务对三种身份保持可访问(兼容脚本与演示)。执行说明:令牌校验依赖 Firebase 管理端凭证,本地缺失时"正确属主"一侧允许在测试层通过可替换的令牌校验器注入模拟身份完成验证;一键演示加载接口创建的无属主任务必须保持对匿名访客可用。
-- **V-03 路径遍历**:分别以包含路径穿越片段、反斜杠变体、绝对路径片段的文件名上传;通过标准:全部被安全处理(拒绝或规范化),存储根目录之外无任何新建文件,目录树前后对比留证。
-- **V-04 情景隔离**:同一任务先跑基线并生成报告,记录基线总值与逐条核算值;触发三个情景;再次读取报告与导出;通过标准:基线数值与情景前完全一致,正式核算集合与审计记录未被情景覆盖,情景接口自身返回值正确;固化为自动化回归测试。
-- **V-05 报告锚点数值**:任取一份生成的报告,核对范围分解锚点的数值与仪表盘聚合数值一致(单位为吨,逐项相等);连同逐条记录锚点一起,固化为自动化回归测试。
-- **V-06 CSV 公式注入**:构造品名以公式触发字符开头的记录(可经复核编辑接口写入),导出两类 CSV;通过标准:危险前缀被中和,文件在表格软件语义下安全,正常字段内容与列结构不受破坏;固化为自动化回归测试。
-- **V-07 数值防线**:通过复核编辑接口与 mock 抽取路径分别注入非数字、无穷、零、负数数量;通过标准:全部被拒绝或安全降级(进入复核而非落库),账本、聚合、报告任何位置不出现非有限数值;固化为自动化回归测试。
-- **V-08 并发运行**:同一任务在报告轮询期间连续两次触发运行;通过标准:最终只产出一份一致报告,报告数值与账本重算一致(仓库自带的一致性验证脚本默认指向公网地址,可通过其支持的基地址环境变量改指本地服务后执行;若不适用则以等效手工核对并在登记册记录)。
-- **V-09 限流与来源防护(仅对本地服务执行)**:以超过阈值的频率请求接口得到限流响应;伪造转发头不再能重置限流桶;非白名单来源无跨域头;畸形来源头不导致服务器错误。
-- **V-10 界面全流程走查(手工)**:启动本地后端与前端开发服务,依次完成:P1 创建任务 → P2 一键加载演示数据并等待完成 → P3 记录表**非空**且可展开详情与审计 → P4 从记录进入匹配查看器并完成一次手动指定因子 → P5 仪表盘数值展示 → P6 三个情景查看(滑块行为符合修复后的设计) → P7 报告十章展示、PDF 与两种 CSV 下载成功且内容正确 → P8 复核队列执行一次编辑/排除并确认报告刷新 → P9 AI 追踪列表可见。每页截图或文字留证;任何页空白、报错、静默失败均不通过。
-- **V-11 上传防御**:空文件、伪装扩展名、损坏文件、超限大小、超过单请求文件数上限的批量——各路径行为符合错误码语义;超限请求不得先完整进入内存(核对中间件限制配置生效)。
-- **V-12 嵌入批次防御**:模拟嵌入接口返回向量数少于输入数的响应;通过标准:客户端重试或显式失败,索引中不写入缺失向量(以单元测试模拟响应实现)。
-- **V-13 文档对账**:README 的命令、环境变量表、错误码、测试数量、行数、指标说明与实际逐一对账修订完毕。
-- **V-14 登记册闭环**:登记册中无任何处于"待修复"且无决策说明的条目;每条"已修复"都引用了通过的验证方式;每条"不成立/有意保留"都附有理由。
+- **V-01 Multi-page document full flow**: Obtain or construct a multi-page PDF (the standard dataset already contains multi-page documents, e.g. the four-page GD-09, which can be used directly; alternatively, construct one with the repository's own dataset generation tool), upload it, and run the pipeline; pass criteria: the document's final state is completed (or needs_review due to low confidence, but not failed), activity records exist for every page, and there is no whole-document failure caused by an illegal state-machine transition. This scenario must also be solidified as an automated regression test.
+- **V-02 Authorization matrix**: For all task-level endpoints (task detail, document list, file download, report read, report export, dashboard, the four review actions, audit view, AI tracing, trigger run), verify each of the three identities one by one — no token, wrong token, correct-owner token — against tasks that **have an owner**; pass criteria: the first two are all rejected with semantically appropriate error codes, and the third all succeed; additionally verify that **ownerless** tasks remain accessible to all three identities (for script and demo compatibility). Execution note: token verification depends on Firebase admin credentials; when these are absent locally, the "correct owner" side may be verified at the test layer by injecting a mock identity through the replaceable token verifier; ownerless tasks created by the one-click demo loading endpoint must remain available to anonymous visitors.
+- **V-03 Path traversal**: Upload files whose names contain path-traversal fragments, backslash variants, and absolute-path fragments respectively; pass criteria: all are handled safely (rejected or normalized), no new files exist outside the storage root, and a before/after directory-tree comparison is retained as evidence.
+- **V-04 Scenario isolation**: For the same task, first run the baseline and generate a report, recording the baseline total and per-item calculated values; trigger the three scenarios; then read the report and export again; pass criteria: the baseline values are exactly the same as before the scenarios, the official calculation collection and audit records are not overwritten by scenarios, and the scenario endpoints themselves return correct values; solidify as an automated regression test.
+- **V-05 Report anchor values**: Take any generated report and check that the scope-breakdown anchor values match the dashboard aggregate values (unit: tonnes, equal item by item); together with the per-record anchors, solidify as an automated regression test.
+- **V-06 CSV formula injection**: Construct records whose product names start with formula trigger characters (they can be written through the review edit endpoint), and export both CSV types; pass criteria: dangerous prefixes are neutralized, the files are safe under spreadsheet-software semantics, and normal field contents and column structure are not damaged; solidify as an automated regression test.
+- **V-07 Numeric defense line**: Inject non-numeric, infinite, zero, and negative quantities through the review edit endpoint and the mock extraction path respectively; pass criteria: all are rejected or safely degraded (routed to review instead of being persisted), and no non-finite value appears anywhere in the ledger, aggregates, or reports; solidify as an automated regression test.
+- **V-08 Concurrent runs**: Trigger a run twice in a row for the same task while report polling is in progress; pass criteria: only one consistent report is ultimately produced, and the report values match a ledger recalculation (the repository's built-in consistency verification script points to a public address by default; it can be redirected to the local service via its supported base-address environment variable before execution; if not applicable, perform an equivalent manual check and record it in the registry).
+- **V-09 Rate limiting and origin protection (local service only)**: Requests at above-threshold frequency receive rate-limit responses; forged forwarding headers can no longer reset the rate-limit bucket; non-whitelisted origins receive no CORS headers; malformed origin headers do not cause server errors.
+- **V-10 Full UI walkthrough (manual)**: Start the local backend and frontend dev servers, then complete in order: P1 create task → P2 one-click load demo data and wait for completion → P3 the record table is **non-empty** and can expand details and audit → P4 enter the matching viewer from a record and complete one manual factor assignment → P5 dashboard values display → P6 view the three scenarios (slider behavior matches the post-fix design) → P7 the ten report chapters display, and the PDF and both CSV downloads succeed with correct content → P8 execute one edit/exclusion in the review queue and confirm the report refreshes → P9 the AI tracing list is visible. Retain a screenshot or written evidence for each page; any blank page, error, or silent failure is a fail.
+- **V-11 Upload defenses**: Empty files, disguised extensions, corrupted files, oversized files, and batches exceeding the per-request file-count limit — each path's behavior matches error-code semantics; oversized requests must not be fully buffered into memory first (verify that the middleware limit configuration is in effect).
+- **V-12 Embedding-batch defense**: Simulate an embedding endpoint response that returns fewer vectors than inputs; pass criteria: the client retries or fails explicitly, and missing vectors are not written to the index (implemented with a unit test that simulates the response).
+- **V-13 Documentation reconciliation**: The README's commands, environment-variable table, error codes, test counts, line counts, and metric descriptions have all been reconciled and revised against reality.
+- **V-14 Registry closure**: The registry contains no entry that is in "to be fixed" status without a decision note; every "fixed" entry cites a passing verification method; every "not substantiated / intentionally retained" entry includes a justification.
 
-### 7.3 不回归确认
+### 7.3 No-Regression Confirmation
 
-- 基线 33 个用例全部仍通过;新增回归测试全部通过。
-- 演示数据集端到端(mock 模式)记录数、章节数、引用覆盖率与基线一致。
-- 既有验证脚本中不依赖密钥与公网的部分全部可运行且结论不劣化。
+- All 33 baseline test cases still pass; all newly added regression tests pass.
+- For the demo dataset end-to-end (mock mode), the record count, chapter count, and citation coverage match the baseline.
+- All parts of the existing verification scripts that do not depend on secrets or the public network remain runnable and their conclusions do not degrade.
 
-### 7.4 二次复查
+### 7.4 Second Review
 
-全部修复完成后,执行一轮与阶段二相同视角的复查(可换一种审查顺序,如按文件而非按域),专门寻找:修复本身引入的新问题、修复之间的相互作用、登记册之外被遗漏的同类问题。二次复查发现的问题按同样闭环处理,直至零新增。最后对照附录 A 逐条点名确认每条疑点的最终处置(修复/不成立/有意保留),确保无一悬空。
-
----
-
-## 八、阶段五:交付物
-
-1. **缺陷登记册**(progress 目录):全部条目闭环,含二次复查结果。
-2. **修复报告**(progress 目录,中文):审查范围与方法、缺陷统计(按严重度与域)、每项修复的摘要、行数预算对冲说明、未实施项及理由、对生产的部署注意事项(仅说明,不执行部署)。
-3. **更新后的 README**:与实际行为一致(含测试数量、行数、指标口径的修订)。
-4. **验收记录**(progress 目录):7.1 与 7.2 每一项的实际结果与证据留存说明。
-5. **git 提交序列**:按 3.3 规范,最后工作区干净。
+After all fixes are complete, run one review round with the same perspective as Phase Two (the review order may be changed, e.g. by file instead of by domain), specifically looking for: new problems introduced by the fixes themselves, interactions between fixes, and similar problems missed outside the registry. Issues found in the second review are handled through the same closed loop until there are zero new additions. Finally, go through Appendix A item by item, naming and confirming the final disposition of each suspicion (fixed / not substantiated / intentionally retained), ensuring none is left hanging.
 
 ---
 
-## 九、最终验收核对单(逐项打勾后任务才算完成)
+## 8. Phase Five: Deliverables
 
-- [ ] 阶段一基线快照已存档,B-1 至 B-8 全部有记录
-- [ ] 附录 A 全部疑点(R-01 至 R-33)逐条核实并登记处置结论
-- [ ] 八个域的检查点全部过完,新发现全部登记
-- [ ] 全部 P0 缺陷已修复且各有通过的回归验证
-- [ ] 全部 P1 缺陷已修复且各有通过的回归验证
-- [ ] P2 缺陷已修复或已记录处置决策
-- [ ] P3 缺陷每条有显式决策(修复或保留理由)
-- [ ] A-1 至 A-7 自动验收全绿
-- [ ] V-01 至 V-14 定向验收全部通过并留证
-- [ ] 二次复查完成且零悬空条目
-- [ ] 缺陷登记册、修复报告、README、验收记录、提交序列五项交付物齐备
-- [ ] 全程未触犯第三章红线清单
+1. **Defect registry** (progress directory): all entries closed, including second-review results.
+2. **Fix report** (progress directory, in Chinese): review scope and method, defect statistics (by severity and domain), a summary of each fix, the line-budget offset explanation, unimplemented items and reasons, and deployment notes for production (explanation only; do not perform deployment).
+3. **Updated README**: consistent with actual behavior (including revisions to test counts, line counts, and metric definitions).
+4. **Acceptance record** (progress directory): the actual result and evidence-retention note for each item in 7.1 and 7.2.
+5. **git commit sequence**: per the 3.3 specification, with a clean working tree at the end.
 
 ---
 
-## 附录 A:预审疑点清单(执行前已完成的初步审查结论;每条都是"疑点",必须先核实再修复,核实证伪则登记"不成立")
+## 9. Final Acceptance Checklist (the task is complete only after every item is checked)
 
-> 说明:行号为预审时行号,修复过程中可能偏移,以实际代码为准。严重度为初判,登记时可调整但须说明。
+- [ ] The Phase One baseline snapshot is archived, with records for all of B-1 through B-8
+- [ ] All suspicions in Appendix A (R-01 through R-33) have been verified item by item and their dispositions registered
+- [ ] All checkpoints of the eight domains have been completed, and all new findings are registered
+- [ ] All P0 defects are fixed and each has a passing regression verification
+- [ ] All P1 defects are fixed and each has a passing regression verification
+- [ ] P2 defects are fixed or have a recorded disposition decision
+- [ ] Every P3 defect has an explicit decision (fix or retention justification)
+- [ ] A-1 through A-7 automated acceptance all green
+- [ ] V-01 through V-14 targeted acceptance all pass with evidence retained
+- [ ] The second review is complete with zero hanging entries
+- [ ] All five deliverables are complete: defect registry, fix report, README, acceptance record, and commit sequence
+- [ ] The Chapter Three red-line list was never violated throughout
 
-| 编号 | 初判 | 位置 | 疑点描述 | 核实方法要点 |
+---
+
+## Appendix A: Pre-Audit Suspicion List (preliminary review conclusions completed before execution; each is a "suspicion" that must be verified before fixing, and if verification disproves it, register it as "not substantiated")
+
+> Note: line numbers are as of the pre-audit and may shift during the fix process; the actual code prevails. Severities are preliminary judgments and may be adjusted at registration, but the change must be explained.
+
+| ID | Preliminary Severity | Location | Suspicion Description | Key Points of Verification Method |
 |---|---|---|---|---|
-| R-01 | P0 | `backend/src/services/pipeline.js`(单元循环内设置抽取状态处)与 `backend/src/services/fileService.js`(状态转换表) | 多单元(多页)文档处理时,抽取状态在单元循环内被重复设置,而转换表不允许自环,第二次设置即抛枚举非法错误,文档被标记失败,全部页面记录丢失;现有演示集与测试恰好全是单页文档,故未暴露 | 构造两页 PDF 走本地全流程,观察文档状态与记录数 |
-| R-02 | P0 | `backend/src/services/scenarios.js`(重算函数)与 `backend/src/services/calculation.js`(核算函数落库) | 情景重算直接复用会持久化的核算函数,情景值覆盖正式账本的核算记录与核算审计记录;此后任何由存储重建报告的路径(懒生成、导出、复核后重建)都会把情景值当作基线 | 跑基线→跑情景→重取报告,比对总值;检查核算集合内容 |
-| R-03 | P0 | `backend/src/server.js`(任务级全部路由) | 除文件下载接口外,任务详情、文档、运行、仪表盘、报告、导出、复核、审计、追踪等接口均不校验任务属主;有属主任务对任何匿名请求开放,违背项目自身的隐私承诺;证据文件中公开的任务标识可被直接使用 | 按第七章 V-02 矩阵逐一探测 |
-| R-04 | P0 | `backend/src/services/fileService.js`(存储键拼接)与 `backend/src/storage/index.js`(本地适配器读写) | 上传文件名未规范化即拼入存储键,本地适配器对键无包含性校验,路径穿越片段可逃逸存储根目录写文件 | 以恶意文件名上传,对比存储根目录树 |
-| R-05 | P1 | `backend/src/ai/client.js`(追踪输入摘要与错误信息)与追踪查询接口 | 追踪记录的输入摘要包含上传文档的 base64 片段,错误信息包含上游错误响应体;叠加 R-03 后等于向任何人公开原始文档片段 | 检查追踪记录字段内容与接口响应 |
-| R-06 | P1 | `frontend/src/pages.jsx`(P3 与 P4 取记录列表处)与任务详情接口返回结构 | 前端从任务详情接口读取记录字段,但该接口不返回记录,两页永远为空;匹配查看器与审计入口因此不可达 | 界面走查(V-10)直接暴露 |
-| R-07 | P1 | `backend/src/services/reportService.js`(范围分解锚点构造处) | 范围分解锚点传值时单位换算方向错误,锚点吨值放大一千倍;逐条记录锚点与总量锚点均正确,仅该处错 | 对比报告锚点值与仪表盘聚合值 |
-| R-08 | P1 | `backend/src/services/exportService.js`(CSV 单元格转义函数) | CSV 导出未中和公式触发字符,品名等用户/模型可控文本可在表格软件中执行公式 | 以恶意品名导出并检查转义 |
-| R-09 | P1 | `backend/src/server.js`(上传中间件配置) | 上传中间件未配置单文件大小、文件数与请求体上限,大小校验发生在全量入内存之后,存在内存耗尽攻击面 | 核对中间件配置与超限请求行为 |
-| R-10 | P1 | `backend/src/server.js`(限流与来源中间件) | 限流键取自可伪造的转发头,伪造即可重置桶;桶字典无上限增长;来源头解析对畸形值可抛未捕获异常;任意 Firebase 域名通配放行过宽(见 R-32) | 伪造头压测与畸形头请求 |
-| R-11 | P1 | `backend/src/services/reviewQueue.js`(指定因子、排除、关闭动作) | 复核动作缺少"记录属于该任务"与任务属主校验,跨任务改写匹配与记录成为可能;编辑补丁值无类型与范围校验 | 跨任务标识调用复核接口 |
-| R-12 | P1 | `backend/src/services/pipelineModelCalls.js`(抽取校验)、`backend/src/services/calculation.js`(核算基数)、`backend/src/services/normalization.js`(换算)、复核编辑路径 | 数量与基数全链路缺少有限数值校验,非数字与无穷可通过校验并污染聚合、排序与报告 | 注入非法数量,追踪落库与报告输出 |
-| R-13 | P1 | `backend/src/services/pipeline.js`(并发数解析)、`backend/src/config.js`(数值解析)、AI 客户端(重试次数) | 并发数与重试次数等配置对非法值无校验:并发数为非法值时流水线静默空跑,重试次数为非法值时调用函数抛出空值错误 | 以非法环境变量启动并跑流程 |
-| R-14 | P2 | `backend/src/services/reportService.js`(引用扫描对情景锚点的判定) | 情景锚点仅凭标识符包含特定片段即判有效,不做存在性校验,削弱无效引用一票否决治理规则 | 构造含伪情景锚点的报告并扫描 |
-| R-15 | P2 | `backend/src/store/index.js`(本地存储) | 集合文件解析失败静默重置为空(数据丢失无告警);整文件同步重写非原子;并发写最后赢 | 损坏一个集合文件重启服务观察 |
-| R-16 | P2 | `backend/src/services/pipeline.js`(候选置信度硬编码处)与 `backend/src/services/uncertainty.js`(阈值判定) | 召回候选置信度被硬编码为低于阈值的常数,导致全部记录被标记为无高置信因子并强制复核,该信号失去区分度;不确定度分布统计对缺失等级产生非数字键 | 检查任一任务的标记比例与分布字段 |
-| R-17 | P2 | `backend/src/queue/index.js` | 队列抽象未被服务端使用且存在同一任务双派发与队列泄漏缺陷;决策:修复或移除(移除可回收行数预算) | 全库引用搜索确认无使用方 |
-| R-18 | P2 | `backend/src/ai/client.js`(嵌入批量调用) | 嵌入批量调用无超时无重试,响应向量数不足时静默接受并写入坏向量索引 | 单元测试模拟短响应 |
-| R-19 | P2 | `backend/src/services/normalization.js`(币种识别) | 币种识别规则顺序错误导致部分币种永不可达或误判 | 针对全部币种符号的用例测试 |
-| R-20 | P2 | `backend/src/services/fileService.js`(XLSX 校验) | XLSX 校验仅为压缩包内子串存在性检查,无解压放大防线 | 构造高压缩比文件评估行为并记录 |
-| R-21 | P2 | `backend/src/services/fileService.js`(页数统计) | PDF 页数以原始字节正则统计,统计偏差影响页单元拆分与追踪上限 | 对标准数据集中已知页数文档核对 |
-| R-22 | P2 | `backend/src/services/exportService.js`(PDF 生成) | PDF 生成异常时不拒绝请求导致悬挂;表头为空时除零;表格静默截断行数无披露 | 触发异常路径与超长表格 |
-| R-23 | P2 | `scripts/` 五个真实适配器验证脚本与 `eval/collectors.js`、密钥扫描脚本 | 五个真实指标脚本中四个无密钥守卫,无密钥运行会以 mock 结果覆写正式指标文件;收集器不校验适配器来源;密钥扫描对"误入暂存区"无防线 | 无密钥环境运行这些脚本并检查指标文件来源字段 |
-| R-24 | P2 | `Dockerfile`、`firebase.json` | 容器无健康检查指令;托管缺安全响应头(内容安全策略、传输安全、帧保护、嗅探保护) | 配置文件核对与本地等效头验证 |
-| R-25 | P3 | `frontend/src/pages.jsx`(P6 比例滑块) | 比例值未传给后端,失焦却触发整条流水线重跑,昂贵副作用与死功能并存 | 界面操作并观察网络请求 |
-| R-26 | P3 | `frontend/vite.config.js` 与因子查询接口 | 开发代理未覆盖因子查询路径,本地开发时该接口返回 404;前端加载时对因子接口发起的空查询调用必然得到 400 错误 | 本地开发环境复现 |
-| R-27 | P3 | 多处(重复检测时机、审计标识生成、列表内线性查找) | 查重在归一化前执行削弱效果;毫秒时间戳审计标识可碰撞;多处平方复杂度线性查找 | 代码审阅与构造用例 |
-| R-28 | P3 | `backend/src/services/pipeline.js`(完成文档跳过)与复核重算 | 已完成文档重跑被跳过但陈旧核算不清理;复核排除记录后其旧核算残留可被报告重建读取 | 改动后重跑与重建报告观察 |
-| R-29 | P3 | `backend/src/services/taskService.js`(任务创建校验) | 任务字段仅做浅校验:实体名可为任意结构、日期顺序与类型无校验 | 以非法字段创建任务 |
-| R-30 | P3 | `backend/src/store/` 两个适配器 | 本地与生产适配器在未定义值查询、文档顺序、分页上行为不一致;列表接口无分页全量加载 | 对照两适配器实现逐项列差异表 |
-| R-31 | P3 | `backend/src/services/reportService.js`(空循环)、`backend/src/services/traceability.js`(死分支) | 明确的死代码,回收以对冲行数预算 | 全引用搜索确认后移除 |
-| R-32 | P3 | `backend/src/server.js`(来源白名单) | 任意 Firebase 托管域名通配放行跨域,应收敛为本项目实际域名 | 配置核对 |
-| R-33 | P3 | `frontend/src/auth.js`(令牌存储与刷新降级)、`frontend/src/api.js`(请求层) | 长期刷新令牌存本地存储放大 XSS 后果;刷新失败静默换新身份可造成"看似成功实为他人"的会话错位;请求层无超时、上传路径不查响应状态、请求头可被覆盖 | 代码审阅加异常路径演练 |
+| R-01 | P0 | `backend/src/services/pipeline.js` (where the extraction state is set inside the unit loop) and `backend/src/services/fileService.js` (state transition table) | When processing multi-unit (multi-page) documents, the extraction state is set repeatedly inside the unit loop, but the transition table does not allow self-transitions, so the second assignment throws an illegal-enum error, the document is marked failed, and all page records are lost; the existing demo set and tests happen to be all single-page documents, so this was never exposed | Construct a two-page PDF, run the full local flow, and observe the document state and record count |
+| R-02 | P0 | `backend/src/services/scenarios.js` (recalculation function) and `backend/src/services/calculation.js` (persistence in the calculation function) | Scenario recalculation directly reuses the calculation function that persists, so scenario values overwrite the official ledger's calculation records and calculation audit records; afterwards any path that rebuilds the report from storage (lazy generation, export, post-review rebuild) treats scenario values as the baseline | Run baseline → run scenarios → re-fetch the report, compare totals; inspect the contents of the calculation collection |
+| R-03 | P0 | `backend/src/server.js` (all task-level routes) | Apart from the file download endpoint, endpoints such as task detail, documents, run, dashboard, report, export, review, audit, and tracing do not verify task ownership; owner-bearing tasks are open to any anonymous request, violating the project's own privacy commitment; task identifiers exposed in the evidence files can be used directly | Probe item by item per the V-02 matrix in Chapter Seven |
+| R-04 | P0 | `backend/src/services/fileService.js` (storage key concatenation) and `backend/src/storage/index.js` (local adapter read/write) | Upload filenames are concatenated into storage keys without normalization, the local adapter performs no containment check on keys, and path-traversal fragments can escape the storage root to write files | Upload with malicious filenames and compare the storage root directory tree |
+| R-05 | P1 | `backend/src/ai/client.js` (trace input summaries and error messages) and the trace query endpoint | Trace records' input summaries contain base64 fragments of uploaded documents, and error messages contain upstream error response bodies; combined with R-03, this amounts to exposing raw document fragments to anyone | Inspect the trace record field contents and endpoint responses |
+| R-06 | P1 | `frontend/src/pages.jsx` (where P3 and P4 fetch the record list) and the task detail endpoint's response structure | The frontend reads record fields from the task detail endpoint, but that endpoint does not return records, so the two pages are always empty; the matching viewer and audit entry points are therefore unreachable | Directly exposed by the UI walkthrough (V-10) |
+| R-07 | P1 | `backend/src/services/reportService.js` (where the scope-breakdown anchor is constructed) | When passing values for the scope-breakdown anchor, the unit conversion direction is wrong, inflating the anchor's tonne value by a factor of one thousand; the per-record anchors and the total anchor are all correct, and only this spot is wrong | Compare report anchor values with dashboard aggregate values |
+| R-08 | P1 | `backend/src/services/exportService.js` (CSV cell escaping function) | CSV export does not neutralize formula trigger characters, so user/model-controllable text such as product names can execute formulas in spreadsheet software | Export with malicious product names and inspect the escaping |
+| R-09 | P1 | `backend/src/server.js` (upload middleware configuration) | The upload middleware does not configure single-file size, file count, or request-body limits; size validation happens after full buffering into memory, creating a memory-exhaustion attack surface | Check the middleware configuration and the behavior of oversized requests |
+| R-10 | P1 | `backend/src/server.js` (rate-limit and origin middleware) | The rate-limit key is taken from a forgeable forwarding header, so forging it resets the bucket; the bucket dictionary grows without bound; origin-header parsing can throw an uncaught exception on malformed values; the wildcard allowance for arbitrary Firebase domains is too broad (see R-32) | Load-test with forged headers and send malformed-header requests |
+| R-11 | P1 | `backend/src/services/reviewQueue.js` (assign-factor, exclude, and close actions) | Review actions lack the "record belongs to this task" check and task-owner verification, making cross-task rewriting of matches and records possible; edit patch values have no type or range validation | Call the review endpoints with cross-task identifiers |
+| R-12 | P1 | `backend/src/services/pipelineModelCalls.js` (extraction validation), `backend/src/services/calculation.js` (calculation bases), `backend/src/services/normalization.js` (conversion), and the review edit path | The entire chain for quantities and bases lacks finite-value validation; non-numeric values and infinity can pass validation and pollute aggregates, sorting, and reports | Inject invalid quantities; trace persistence and report output |
+| R-13 | P1 | `backend/src/services/pipeline.js` (concurrency parsing), `backend/src/config.js` (numeric parsing), and the AI client (retry count) | Configuration such as concurrency and retry counts has no validation for invalid values: an invalid concurrency value makes the pipeline silently run empty, and an invalid retry count makes the calling function throw a null error | Start with invalid environment variables and run the flow |
+| R-14 | P2 | `backend/src/services/reportService.js` (how the citation scan judges scenario anchors) | Scenario anchors are deemed valid merely because the identifier contains a specific fragment, with no existence check, weakening the governance rule that invalid references are an automatic veto | Construct a report containing fake scenario anchors and scan it |
+| R-15 | P2 | `backend/src/store/index.js` (local storage) | A failed collection-file parse silently resets it to empty (data loss with no alert); whole-file synchronous rewrite is non-atomic; concurrent writes are last-write-wins | Corrupt one collection file, restart the service, and observe |
+| R-16 | P2 | `backend/src/services/pipeline.js` (where candidate confidence is hard-coded) and `backend/src/services/uncertainty.js` (threshold judgment) | Recall-candidate confidence is hard-coded to a constant below the threshold, causing all records to be flagged as having no high-confidence factor and forced into review, so the signal loses discriminative power; the uncertainty distribution statistics produce non-numeric keys for missing grades | Inspect any task's flag ratio and distribution fields |
+| R-17 | P2 | `backend/src/queue/index.js` | The queue abstraction is unused by the server and has defects of double dispatch for the same task and queue leakage; decision: fix or remove (removal reclaims line budget) | Search the whole repository for references to confirm there are no callers |
+| R-18 | P2 | `backend/src/ai/client.js` (embedding batch call) | The embedding batch call has no timeout and no retry; when the response has fewer vectors than expected it silently accepts and writes bad vectors to the index | Simulate a short response in a unit test |
+| R-19 | P2 | `backend/src/services/normalization.js` (currency recognition) | Incorrect ordering of currency recognition rules makes some currencies permanently unreachable or misclassified | Test cases covering all currency symbols |
+| R-20 | P2 | `backend/src/services/fileService.js` (XLSX validation) | XLSX validation is only a substring-existence check inside the archive, with no defense against decompression amplification | Construct a high-compression-ratio file, evaluate the behavior, and record it |
+| R-21 | P2 | `backend/src/services/fileService.js` (page counting) | PDF page count is computed by regex over raw bytes; counting bias affects page-unit splitting and the tracing cap | Check against documents of known page count in the standard dataset |
+| R-22 | P2 | `backend/src/services/exportService.js` (PDF generation) | PDF generation exceptions do not reject the request, causing hangs; division by zero when headers are empty; tables silently truncate rows without disclosure | Trigger the exception path and an overlong table |
+| R-23 | P2 | The five real-adapter verification scripts in `scripts/`, plus `eval/collectors.js` and the secret-scan script | Four of the five real-metric scripts lack secret guards, so running without secrets overwrites the official metrics files with mock results; the collector does not verify the adapter source; the secret scan has no defense against secrets "accidentally entering the staging area" | Run these scripts in a secretless environment and check the metrics files' source fields |
+| R-24 | P2 | `Dockerfile`, `firebase.json` | The container has no health-check instruction; hosting lacks security response headers (content security policy, transport security, frame protection, sniffing protection) | Check the configuration files and verify equivalent headers locally |
+| R-25 | P3 | `frontend/src/pages.jsx` (P6 ratio slider) | The ratio value is not sent to the backend, yet losing focus triggers a rerun of the entire pipeline — an expensive side effect coexisting with a dead feature | Operate the UI and observe network requests |
+| R-26 | P3 | `frontend/vite.config.js` and the factor query endpoint | The dev proxy does not cover the factor query path, so that endpoint returns 404 in local development; the empty query the frontend issues to the factor endpoint on load inevitably gets a 400 error | Reproduce in the local development environment |
+| R-27 | P3 | Multiple places (deduplication timing, audit ID generation, linear searches within lists) | Deduplication runs before normalization, weakening its effect; millisecond-timestamp audit IDs can collide; multiple quadratic-complexity linear searches | Code review and constructed test cases |
+| R-28 | P3 | `backend/src/services/pipeline.js` (skipping completed documents) and post-review recalculation | Re-running a completed document is skipped, but stale calculations are not cleaned up; after a record is excluded in review, its leftover old calculations can be read by report rebuilds | After changes, re-run and rebuild the report and observe |
+| R-29 | P3 | `backend/src/services/taskService.js` (task creation validation) | Task fields get only shallow validation: entity names can be any structure, and date order and types are not validated | Create tasks with invalid fields |
+| R-30 | P3 | The two adapters in `backend/src/store/` | The local and production adapters behave inconsistently on undefined-value queries, document order, and pagination; list endpoints load everything with no pagination | Compare the two adapter implementations and list the differences item by item |
+| R-31 | P3 | `backend/src/services/reportService.js` (empty loop), `backend/src/services/traceability.js` (dead branch) | Clearly dead code; reclaim it to offset the line budget | Remove after a full reference search confirms it |
+| R-32 | P3 | `backend/src/server.js` (origin whitelist) | Wildcard CORS allows any Firebase hosting domain; this should be narrowed to the project's actual domains | Check the configuration |
+| R-33 | P3 | `frontend/src/auth.js` (token storage and refresh degradation), `frontend/src/api.js` (request layer) | Long-lived refresh tokens stored in local storage amplify the consequences of XSS; a silent identity swap on refresh failure can cause a session mismatch that "looks successful but is actually someone else"; the request layer has no timeout, the upload path does not check response status, and request headers can be overridden | Code review plus exception-path drills |
 
-**附录 A 使用要求**:逐条核实、逐条登记处置;核实结论与预审不一致时,以核实为准并记录差异原因;禁止未经核实直接批量按表修复(防止预审误判导致错误改动)。
-
----
-
-## 附录 B:编号体系对照(引用项目内文档时使用)
-
-- 实施计划任务:`T-001` 至 `T-051`;阶段关卡:`G0` 至 `G6`。
-- PRD 需求:`FR-1xx` 文件摄入、`FR-2xx` 分类、`FR-3xx` 抽取、`FR-4xx` 归一化、`FR-5xx` 边界、`FR-6xx` 因子库、`FR-7xx` 匹配、`FR-8xx` 核算聚合、`FR-9xx` 情景、`FR-10xx` 报告导出、`FR-11xx` 复核、`FR-12xx` 可观测与演示;`NFR-1xx` 性能、`NFR-2xx` 可靠性、`NFR-3xx` 安全隐私、`NFR-4xx` 可用性、`NFR-5xx` 可维护性;`AI-1xx` 输出契约、`AI-2xx` 幻觉治理、`AI-3xx` 自检;`EV-1` 至 `EV-6` 评估契约。最终验收清单在 PRD 第 10.3 节。
-- 本任务书编号:缺陷 `D-xx`、预审疑点 `R-xx`、基线项 `B-x`、自动验收项 `A-x`、定向验收场景 `V-xx`。
+**Appendix A usage requirements**: Verify item by item and register dispositions item by item; when verification conclusions differ from the pre-audit, the verification prevails and the reason for the discrepancy is recorded; it is forbidden to batch-fix directly from the table without verification (to prevent erroneous changes caused by pre-audit misjudgments).
 
 ---
 
-## 附录 C:记录模板说明(以文字描述字段,不规定具体文件格式)
+## Appendix B: Numbering System Reference (use when citing documents within the project)
 
-- **基线快照**:命令、日期、结果、关键数值(用例数、三个行数口径)、异常备注。
-- **缺陷登记册**:见 3.1 节字段清单。
-- **验收记录**:每个 A 项与 V 项一行:编号、执行日期、结果(通过/失败)、证据留存位置(文件路径或截图说明)、失败时的缺陷编号回链。
+- Implementation-plan tasks: `T-001` through `T-051`; phase gates: `G0` through `G6`.
+- PRD requirements: `FR-1xx` file ingestion, `FR-2xx` classification, `FR-3xx` extraction, `FR-4xx` normalization, `FR-5xx` boundaries, `FR-6xx` factor library, `FR-7xx` matching, `FR-8xx` calculation and aggregation, `FR-9xx` scenarios, `FR-10xx` report and export, `FR-11xx` review, `FR-12xx` observability and demo; `NFR-1xx` performance, `NFR-2xx` reliability, `NFR-3xx` security and privacy, `NFR-4xx` usability, `NFR-5xx` maintainability; `AI-1xx` output contract, `AI-2xx` hallucination governance, `AI-3xx` self-checks; `EV-1` through `EV-6` evaluation contracts. The final acceptance checklist is in PRD Section 10.3.
+- Numbering in this audit brief: defects `D-xx`, pre-audit suspicions `R-xx`, baseline items `B-x`, automated acceptance items `A-x`, targeted acceptance scenarios `V-xx`.
 
-(本任务书完)
+---
+
+## Appendix C: Record Template Notes (fields described in prose; no specific file format mandated)
+
+- **Baseline snapshot**: commands, dates, results, key values (test-case count, the three line-count bases), anomaly notes.
+- **Defect registry**: see the field list in Section 3.1.
+- **Acceptance record**: one row per A item and V item: ID, execution date, result (pass/fail), evidence retention location (file path or screenshot description), and a backlink to the defect ID on failure.
+
+(End of this audit brief)

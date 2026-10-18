@@ -1,113 +1,108 @@
-# 修复报告（第二轮全面审查）— 2026-10-15
+# Fix Report (Second Full Review) — 2026-10-15
 
-## 一、审查范围与方法
+## 1. Review Scope and Method
 
-- **对象**：HEAD `7635e44`（第一轮收口 70b6724 之后又合入三个提交：T-052 前端丰富化+后端
-  增量接口、生产环境迁移 us-central1、全站去中国化+P1 表单 UI 修复），以及本轮修复收口。
-- **方法**：按任务书五阶段推进。阶段二八域审查采用"先圈定上轮收口后全部变更
-  （`git diff 70b6724..HEAD`），再按域逐文件通读全部后端/前端源码、脚本、评估工具、
-  部署配置"，并对附录 A 全部 33 条疑点逐条核实其修复在 HEAD 是否仍然成立；关键疑点
-  辅以运行时验证（测试套件、数据集校验脚本、场景脚本）。全程 mock 模式，零外部 API
-  调用，零外部费用。
-- **登记册**：`progress/DEFECT_REGISTER_2026-10-15.md`（编号自 D-101 起，避免与第一轮
-  D-01~D-68 冲突——任务书未覆盖事项，按最保守方式处理并已在登记册头部记录该决策）。
+- **Subject**: HEAD `7635e44` (after the first-round closure 70b6724, three more commits were merged: T-052 frontend enrichment + backend
+  incremental APIs, production environment migration to us-central1, site-wide removal of China-specific content + P1 form UI fixes), plus this round's fix closure.
+- **Method**: Proceeded through the audit brief's five stages. The stage-two eight-domain review used "first delineate all changes after the previous round's closure
+  (`git diff 70b6724..HEAD`), then read all backend/frontend source code, scripts, evaluation tools, and
+  deployment configuration file by file, domain by domain", and verified all 33 review findings in Appendix A one by one as to whether their fixes still hold at HEAD; key findings
+  were backed by runtime verification (test suite, dataset validation script, scenario script). Mock mode throughout, zero external API
+  calls, zero external cost.
+- **Defect register**: `progress/DEFECT_REGISTER_2026-10-15.md` (numbering starts at D-101 to avoid conflict with the first round's
+  D-01~D-68 — matters not covered by the audit brief were handled in the most conservative way, and this decision is recorded at the top of the register).
 
-## 二、缺陷统计
+## 2. Defect Statistics
 
-| 维度 | 数量 | 明细 |
+| Dimension | Count | Details |
 |---|---|---|
-| 本轮登记 | 6 | D-101(P1)、D-104(P2)、D-103(P3)、D-102(P3)、D-106(P3)、D-105(P3) |
-| 已修复 | 5 | D-101、D-103、D-104、D-106、D-102（文档） |
-| 有意保留 | 1 | D-105（GET dashboard 重算落库：确定性覆盖、id 稳定、承担复核后自愈职能；前端无轮询放大有界） |
-| 不成立 | 0 | — |
-| P0/P1 新增安全缺陷 | 0 | 三个新提交未引入属主/注入/穿越类回归（越权矩阵 HTTP 实测 + 代码核对） |
+| Registered this round | 6 | D-101(P1), D-104(P2), D-103(P3), D-102(P3), D-106(P3), D-105(P3) |
+| Fixed | 5 | D-101, D-103, D-104, D-106, D-102 (documentation) |
+| Intentionally kept | 1 | D-105 (GET dashboard recompute persistence: deterministic overwrite, stable ids, fulfills the post-review self-healing role; bounded front-end polling amplification) |
+| Not substantiated | 0 | — |
+| New P0/P1 security defects | 0 | The three new commits introduced no ownership/injection/traversal-class regressions (over-privilege matrix tested over HTTP + code verification) |
 
-按域分布：域 G（测试体系）1（D-101）、域 D/B（数据存储+因子库）1（D-104）、域 C（前端）1
-（D-103）、域 F（配置/脚本）2（D-106、D-102）、域 A/B 交界 1（D-105）。
+Distribution by domain: domain G (test system) 1 (D-101), domains D/B (data storage + factor library) 1 (D-104), domain C (frontend) 1
+(D-103), domain F (configuration/scripts) 2 (D-106, D-102), domain A/B boundary 1 (D-105).
 
-## 三、逐项修复摘要
+## 3. Item-by-Item Fix Summary
 
-1. **D-101（P1）测试隔离缺陷**：D-07/V-03 穿越回归用例遍历整个 OS 临时目录，与本机
-   无关进程（外部 Vite SSR 缓存写入器）的并发写入冲突，产生"file escaped storage root"
-   误报（基线 B-3 失败的根因）。修复：存储根置于专用沙箱三层之下，仅遍历沙箱——逃逸
-   仍可检出、与机器隔离。验证：48/48 × 3 轮。
-2. **D-104（P2）因子库幽灵行**：`loadFactorLibrary` 以数量相等判定"无需刷新"且只增不删；
-   数据文件 743→741（去中国化剔除 china/hong kong/Macau/Taiwan 行）后，既有库会保留两条
-   已删除的幽灵因子，且同数量内容变更被误跳过。修复：改为数据文件 SHA-256 内容指纹判定
-   + 刷新时删除文件中已不存在的行；指纹存于 `_library_meta` 文档，`listFactors` 过滤 `_`
-   前缀文档。验证：新增回归测试（幽灵行清理、同数量值变更刷新、元数据不进入列表、
-   未变更跳过），套件 49/49；`verify_factor_store.js` PASS。
-   **部署注意**：既有库（生产 Firestore）首次启动会全量刷新一次并清理幽灵行——这正是
-   修复意图，属预期的一次性写放大。
-3. **D-103（P3）P6 滑块重算静默吞错**：`catch { /* report stays */ }` 改为可见的
-   `role=alert` 错误提示（"重算失败+下方数字来自上一次运行"）。验证：V-10 中停后端实测
-   提示可见（截图 10）。
-4. **D-106（P3）统计输出失实**：`count_lines.sh` 结论行固定打印"hard cap met under every
-   figure"，而 C=10,851 已超 10,000。仅修正输出文本按实际数值陈述；判定逻辑与统计口径
-   零改动（红线 3.4.4）。验证：A-5 复跑输出与数值一致；确认无脚本解析该行。
-5. **D-102（P3）README 对账**：测试数 48→49；三口径行数更新为 5,828/9,049/10,851 并与
-   收口实测逐字一致；NFR-504 段落补引第二轮登记册。
-6. **D-105 有意保留**：见登记册（理由与影响面已写明）。
+1. **D-101 (P1) test isolation defect**: the D-07/V-03 traversal regression case walked the entire OS temp directory and conflicted with concurrent writes from an unrelated local
+   process (an external Vite SSR cache writer), producing a "file escaped storage root"
+   false positive (the root cause of baseline B-3's failure). Fix: place the storage root three levels below a dedicated sandbox and walk only the sandbox — escapes
+   remain detectable and the test is isolated from the machine. Verification: 48/48 × 3 rounds.
+2. **D-104 (P2) factor library ghost rows**: `loadFactorLibrary` decided "no refresh needed" by equal counts and only ever added rows without deleting;
+   after the data file went 743→741 (removal of China-specific content dropped the china/hong kong/Macau/Taiwan rows), an existing library would retain two
+   deleted ghost factors, and same-count content changes were wrongly skipped. Fix: switch to a SHA-256 content fingerprint of the data file
+   + delete rows that no longer exist in the file during refresh; the fingerprint is stored in the `_library_meta` document, and `listFactors` filters `_`-prefixed documents. Verification: new regression tests (ghost row cleanup, same-count value change refresh, metadata excluded from the list,
+   unchanged skip), suite 49/49; `verify_factor_store.js` PASS.
+   **Deployment note**: an existing library (production Firestore) will do one full refresh on first startup and clean up the ghost rows — this is exactly
+   the intent of the fix and counts as an expected one-time write amplification.
+3. **D-103 (P3) P6 slider recompute silently swallowed errors**: `catch { /* report stays */ }` was changed to a visible
+   `role=alert` error prompt ("recompute failed + the numbers below come from the previous run"). Verification: in V-10 the backend was stopped and the prompt was confirmed visible in testing
+   (screenshot 10).
+4. **D-106 (P3) statistics output misstatement**: `count_lines.sh`'s conclusion line always printed "hard cap met under every
+   figure", while C=10,851 already exceeds 10,000. Only the output text was corrected to state the actual figures; the decision logic and statistical basis saw
+   zero changes (red line 3.4.4). Verification: A-5's rerun output matches the figures; confirmed no script parses this line.
+5. **D-102 (P3) README reconciliation**: test count 48→49; the line counts for the three bases were updated to 5,828/9,049/10,851 and match the
+   closure measurements word for word; the NFR-504 section now also cites the second-round defect register.
+6. **D-105 intentionally kept**: see the defect register (reasons and impact surface already documented).
 
-## 四、R-01 ~ R-33 处置总览
+## 4. R-01 ~ R-33 Disposition Overview
 
-33 条疑点全部核实（登记册附表）：第一轮修复在 HEAD **全部仍然成立**（含三个新提交引入的
-新路由 /api/tasks、/units、/candidates、/audit 的属主校验与分页边界）；R-20"解压放大"
-维持不成立结论；R-25 的残余（滑块吞错）即本轮 D-103 已修；R-30/R-33 既定保留口径不变。
-**无悬空条目。**
+All 33 review findings were verified (appendix table in the defect register): the first round's fixes **all still hold** at HEAD (including ownership checks and pagination
+bounds for the new routes /api/tasks, /units, /candidates, /audit introduced by the three new commits); R-20 "decompression amplification"
+retains its "not substantiated" conclusion; the remainder of R-25 (slider error swallowing) was fixed by this round's D-103; R-30/R-33's established retention basis is unchanged.
+**No dangling items.**
 
-## 五、行数预算说明
+## 5. Line Budget Notes
 
-NFR-504 于 T-052 由维护者书面豁免（README + 第一轮 D-02 + execution_log 标记 +
-verify_acceptance C4 豁免识别）。本轮基线 B=8,978 → 收口 B=9,049（+71 行：D-104 代码
-约 +30、D-101/D-104 回归测试约 +47、D-103 约 +10、D-106 输出文本中性）；C=10,780 →
-10,851。全部增量计入 D-102 对账并写入 README。A-5 按任务书口径"超支已书面记录并被接受"
-判定通过。
+NFR-504 was exempted in writing by the maintainer at T-052 (README + first-round D-02 + execution_log marker +
+verify_acceptance C4 exemption recognition). This round's baseline B=8,978 → closure B=9,049 (+71 lines: about +30 for D-104 code,
+about +47 for D-101/D-104 regression tests, about +10 for D-103, D-106 output text neutral); C=10,780 →
+10,851. All increments are counted in D-102's reconciliation and written into README. A-5 passed under the audit brief's basis of "overage documented in writing and accepted".
 
-## 六、未实施项及理由
+## 6. Items Not Implemented and Reasons
 
-- R-33(4)(5)（localStorage 匿名令牌、刷新失败换新身份）：第一轮既定保留口径，匿名身份
-  无 PII、可用性取舍，README 已记录改进路径（HttpOnly cookie 属架构变更）。
-- D-105：见上。
-- 生产部署验证：红线禁止，未执行；D-104 的部署注意事项已在上文写明。
+- R-33(4)(5) (localStorage anonymous token, switching to a new identity on refresh failure): the first round's established retention basis — the anonymous identity
+  carries no PII, a usability tradeoff; README records the improvement path (an HttpOnly cookie is an architectural change).
+- D-105: see above.
+- Production deployment verification: prohibited by the red line, not executed; D-104's deployment note is stated above.
 
-## 七、对生产的部署注意事项（仅说明，不执行）
+## 7. Production Deployment Notes (explanatory only, not executed)
 
-1. 下一次部署后首启会触发因子库一次性全量刷新（741 行重写 + 幽灵行清理 + 嵌入重建），
-   Firestore 写配额有一次瞬时放大，属预期。
-2. `CORS_ORIGINS` 默认值含本项目实际域名（myproject-dc19d.web.app）；换托管域名时需同步
-   该环境变量与 firebase.json。
-3. Cloud Run 已要求 1Gi 内存（0b71999 提交记录的启动 OOM 结论），保持不变。
+1. First startup after the next deployment will trigger a one-time full refresh of the factor library (741-row rewrite + ghost row cleanup + embedding rebuild), causing one transient amplification of the Firestore write quota; this is expected.
+2. The default value of `CORS_ORIGINS` contains this project's actual domain (myproject-dc19d.web.app); when changing the hosting domain, this environment variable and firebase.json must be updated in sync.
+3. Cloud Run already requires 1Gi memory (the startup OOM conclusion recorded in commit 0b71999); keep it unchanged.
 
-## 八、结论
+## 8. Conclusion
 
-任务书五阶段完成；第九章核对单 12 项全部勾选（见 ACCEPTANCE_RECORD_2026-10-15.md 与
-登记册）；A-1~A-7、V-01~V-14 全绿并留证；二次复查零悬空。
+The audit brief's five stages are complete; all 12 items of the chapter-nine checklist are ticked (see ACCEPTANCE_RECORD_2026-10-15.md and the defect register); A-1~A-7 and V-01~V-14 are all green with evidence retained; the second re-review found zero dangling items.
 
 ---
 
-## 九、合并前独立复审追加（第三轮，code-reviewer）
+## 9. Pre-Merge Independent Review Addendum (third round, code-reviewer)
 
-交付收口后、合并主分支前，code-reviewer 独立代理对本轮全部代码改动复审，发现 5 项
-（D-107~D-111，均已登记并修复，回归后 51/51）：
+After delivery closure and before merging into the main branch, the code-reviewer independent agent reviewed all of this round's code changes and found 5 items
+(D-107~D-111, all registered and fixed; 51/51 after regression):
 
-1. **D-107（P2）**：后台运行失败仍不可见——`POST /run` 202 后失败被吞、`GET /report`
-   返回旧报告 200，真实 AI 模式下 P6 重算失败依旧静默（D-103 只覆盖了网络层失败）。
-   修复：`taskRuns` 持久化最近失败（成功清除、上限 1000），报告响应附
-   `last_run_error`，P6 显示并区分"仍在重算（拉取超时）"与真失败。
-2. **D-108（P2）**：`listFactors` 检查后置缓存在刷新失效与慢读（Firestore 网络延迟）
-   交错时会把旧快照写回缓存，绕过 D-104。修复：代次计数，跨失效的读不入缓存。
-3. **D-109（P3）**：D-07/V-03 用例快照拍在第一个恶意上传之后，该载荷不在检出窗口。
-   修复：预创建存储根后先拍快照，三个载荷全部入窗。
-4. **D-110（P3，既有）**：`verify_acceptance.js` C4 的 `execFileSync` 在
-   `count_lines.sh` 以退出码 1（预算超限）结束时会抛异常，验收脚本自 T-052 豁免后
-   必然崩溃、豁免逻辑无法执行。修复：捕获非零退出读取 stdout。本地全量复跑：C4 以
-   豁免结论 PASS，脚本完整跑完（B1/B3 为公网部署检查，本地 BASE 下不可达属预期）。
-5. **D-111（P3）**：守卫前被污染的 match 行会使 dashboard 500。修复：recalculateTask
-   形状守卫跳过非因子行。另补两处 `_` 前缀守卫（getFactorById / assignFactorManually）
-   堵住把 `_library_meta` 当因子查询/写入的路径（复审确认所有合法因子行数值 value +
-   activity_unit 齐备，无误伤）。
+1. **D-107 (P2)**: background run failures remain invisible — after `POST /run` 202 the failure was swallowed and `GET /report`
+   returned the old report with 200, so P6 recompute failures stayed silent in real AI mode (D-103 only covered network-layer failures).
+   Fix: `taskRuns` persists the most recent failure (cleared on success, cap 1000), the report response carries
+   `last_run_error`, and P6 displays and distinguishes "still recomputing (fetch timeout)" from a genuine failure.
+2. **D-108 (P2)**: `listFactors`'s check-then-cache pattern, when a refresh invalidation interleaved with a slow read (Firestore network latency),
+   could write a stale snapshot back into the cache, bypassing D-104. Fix: generation counting — reads that cross an invalidation do not enter the cache.
+3. **D-109 (P3)**: the D-07/V-03 case snapshot was taken after the first malicious upload, so that payload fell outside the detection window.
+   Fix: after pre-creating the storage root, take the snapshot first, so all three payloads fall inside the window.
+4. **D-110 (P3, pre-existing)**: the `execFileSync` in C4 of `verify_acceptance.js` throws when
+   `count_lines.sh` ends with exit code 1 (budget overage), so ever since the T-052 exemption the acceptance script was
+   certain to crash and the exemption logic could never run. Fix: catch the non-zero exit and read stdout. Full local rerun: C4
+   PASSes with the exemption conclusion and the script runs to completion (B1/B3 are public-network deployment checks; being unreachable under the local BASE is expected).
+5. **D-111 (P3)**: a match row polluted before the guard would make dashboard 500. Fix: recalculateTask's
+   shape guard skips non-factor rows. Two additional `_`-prefix guards (getFactorById / assignFactorManually)
+   block paths that query/write `_library_meta` as a factor (the review confirmed that every legitimate factor row has both its value +
+   activity_unit present, so there is no collateral damage).
 
-验证：`npm test` **51/51**（新增 D-107/D-108 用例与 D-104/D-111 断言）、`npm run build`
-通过、本地 verify_acceptance 全程跑通且 C4 豁免生效。本轮复审修改后的增量行数并入
-D-102 账目（README 口径在下次对账时同步；当前脚本实测为准）。
+Verification: `npm test` **51/51** (new D-107/D-108 cases plus D-104/D-111 assertions), `npm run build`
+passes, and local verify_acceptance runs end to end with the C4 exemption in effect. The incremental line counts from this round's review changes are folded into
+D-102's account (README's basis will be synced at the next reconciliation; the current script measurements are authoritative).

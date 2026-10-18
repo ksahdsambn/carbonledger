@@ -1,140 +1,140 @@
-# 验收记录(阶段四,2026-10-14)
+# Acceptance Record (Phase Four, 2026-10-14)
 
-> 依据 `AUDIT_FIX_PROMPT.md` 第 7 章。每条给出编号、执行日期、结果、证据位置、失败回链。
-> 所有场景仅针对**本地服务**执行(mock 模式);未对公网部署执行任何注入/遍历/限流/损坏文件验证。
+> Based on Chapter 7 of `AUDIT_FIX_PROMPT.md`. Each entry gives its ID, execution date, result, evidence location, and failure back-link.
+> All scenarios were executed against the **local service only** (mock mode); no injection/traversal/rate-limit/corrupted-file verification was performed against any public deployment.
 
-## 7.1 自动验收电池
+## 7.1 Automated Acceptance Battery
 
-| 序号 | 命令/动作 | 结果 | 关键输出 | 证据 |
+| No. | Command/Action | Result | Key Output | Evidence |
 |---|---|---|---|---|
-| A-1 | `npm run build` | ✅ 通过 | 前端 32 模块,dist JS 169.14 kB(gzip 54.07 kB);`BUILD OK` | 终端输出 |
-| A-2 | `npm test` | ✅ 通过 | `backend pass=47 fail=0` + `upload pass=1 fail=0` → **TOTAL passed=48 failed=0**(基线 34,含本次新增回归测试) | 终端输出 |
-| A-3 | `npm run smoke` | ✅ 通过 | `health response: {"status":"ok"}` → `SMOKE OK` | 终端输出 |
-| A-4 | `npm run scan-secrets` | ✅ 通过 | `SECRET SCAN: PASSED (0 hits)`,退出码 0 | 终端输出 |
-| A-5 | `bash scripts/count_lines.sh` | ⚠️ 依 2.6.2 条款记录并接受 | 口径 A=4544,B=**7708**(>7000),C=**9503**(<10000 硬顶)。脚本本身仍打印 `NFR-504: FAIL`,如实记录;超支账与理由见登记册 D-02"最终账" | 登记册 D-02 |
-| A-6 | `node eval/run.js` | ✅ 通过 | `Summary rows=11 passed=11 failed=0` → `Overall verdict: PASS`;与基线 B-8 口径一致 | `eval/results/run/evaluation.{json,md}` |
-| A-7 | `git status` | ✅ 干净(提交后) | 仅预期的源码/证据改动;`.env`、`frontend/.env`、`frontend/dist`、`data/.local-store`、`data/.uploads`、`frontend/.playwright-cli` 均被忽略 | 见提交序列 |
+| A-1 | `npm run build` | ✅ Pass | Frontend 32 modules, dist JS 169.14 kB (gzip 54.07 kB); `BUILD OK` | Terminal output |
+| A-2 | `npm test` | ✅ Pass | `backend pass=47 fail=0` + `upload pass=1 fail=0` → **TOTAL passed=48 failed=0** (baseline 34, including the regression tests added this time) | Terminal output |
+| A-3 | `npm run smoke` | ✅ Pass | `health response: {"status":"ok"}` → `SMOKE OK` | Terminal output |
+| A-4 | `npm run scan-secrets` | ✅ Pass | `SECRET SCAN: PASSED (0 hits)`, exit code 0 | Terminal output |
+| A-5 | `bash scripts/count_lines.sh` | ⚠️ Recorded and accepted under clause 2.6.2 | Metric A=4544, B=**7708** (>7000), C=**9503** (<10000 hard cap). The script itself still prints `NFR-504: FAIL`, recorded faithfully; the overage account and rationale are in defect register D-02 "final account" | Defect register D-02 |
+| A-6 | `node eval/run.js` | ✅ Pass | `Summary rows=11 passed=11 failed=0` → `Overall verdict: PASS`; consistent with the baseline B-8 metric | `eval/results/run/evaluation.{json,md}` |
+| A-7 | `git status` | ✅ Clean (after commit) | Only the expected source/evidence changes; `.env`, `frontend/.env`, `frontend/dist`, `data/.local-store`, `data/.uploads`, `frontend/.playwright-cli` are all ignored | See commit sequence |
 
-**A-5 说明(不粉饰)**:口径 B 超支 708 行,其中约 393 行是任务书 7.2 明文要求"必须固化为自动化回归测试"的验收场景,其余为 P0/P1 安全与正确性修复的最小实现;已回收全部可确认无引用的死代码 147 行;`count_lines.sh` 一字未改。结论按 2.6.2 逃逸条款成立。
+**Note on A-5 (no whitewashing)**: Metric B overspends by 708 lines, of which about 393 lines are the acceptance scenarios that the audit brief's section 7.2 explicitly requires to be "consolidated into automated regression tests", and the remainder are the minimal implementations of the P0/P1 security and correctness fixes; 147 lines of dead code confirmed to have no references have all been reclaimed; `count_lines.sh` was not changed by a single character. The conclusion holds under the 2.6.2 escape clause.
 
-## 7.2 定向验收场景
+## 7.2 Targeted Acceptance Scenarios
 
-| 编号 | 场景 | 结果 | 执行方式与证据 |
+| No. | Scenario | Result | Execution Method and Evidence |
 |---|---|---|---|
-| V-01 | 多页文档全流程 | ✅ 通过 | 构造两页 PDF 走全流程:文档终态为 completed/needs_review(非 failed),两页记录均存在;重跑保持完整。固化为回归测试 `backend/test/regression.test.js`(D-04/V-01) |
-| V-02 | 越权矩阵 | ✅ 通过 | 全部任务级接口(详情/文档/下载/报告/导出/仪表盘/复核/审计/追踪/触发运行)× 三种身份(无 token/错 token/正确属主)对**有属主**任务逐一验证:前两者 403 ERR_FORBIDDEN,属主通过;**无属主**任务对三种身份均可访问(兼容脚本与演示)。固化为回归测试(D-06/V-02),令牌校验器以注入方式提供模拟身份 |
-| V-03 | 路径遍历 | ✅ 通过 | 穿越片段、反斜杠变体、绝对路径文件名上传:全部规范化,存储根目录之外无任何新建文件(前后目录树对比断言);越界键读取抛 ERR_STORAGE_ACCESS。固化为回归测试(D-07/V-03) |
-| V-04 | 情景隔离 | ✅ 通过 | 跑基线→跑三情景→重取报告与导出:基线总值与情景前完全一致(463.047 t 双触发后仍一致),落库核算与审计记录未被情景覆盖。固化为回归测试(D-05/V-04) |
-| V-05 | 报告锚点数值 | ✅ 通过 | 范围分解锚点吨值与仪表盘聚合吨值逐项相等(回归断言逐项比对),逐条记录锚点亦精确。固化为回归测试(D-04/V-01 内) |
-| V-06 | CSV 公式注入 | ✅ 通过 | 经复核编辑写入 `=SUM(A1:A9)*cmd`、`+1|@ping|-2` 等品名,两类 CSV 导出:危险前缀被前置单引号中和,数值列仍为数值,列结构不变。固化为回归测试(D-11/V-06) |
-| V-07 | 数值防线 | ✅ 通过 | 经复核编辑接口与 mock 抽取路径分别注入非数字/无穷/零/负数:全部拒绝(ERR_ENUM_INVALID)或安全降级;账本、聚合、报告无任何非有限数值(回归断言)。固化为回归测试(D-14/D-15/V-07) |
-| V-08 | 并发运行 | ✅ 通过 | 报告轮询期间连续两次触发运行:最终只产出一份一致报告,报告数值与账本重算一致。证据:本地服务上 `PUBLIC_BASE=http://127.0.0.1:8080 node scripts/verify_consistency.js` → `1/1 tasks consistent -> PASS`(20 行 0 不匹配);同时固化为回归测试(D-33) |
-| V-09 | 限流与来源防护 | ✅ 通过 | 超阈值请求得 429 ERR_RATE_LIMITED;伪造转发头不再能重置限流桶(默认按 socket 地址计键);非白名单来源无跨域头;畸形 Origin 头不导致服务器错误(精确字符串比较,不做 URL 解析)。固化为回归测试(D-13/D-37/V-09) |
-| V-10 | 界面全流程走查 | ✅ 通过 | 本地后端 8080 + 前端 5173,浏览器依次走查 P1→P9:创建任务→一键演示(20 单据,状态 completed/needs_review)→P3 记录表非空且可展开详情与审计→P4 从记录进入匹配查看器并完成一次手动指定因子→P5 仪表盘数值→P6 三情景(滑块 50% 后 S-2 节约精确减半,证明比例真实生效)→P7 十章 + PDF + 两种 CSV 下载且内容正确→P8 编辑(quantity 21000 落库,报告随之刷新)→P9 172 条追踪。9 张截图由 vision 子智能体独立视觉核验,最终全部 PASS | `progress/evidence/audit-2026-10-14/v10-screenshots/*.png`(9 张)、`.../carbonledger-report.pdf`、`.../activity-detail.csv`、`.../category-summary.csv` |
-| V-11 | 上传防御 | ✅ 通过 | 空文件→逐文件 ERR_FILE_CORRUPT;伪装扩展名(可执行内容命名 .pdf)→ERR_FILE_CORRUPT;损坏文件→ERR_FILE_CORRUPT;超限大小(11MB)→中间件 413 ERR_FILE_TOO_LARGE(不再完整进内存);超单请求文件数(51)→422 ERR_ENUM_INVALID。upload 套件同步覆盖 |
-| V-12 | 嵌入批次防御 | ✅ 通过 | 模拟嵌入接口返回向量数少于输入数:客户端重试一次后显式失败(ERR_MODEL_CALL_FAILED),索引不写入缺失向量。固化为回归测试(D-18/V-12) |
-| V-13 | 文档对账 | ✅ 通过 | README 修订:测试数(44 及构成)、三口径行数与 NFR-504 现状、错误码(补 ERR_FORBIDDEN/ERR_RATE_LIMITED,共 15)、身份/隐私与限流口径、队列表述改为内联执行、运行时开关补 TRUST_PROXY、新增 2026-10 加固小节;T-050 报告加 Addendum 确认其修复在情景隔离后仍成立 |
-| V-14 | 登记册闭环 | ✅ 通过 | 登记册 67 条全部闭环:**58 已修复**(均引用通过的验证方式)、**1 按 2.6.2 处理**(D-02,附超支账与理由)、**6 有意保留**(D-25/D-35/D-44/D-49/D-50/D-56,各附理由)、**2 不成立**(D-55/D-57,附核实解释);无"待修复"且无决策说明的条目 |
+| V-01 | Multi-page document full flow | ✅ Pass | Constructed a two-page PDF and ran it through the full flow: the document's final state is completed/needs_review (not failed), both page records exist; rerunning preserves completeness. Consolidated as a regression test in `backend/test/regression.test.js` (D-04/V-01) |
+| V-02 | Privilege escalation matrix | ✅ Pass | All task-level endpoints (detail/documents/download/report/export/dashboard/review/audit/trace/trigger run) × three identities (no token/wrong token/correct owner) were verified one by one against tasks **with an owner**: the first two get 403 ERR_FORBIDDEN, the owner passes; **unowned** tasks are accessible to all three identities (for script and demo compatibility). Consolidated as a regression test (D-06/V-02); the token validator supplies mock identities via injection |
+| V-03 | Path traversal | ✅ Pass | Traversal segments, backslash variants, absolute-path filenames on upload: all normalized, no new files of any kind created outside the storage root (before/after directory tree comparison assertion); out-of-bounds key reads throw ERR_STORAGE_ACCESS. Consolidated as a regression test (D-07/V-03) |
+| V-04 | Scenario isolation | ✅ Pass | Ran baseline → ran three scenarios → re-fetched report and export: the baseline totals are exactly identical to before the scenarios (463.047 t still identical after the double trigger), and the persisted accounting and audit records were not overwritten by the scenarios. Consolidated as a regression test (D-05/V-04) |
+| V-05 | Report anchor values | ✅ Pass | Range breakdown anchor tonnage equals dashboard aggregate tonnage item by item (regression assertion compares item by item), and per-record anchors are also exact. Consolidated as a regression test (inside D-04/V-01) |
+| V-06 | CSV formula injection | ✅ Pass | Via the review edit path, wrote product names such as `=SUM(A1:A9)*cmd` and `+1|@ping|-2`; on both CSV exports, dangerous prefixes are neutralized by a prepended single quote, numeric columns remain numeric, and the column structure is unchanged. Consolidated as a regression test (D-11/V-06) |
+| V-07 | Numeric defenses | ✅ Pass | Via the review edit endpoint and the mock extraction path, injected non-numeric/infinite/zero/negative values respectively: all rejected (ERR_ENUM_INVALID) or safely degraded; the ledger, aggregates, and report contain no non-finite values (regression assertion). Consolidated as a regression test (D-14/D-15/V-07) |
+| V-08 | Concurrent runs | ✅ Pass | Triggered a run twice in succession during report polling: only one consistent report is ultimately produced, and the report values agree with the ledger recomputation. Evidence: on the local service, `PUBLIC_BASE=http://127.0.0.1:8080 node scripts/verify_consistency.js` → `1/1 tasks consistent -> PASS` (20 rows, 0 mismatches); also consolidated as a regression test (D-33) |
+| V-09 | Rate limiting and origin protection | ✅ Pass | Over-threshold requests get 429 ERR_RATE_LIMITED; forged forwarding headers can no longer reset the rate-limit buckets (keyed by socket address by default); non-whitelisted origins get no cross-origin headers; malformed Origin headers do not cause server errors (exact string comparison, no URL parsing). Consolidated as a regression test (D-13/D-37/V-09) |
+| V-10 | UI full-flow walkthrough | ✅ Pass | Local backend 8080 + frontend 5173; the browser walked through P1→P9 in sequence: create task → one-click demo (20 documents, status completed/needs_review) → P3 record table non-empty, expandable detail and audit → P4 enter the matching viewer from a record and complete one manual factor assignment → P5 dashboard values → P6 three scenarios (after the slider is at 50%, the S-2 savings are exactly halved, proving the ratio really takes effect) → P7 ten chapters + PDF + two CSV downloads with correct content → P8 edit (quantity 21000 persisted, the report refreshes accordingly) → P9 172 traces. The 9 screenshots were independently visually verified by a vision sub-agent, and all finally PASS | `progress/evidence/audit-2026-10-14/v10-screenshots/*.png` (9 files), `.../carbonledger-report.pdf`, `.../activity-detail.csv`, `.../category-summary.csv` |
+| V-11 | Upload defenses | ✅ Pass | Empty file → per-file ERR_FILE_CORRUPT; disguised extension (executable content named .pdf) → ERR_FILE_CORRUPT; corrupted file → ERR_FILE_CORRUPT; oversize (11MB) → middleware 413 ERR_FILE_TOO_LARGE (no longer fully loaded into memory); over single-request file count (51) → 422 ERR_ENUM_INVALID. The upload suite covers this in sync |
+| V-12 | Embedded batch defenses | ✅ Pass | The mock embedding interface returned fewer vectors than inputs: the client retried once and then failed explicitly (ERR_MODEL_CALL_FAILED), and missing vectors were not written to the index. Consolidated as a regression test (D-18/V-12) |
+| V-13 | Documentation reconciliation | ✅ Pass | README revisions: test count (44 and its composition), the three metrics' line counts and current NFR-504 status, error codes (added ERR_FORBIDDEN/ERR_RATE_LIMITED, 15 in total), identity/privacy and rate-limit metrics, the queue wording changed to inline execution, the runtime switches supplemented with TRUST_PROXY, and a new 2026-10 hardening subsection; the T-050 report adds an Addendum confirming its fix still holds after scenario isolation |
+| V-14 | Defect register closure | ✅ Pass | All 67 defect register entries are closed: **58 fixed** (each citing a passing verification method), **1 handled per 2.6.2** (D-02, with the overage account and rationale), **6 intentionally retained** (D-25/D-35/D-44/D-49/D-50/D-56, each with rationale), **2 not substantiated** (D-55/D-57, with verification explanations); no entry is "to be fixed" without a decision note |
 
-## 7.5 第二轮复核(独立复核者,收口后重跑)
+## 7.5 Second Review Round (independent reviewer, rerun after closure)
 
-> 第一轮"零悬空条目"的结论被本轮**证伪**:发现 9 项遗漏/未闭环问题(D-60 至 D-68),已全部登记、修复并配回归断言。详见登记册"二次复查(第二轮)"。
-> 其中 D-67 与 D-68 由**端到端/退出码实测**发现,均经旧版本代码归因确认属既有缺陷。
+> The first round's conclusion of "zero dangling entries" was **falsified** by this round: 9 missed/unclosed issues (D-60 through D-68) were found, all registered, fixed, and accompanied by regression assertions. See the defect register's "secondary re-examination (second round)".
+> Of these, D-67 and D-68 were found by **end-to-end/exit-code testing**, and both were confirmed by attribution against the old version code to be pre-existing defects.
 
-| 项 | 结果 | 说明 |
+| Item | Result | Notes |
 |---|---|---|
-| 新增缺陷 | 9 项(D-60…D-68) | D-60 为 P1(失败文档不可重试 + 重跑销毁既有记录),D-67/D-68 为 P2(重跑静默清空账本;验证脚本退出码契约),其余 P3 |
-| 全部修复 | ✅ | 每项均配回归断言;`npm test` 44 → **48** 全绿 |
-| 复核电池重跑 | ✅ | A-1/A-2/A-3/A-4/A-6/A-7 全绿;A-5 依 2.6.2 记录并接受(B=7708,C=9503) |
-| 全库死导出扫描 | ✅ | 仅 4 处命中,已全部回收(D-64,−8 行) |
-| **V-08 本地复验** | ✅ | 一键演示任务连续两次并发重跑后记录仍为 **20 条**;`PUBLIC_BASE=本地 node scripts/verify_consistency.js` → `PASS (20 rows, 0 mismatch(es))` |
-| **V-08 证据盲区** | ⚠️ 已记录 | `verify_consistency.js` 只校验"报告与**残存**账本自洽",账本被清空后仍会 PASS;D-67 已封堵该路径,盲区本身记录在案 |
-| **D-68 退出码实测** | ✅ | `verify_consistency.js` 打印 PASS 且 `exit=0`(三次);修复前为 127 |
-| 登记册闭环 | ✅ | 67 条全部有明确处置,零"待修复" |
+| New defects | 9 (D-60…D-68) | D-60 is P1 (failed documents cannot be retried + rerun destroys existing records), D-67/D-68 are P2 (rerun silently clears the ledger; verification script exit-code contract), the rest P3 |
+| All fixed | ✅ | Each is accompanied by a regression assertion; `npm test` 44 → **48** all green |
+| Review battery rerun | ✅ | A-1/A-2/A-3/A-4/A-6/A-7 all green; A-5 recorded and accepted per 2.6.2 (B=7708, C=9503) |
+| Repo-wide dead export scan | ✅ | Only 4 hits, all reclaimed (D-64, −8 lines) |
+| **V-08 local re-verification** | ✅ | After two consecutive concurrent reruns of the one-click demo task, the records still number **20**; `PUBLIC_BASE=local node scripts/verify_consistency.js` → `PASS (20 rows, 0 mismatch(es))` |
+| **V-08 evidence blind spot** | ⚠️ Recorded | `verify_consistency.js` only checks that "the report is self-consistent with the **surviving** ledger", and will still PASS after the ledger is cleared; D-67 has blocked this path, and the blind spot itself is on record |
+| **D-68 exit-code testing** | ✅ | `verify_consistency.js` prints PASS and `exit=0` (three times); before the fix it was 127 |
+| Defect register closure | ✅ | All 67 entries have explicit dispositions, zero "to be fixed" |
 
-## 7.3 不回归确认
+## 7.3 No-Regression Confirmation
 
-- 基线 34 个用例全部仍通过;**新增 14 个回归用例全部通过**(合计 48)。
-- 演示数据集端到端(mock):20 记录、十章报告、引用覆盖 100%、失效 0,与基线一致。
-- 不依赖密钥与公网的既有验证脚本全部可运行且结论不劣化:
-  - `verify_units.js` → RESULT: PASS(7 单元、5 抽样可回溯)
-  - `verify_traceability.js` → RESULT: PASS(30/30 解析、0 失效、3/3 负控检出)
-  - `verify_factor_store.js` → RESULT: PASS(743 因子、年份分布合计一致)
-  - `verify_upload.js`(经 `npm test` 的 upload 套件)→ PASS
-  - `verify_consistency.js`(指向本地)→ PASS(1/1,20 行 0 不匹配)
-- 五个真实适配器脚本:四脚本补齐密钥守卫后,无密钥运行 exit 2 且不写结果文件。
+- All 34 baseline cases still pass; **all 14 new regression cases pass** (48 in total).
+- The demo dataset end-to-end (mock): 20 records, a ten-chapter report, 100% citation coverage, 0 invalidation, consistent with the baseline.
+- All pre-existing verification scripts that do not depend on keys or the public network run and their conclusions do not degrade:
+  - `verify_units.js` → RESULT: PASS (7 units, 5 samples traceable)
+  - `verify_traceability.js` → RESULT: PASS (30/30 parsed, 0 invalidation, 3/3 negative controls detected)
+  - `verify_factor_store.js` → RESULT: PASS (743 factors, year-distribution totals consistent)
+  - `verify_upload.js` (via the `npm test` upload suite) → PASS
+  - `verify_consistency.js` (pointed at local) → PASS (1/1, 20 rows, 0 mismatches)
+- Five real adapter scripts: four scripts gained key guards; run without keys they exit 2 and write no result file.
 
-## 7.4 二次复查
+## 7.4 Secondary Re-examination
 
-已完成(详见登记册"阶段四二次复查结论"):换视角按文件复核,新发现并闭环 D-51、D-52、D-53、D-54、D-58、D-59;核对修复间相互作用(属主+前端认证头、串行化+情景隔离+状态机、上传限制+既有断言、真实召回分+数值防线、PDF 双解析);登记册外同类遗漏逐项核对(其余 verify 脚本写入目标、前端残留未认证 API 访问、后端主键冲突、全库数值入口)。**零悬空条目**。
+Completed (see the defect register's "phase four secondary re-examination conclusion"): re-reviewed file by file from a fresh perspective, newly finding and closing D-51, D-52, D-53, D-54, D-58, D-59; checked interactions between fixes (owner + frontend auth header, serialization + scenario isolation + state machine, upload limits + existing assertions, real recall scores + numeric defenses, PDF dual parsing); cross-checked similar omissions outside the defect register item by item (the other verify scripts' write targets, leftover unauthenticated frontend API access, backend primary-key conflicts, repo-wide numeric entry points). **Zero dangling entries**.
 
-## 附录 A 疑点最终处置(R-01 至 R-33)
+## Appendix A Final Disposition of Doubts (R-01 through R-33)
 
-| 疑点 | 处置 |
+| Doubt | Disposition |
 |---|---|
-| R-01 | 成立→已修复(D-04) |
-| R-02 | 成立→已修复(D-05) |
-| R-03 | 成立→已修复(D-06) |
-| R-04 | 成立→已修复(D-07) |
-| R-05 | 成立→已修复(D-08) |
-| R-06 | 成立→已修复(D-09) |
-| R-07 | 成立→已修复(D-10);另发现同源 Share 列错误(D-52)并修复 |
-| R-08 | 成立→已修复(D-11) |
-| R-09 | 成立→已修复(D-12) |
-| R-10 | 成立→已修复(D-13);另发现跨切面中间件未覆盖早期路由(并入 D-13) |
-| R-11 | 成立→已修复(D-14) |
-| R-12 | 成立→已修复(D-15) |
-| R-13 | 成立→已修复(D-16/D-17) |
-| R-14 | 成立→已修复(D-19) |
-| R-15 | 成立→已修复(D-20) |
-| R-16 | 成立→已修复(D-21) |
-| R-17 | 成立→按 5.4.3 授权移除(D-22) |
-| R-18 | 成立→已修复(D-18) |
-| R-19 | 成立→已修复(D-24) |
-| R-20 | 部分不成立(无本地解压路径)→有意保留并文档化(D-25) |
-| R-21 | 风险成立(当前数据 0 偏差)→改用 pdf-lib 精确计数(D-26) |
-| R-22 | 成立(截断披露子点不成立)→已修复(D-27) |
-| R-23 | 成立→已修复(D-28) |
-| R-24 | 成立→已修复(D-29) |
-| R-25 | 成立→已修复(D-30) |
-| R-26 | 成立→已修复(D-31) |
-| R-27 | 部分成立(审计 ID 碰撞)→已修复(D-32);查重时机与线性查找子点不成立/有意保留 |
-| R-28 | 成立→已修复(D-33) |
-| R-29 | 成立→已修复(D-34) |
-| R-30 | 差异确认→有意保留并列出差异表(D-35) |
-| R-31 | 成立→已修复(D-36) |
-| R-32 | 成立→已修复(D-37) |
-| R-33 | 成立→(1)(2)(3) 已修复(D-38);(4)(5) 有意保留并文档化 |
+| R-01 | Substantiated → fixed (D-04) |
+| R-02 | Substantiated → fixed (D-05) |
+| R-03 | Substantiated → fixed (D-06) |
+| R-04 | Substantiated → fixed (D-07) |
+| R-05 | Substantiated → fixed (D-08) |
+| R-06 | Substantiated → fixed (D-09) |
+| R-07 | Substantiated → fixed (D-10); a same-source Share column error (D-52) was also found and fixed |
+| R-08 | Substantiated → fixed (D-11) |
+| R-09 | Substantiated → fixed (D-12) |
+| R-10 | Substantiated → fixed (D-13); a cross-cutting middleware that did not cover early routes was also found (folded into D-13) |
+| R-11 | Substantiated → fixed (D-14) |
+| R-12 | Substantiated → fixed (D-15) |
+| R-13 | Substantiated → fixed (D-16/D-17) |
+| R-14 | Substantiated → fixed (D-19) |
+| R-15 | Substantiated → fixed (D-20) |
+| R-16 | Substantiated → fixed (D-21) |
+| R-17 | Substantiated → removed under 5.4.3 authorization (D-22) |
+| R-18 | Substantiated → fixed (D-18) |
+| R-19 | Substantiated → fixed (D-24) |
+| R-20 | Partially not substantiated (no local decompression path) → intentionally retained and documented (D-25) |
+| R-21 | Risk substantiated (0 deviation in current data) → switched to pdf-lib exact counting (D-26) |
+| R-22 | Substantiated (the truncation disclosure sub-point is not substantiated) → fixed (D-27) |
+| R-23 | Substantiated → fixed (D-28) |
+| R-24 | Substantiated → fixed (D-29) |
+| R-25 | Substantiated → fixed (D-30) |
+| R-26 | Substantiated → fixed (D-31) |
+| R-27 | Partially substantiated (audit ID collision) → fixed (D-32); the deduplication timing and linear-search sub-points are not substantiated / intentionally retained |
+| R-28 | Substantiated → fixed (D-33) |
+| R-29 | Substantiated → fixed (D-34) |
+| R-30 | Difference confirmed → intentionally retained with a difference table (D-35) |
+| R-31 | Substantiated → fixed (D-36) |
+| R-32 | Substantiated → fixed (D-37) |
+| R-33 | Substantiated → (1)(2)(3) fixed (D-38); (4)(5) intentionally retained and documented |
 
-## 最终收口复验(任务书第九章核对,2026-10-14)
+## Final Closure Re-verification (audit brief Chapter Nine checklist, 2026-10-14)
 
-> 在第二轮复核收口提交(b587f07)之后、最终交付之前,于同一 HEAD 上对自动验收电池整体重跑一遍,并逐项核对第九章核对单。全程 mock 模式(`GEMINI_API_KEY` 未注入进程环境,`.env` 未被加载——项目无 dotenv 依赖,密钥仅从进程环境读取),**本次复验未发起任何真实 Gemini / Google Cloud API 调用,增量费用为 0**;评估表中 "$0.00058/document" 为历史真实适配器轮次的存档指标,非当前支出。
+> After the second review round's closure commit (b587f07) and before final delivery, the entire automated acceptance battery was rerun once on the same HEAD, and the Chapter Nine checklist was confirmed item by item. Mock mode throughout (`GEMINI_API_KEY` was not injected into the process environment and `.env` was not loaded — the project has no dotenv dependency, and keys are read only from the process environment), **this re-verification initiated no real Gemini / Google Cloud API calls, and the incremental cost is 0**; the "$0.00058/document" in the evaluation table is an archived metric from a historical real-adapter round, not current spend.
 
-**A-1 至 A-7 实测(收口 HEAD 重跑)**:
+**A-1 through A-7 actual measurements (rerun on the closure HEAD)**:
 
-| 项 | 结果 | 实测输出 |
+| Item | Result | Measured Output |
 |---|---|---|
-| A-1 `npm run build` | ✅ | 32 模块,dist JS 169.14 kB(gzip 54.07 kB),BUILD OK |
-| A-2 `npm test` | ✅ | backend pass=47 fail=0 + upload pass=1 fail=0,TOTAL **48/48** |
+| A-1 `npm run build` | ✅ | 32 modules, dist JS 169.14 kB (gzip 54.07 kB), BUILD OK |
+| A-2 `npm test` | ✅ | backend pass=47 fail=0 + upload pass=1 fail=0, TOTAL **48/48** |
 | A-3 `npm run smoke` | ✅ | `{"status":"ok"}` → SMOKE OK |
-| A-4 `npm run scan-secrets` | ✅ | PASSED(0 命中),退出码 0 |
-| A-5 `bash scripts/count_lines.sh` | ✅(按 2.6.2 条款) | A=4544,B=7708,C=9503;脚本如实打印 FAIL;超支账见登记册 D-02 最终账(含第二轮追加) |
-| A-6 `node eval/run.js` | ✅ | 11 组指标全 PASS,Overall verdict: PASS;与上次仅 `run_at` 时间戳不同,11 项数值逐字一致(已用 `git diff` 核实后恢复文件) |
-| A-7 `git status` | ✅ | 干净(0 条目) |
+| A-4 `npm run scan-secrets` | ✅ | PASSED (0 hits), exit code 0 |
+| A-5 `bash scripts/count_lines.sh` | ✅ (per clause 2.6.2) | A=4544, B=7708, C=9503; the script faithfully prints FAIL; the overage account is in defect register D-02's final account (including the second round's additions) |
+| A-6 `node eval/run.js` | ✅ | All 11 metric groups PASS, Overall verdict: PASS; compared with the previous run only the `run_at` timestamp differs, and the 11 values are word-for-word identical (verified with `git diff`, then the file was restored) |
+| A-7 `git status` | ✅ | Clean (0 entries) |
 
-**第九章核对单逐项确认**:
+**Chapter Nine checklist, confirmed item by item**:
 
-- [x] 阶段一基线快照已存档(`BASELINE_SNAPSHOT_2026-10-14.md`),B-1 至 B-8 全部有记录(含 B-4/B-6 两条基线失败项及其缺陷回链 D-01/D-02)
-- [x] 附录 A 疑点 R-01 至 R-33 逐条核实并登记处置结论(本文件附录表 33 行,无一悬空)
-- [x] 八个域检查点全部过完(`REVIEW_PHASE2_NOTES_2026-10-14.md`"各域检查点完成情况",新发现登记为 D-39 至 D-50)
-- [x] 全部 P0 缺陷已修复且各有通过的回归验证(D-04/05/06/07;A-2 含对应用例)
-- [x] 全部 P1 缺陷已修复且各有通过的回归验证(D-08…D-17、D-33、D-39、D-40、D-51、D-52、D-59、D-60)
-- [x] P2 缺陷已修复或已记录处置决策(D-02 按 2.6.2 书面记录并被接受;D-18…D-29、D-58、D-67、D-68 已修复)
-- [x] P3 缺陷每条有显式决策(有意保留:D-25/D-35/D-44/D-49/D-50/D-56 及 D-38(4)(5),均附理由;其余已修复)
-- [x] A-1 至 A-7 自动验收全绿(见上表;A-5 依任务书 7.1 自带的"超支已书面记录并被接受"条款判定)
-- [x] V-01 至 V-14 定向验收全部通过并留证(7.2 表 + `progress/evidence/audit-2026-10-14/`:九张 V-10 截图、PDF/CSV 导出件、V-08 本地一致性结果;V-01/02/03/04/05/06/07/09/12 均已固化为 `regression.test.js` 用例,收口抽查确认 17 例与编号一一对应)
-- [x] 二次复查完成且零悬空条目(两轮:第一轮 D-51…D-59;第二轮 D-60…D-68 并修正第一轮"零新增"表述;登记册无"待修复"状态条目——仅存的一处"待修复"字样属"阶段二收口"历史快照段落,已被后续汇总取代)
-- [x] 五项交付物齐备:缺陷登记册、修复报告(含第二轮追加)、更新后 README(实测对账:测试数 48=47+1、三口径 4544/7708/9503 与 `count_lines.sh` 实测逐字一致)、验收记录(本文件)、git 提交序列(每缺陷/每阶段一提交)
-- [x] 全程未触犯第三章红线:无部署命令;`.env`/`frontend/.env` 未入库未输出(`git ls-files` 零命中);`.gitignore` 两次改动均为只增不减(核过 42c7849/70b6724 两处 diff);`count_lines.sh` 一字未改、超支如实打印;测试无削弱(48/48 全通过);`AI_MODEL_ALLOWLIST` 未扩大;无新增运行时依赖
+- [x] Phase one baseline snapshot archived (`BASELINE_SNAPSHOT_2026-10-14.md`), with records for all of B-1 through B-8 (including the two baseline failure items B-4/B-6 and their defect back-links D-01/D-02)
+- [x] Appendix A doubts R-01 through R-33 verified one by one and their dispositions registered (this file's appendix table has 33 rows, none dangling)
+- [x] All eight domain checkpoints completed (`REVIEW_PHASE2_NOTES_2026-10-14.md` "each domain's checkpoint status", with new findings registered as D-39 through D-50)
+- [x] All P0 defects fixed, each with passing regression verification (D-04/05/06/07; A-2 includes the corresponding cases)
+- [x] All P1 defects fixed, each with passing regression verification (D-08…D-17, D-33, D-39, D-40, D-51, D-52, D-59, D-60)
+- [x] P2 defects fixed or with recorded disposition decisions (D-02 recorded in writing per 2.6.2 and accepted; D-18…D-29, D-58, D-67, D-68 fixed)
+- [x] Each P3 defect has an explicit decision (intentionally retained: D-25/D-35/D-44/D-49/D-50/D-56 and D-38(4)(5), each with rationale; the rest fixed)
+- [x] A-1 through A-7 automated acceptance all green (see the table above; A-5 is judged under the audit brief 7.1's own clause of "overage recorded in writing and accepted")
+- [x] V-01 through V-14 targeted acceptance all pass with evidence retained (7.2 table + `progress/evidence/audit-2026-10-14/`: nine V-10 screenshots, PDF/CSV exports, V-08 local consistency result; V-01/02/03/04/05/06/07/09/12 are all consolidated as `regression.test.js` cases, and a closure spot-check confirmed 17 cases correspond one-to-one to the numbers)
+- [x] Secondary re-examination completed with zero dangling entries (two rounds: the first round D-51…D-59; the second round D-60…D-68 and correction of the first round's "zero new" statement; the defect register has no "to be fixed" status entries — the only occurrence of the phrase "to be fixed" belongs to the historical snapshot section of "phase two closure" and has since been superseded by a later summary)
+- [x] All five deliverables in place: the defect register, the fix report (including the second round's additions), the updated README (reconciled against measurements: test count 48=47+1, and the three metrics 4544/7708/9503 word-for-word identical to `count_lines.sh` measurements), the acceptance record (this file), and the git commit sequence (one commit per defect/phase)
+- [x] No Chapter Three red lines violated throughout: no deployment commands; `.env`/`frontend/.env` not committed and not output (zero `git ls-files` hits); both `.gitignore` changes were additive only (both diffs at 42c7849/70b6724 checked); `count_lines.sh` unchanged by a single character and overage printed faithfully; no test weakening (48/48 all pass); `AI_MODEL_ALLOWLIST` not expanded; no new runtime dependencies
 
-**结论**:任务书五阶段全部完成,第九章核对单 12 项全部勾选,验收记录全绿。任务完成。
+**Conclusion**: All five phases of the audit brief are complete, all 12 items of the Chapter Nine checklist are checked, and the acceptance record is all green. The task is complete.

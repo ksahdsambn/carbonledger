@@ -1,211 +1,227 @@
-# 验收记录（第二轮全面审查）— 2026-10-15
+# Acceptance Record (Second-Round Comprehensive Review) — 2026-10-15
 
-> 审查对象 HEAD 区间：`7635e44`（第一轮收口后三个提交）→ 本轮修复收口。
-> 环境：Node v24.12.0 / Git Bash (win32) / 全程 mock 模式，零外部 API 调用（零费用）。
-> 证据目录：`progress/evidence/audit2-2026-10-15/`。
+> HEAD range under review: `7635e44` (three commits after the first-round wrap-up) → this round's fix wrap-up.
+> Environment: Node v24.12.0 / Git Bash (win32) / mock mode throughout, zero external API calls (zero cost).
+> Evidence directory: `progress/evidence/audit2-2026-10-15/`.
 
-## 7.1 自动验收电池
+## 7.1 Automated Acceptance Battery
 
-| 项 | 命令 | 结果 | 关键记录 |
+| Item | Command | Result | Key Notes |
 |---|---|---|---|
-| A-1 | `npm run build` | ✅ 通过 | 前端 37 模块构建 + 后端语法检查 OK |
-| A-2 | `npm test` | ✅ 通过 | **49/49**（基线 48 项全保留 + 新增 D-104 回归 1 项；含 D-101 修复后的 D-07/V-03 用例） |
-| A-3 | `npm run smoke` | ✅ 通过 | SMOKE OK（health 200、结构化日志、关停无残留监听） |
-| A-4 | `npm run scan-secrets` | ✅ 通过 | 0 命中、退出码 0 |
-| A-5 | `bash scripts/count_lines.sh` | ✅ 通过（豁免在案） | A=5,828 / B=9,049 / C=10,851。B 超 7,000、C 超 10,000，系 T-052 维护者书面豁免（README + 第一轮 D-02 + execution_log 标记 + verify_acceptance C4 豁免识别），本轮增量已记录于 D-102。结论行经 D-106 修复后如实陈述口径 C 实际超限 |
-| A-6 | `node eval/run.js` | ✅ 通过 | 11 组指标全部 PASS，仅汇总既有证据文件（结果文件 diff 仅 run_at 时间戳） |
-| A-7 | `git status` | ✅ 通过 | 干净；`.env`/`frontend/.env`/dist/本地存储均未入库（`git ls-files` 零命中核验） |
+| A-1 | `npm run build` | ✅ Pass | Frontend 37-module build + backend syntax check OK |
+| A-2 | `npm test` | ✅ Pass | **49/49** (all 48 baseline items retained + 1 new D-104 regression; includes the post-D-101-fix D-07/V-03 cases) |
+| A-3 | `npm run smoke` | ✅ Pass | SMOKE OK (health 200, structured logs, no residual listeners on shutdown) |
+| A-4 | `npm run scan-secrets` | ✅ Pass | 0 hits, exit code 0 |
+| A-5 | `bash scripts/count_lines.sh` | ✅ Pass (exemption on file) | A=5,828 / B=9,049 / C=10,851. B exceeds 7,000 and C exceeds 10,000, per the T-052 maintainer's written exemption (README + first-round D-02 + execution_log marker + verify_acceptance C4 exemption recognition); this round's increments are recorded in D-102. After the D-106 fix, the conclusion line states the actual scope C overage factually |
+| A-6 | `node eval/run.js` | ✅ Pass | All 11 metric groups PASS, summarizing existing evidence files only (the result file diff contains only the run_at timestamp) |
+| A-7 | `git status` | ✅ Pass | Clean; `.env`/`frontend/.env`/dist/local storage not committed (verified with zero hits via `git ls-files`) |
 
-## 7.2 定向验收场景
+## 7.2 Targeted Acceptance Scenarios
 
-| 项 | 场景 | 结果 | 说明与证据 |
+| Item | Scenario | Result | Notes and Evidence |
 |---|---|---|---|
-| V-01 | 多页文档全流程 | ✅ 通过 | 真实金标准四页 GD-09：4 单元 → 每页各 1 条记录（page=1..4）→ 状态 needs_review（合规）→ 十章报告 6 锚点。自动化回归（生成式两页 PDF）在套件内同为 D-04/V-01 用例。证据：`v01_multipage.json` |
-| V-02 | 越权矩阵 | ✅ 通过 | 15 条任务级路由 × 3 身份（HTTP 实测）：有属主任务对匿名/错 token 全部 403 ERR_FORBIDDEN，属主全部放行（业务 4xx 属通过）；无属主任务对三种身份开放；任务列表对他人属主任务不可见。证据：`v02_v03_v08_v11.json` |
-| V-03 | 路径穿越 | ✅ 通过 | 5 个恶意文件名（`../../`、`..\..\`、`C:\abs\`、`/abs/`、`sub/../../`）经 HTTP 上传全部净化为 basename，沙箱前后目录树零逃逸。证据：`v02_v03_v08_v11.json` |
-| V-04 | 情景隔离 | ✅ 通过 | 回归用例 D-05/V-04（persist:false，账本与审计零写入）；V-08 全流程中报告锚点=仪表盘重算值 |
-| V-05 | 报告锚点数值 | ✅ 通过 | 回归用例（锚点=仪表盘吨值逐项相等，含逐条记录锚点）；V-08 实测 anchor_total_t=report_total_t=306.893 |
-| V-06 | CSV 公式注入 | ✅ 通过 | 回归用例 D-11/V-06（`=+@-` 前缀中和、负数保持数值） |
-| V-07 | 数值防线 | ✅ 通过 | 回归用例 D-14/D-15/V-07（NaN/∞/0/负数/字符串全路径拒绝） |
-| V-08 | 并发运行 | ✅ 通过 | 双触发 202/202 + 运行中轮询 200 → 单一一致报告；`verify_consistency.js`（PUBLIC_BASE 指向本地）20 行 0 失配 PASS。证据：`v02_v03_v08_v11.json`、`v08_consistency_local.json`、`v08_consistency_console.txt`（T-050 原证据已备份还原） |
-| V-09 | 限流与来源防护 | ✅ 通过 | 限流 3/min 实例：伪造 X-Forwarded-For 不分桶（第 4 次 429 ERR_RATE_LIMITED）、healthz 豁免、恶意 Origin 无 CORS 头、localhost 回显、畸形 Origin 无 5xx。证据：`v09_rate_cors.json` |
-| V-10 | 界面全流程走查 | ✅ 通过 | 浏览器逐页实测：P1 建任务 → P2 一键演示 20 单据（4 completed/16 needs_review）→ P3 表 20 行非空+展开详情+审计步骤 → P4 手动指定次优因子（API 复核 confidence=1.0）→ P5 四 KPI+环图 → P6 滑块 50% 后 S-2 节约 −200.905→−100.453 精确减半 → P7 十章+引用覆盖 100%+PDF/两种 CSV（内容核验：PDF 魔数、CSV 表头与手动因子行 148.8t=12kg×12400）→ P8 编辑 quantity 21000 落库且报告 454.301→459.994 刷新 → P9 176 条追踪 0 失败。另验证 D-103：停后端后滑块重算失败显示明确 alert。12 张截图经 vision 子智能体两轮核验 12/12 PASS。证据：`v10-screenshots/*.png`（12 张）、`carbonledger-report.pdf`、`activity-detail.csv`、`category-summary.csv` |
-| V-11 | 上传防御 | ✅ 通过 | 空文件/伪装扩展名/损坏 PDF → 200+逐文件 ok:false（ERR_FILE_CORRUPT / ERR_FILE_FORMAT_UNSUPPORTED，符合 PRD 3.2 批量语义）；11MB → 中间件 413 ERR_FILE_TOO_LARGE（流式拒绝）；51 文件 → 422 ERR_ENUM_INVALID。证据：`v02_v03_v08_v11.json` |
-| V-12 | 嵌入批次防御 | ✅ 通过 | 回归用例 D-18/V-12 + D-66（短响应重试后显式失败） |
-| V-13 | 文档对账 | ✅ 通过 | README 修订：测试数 48→49（48 单元/e2e + 1 upload）、三口径行数 5,828/9,049/10,851 与实测逐字一致、NFR-504 段落补第二轮登记册引用；741 因子/命令/错误码/环境变量表复核一致 |
-| V-14 | 登记册闭环 | ✅ 通过 | `DEFECT_REGISTER_2026-10-15.md`：D-101~D-106 共 6 条，4 修复（各引用通过的验证）、1 有意保留（D-105 附理由）、1 文档修复（D-102）；R-01~R-33 逐条核实表全部闭环；无"待修复"无决策条目 |
+| V-01 | Multi-page document full flow | ✅ Pass | Real gold-standard four-page GD-09: 4 units → 1 record per page (page=1..4) → status needs_review (compliant) → ten-chapter report with 6 anchors. The automated regression (generated two-page PDF) is the same D-04/V-01 case within the suite. Evidence: `v01_multipage.json` |
+| V-02 | Authorization matrix | ✅ Pass | 15 task-level routes × 3 identities (HTTP verified): owned tasks return 403 ERR_FORBIDDEN for anonymous/wrong token, the owner is fully allowed (business 4xx counts as pass); unowned tasks are open to all three identities; the task list hides tasks owned by others. Evidence: `v02_v03_v08_v11.json` |
+| V-03 | Path traversal | ✅ Pass | 5 malicious file names (`../../`, `..\..\`, `C:\abs\`, `/abs/`, `sub/../../`) are all sanitized to basename via HTTP upload, with zero directory-tree escapes inside or outside the sandbox. Evidence: `v02_v03_v08_v11.json` |
+| V-04 | Scenario isolation | ✅ Pass | Regression case D-05/V-04 (persist:false, ledger and audit write nothing); in the V-08 full flow the report anchor equals the dashboard recomputed value |
+| V-05 | Report anchor values | ✅ Pass | Regression case (anchors equal the dashboard tonnage values item by item, including per-record anchors); V-08 measured anchor_total_t=report_total_t=306.893 |
+| V-06 | CSV formula injection | ✅ Pass | Regression case D-11/V-06 (`=+@-` prefix neutralized, negatives stay numeric) |
+| V-07 | Numeric defenses | ✅ Pass | Regression cases D-14/D-15/V-07 (NaN/∞/0/negative/string all rejected across paths) |
+| V-08 | Concurrent runs | ✅ Pass | Double trigger 202/202 + in-run polling 200 → single consistent report; `verify_consistency.js` (PUBLIC_BASE points locally) 20 lines, 0 mismatches, PASS. Evidence: `v02_v03_v08_v11.json`, `v08_consistency_local.json`, `v08_consistency_console.txt` (T-050 original evidence backed up and restored) |
+| V-09 | Rate limiting and origin protection | ✅ Pass | Rate limit 3/min instance: forged X-Forwarded-For is not bucketed separately (4th request 429 ERR_RATE_LIMITED), healthz exempted, malicious Origin has no CORS header, localhost echoed, malformed Origin has no 5xx. Evidence: `v09_rate_cors.json` |
+| V-10 | UI full-flow walkthrough | ✅ Pass | Browser page-by-page verified: P1 create task → P2 one-click demo with 20 documents (4 completed/16 needs_review) → P3 table with 20 non-empty rows + expandable detail + audit steps → P4 manual assignment of the suboptimal factor (API review confidence=1.0) → P5 four KPIs + donut chart → P6 slider at 50% gives S-2 savings −200.905→−100.453 exactly halved → P7 ten chapters + citation coverage 100% + PDF/two CSVs (content verified: PDF magic number, CSV header and manual-factor row 148.8t=12kg×12400) → P8 edit quantity 21000 persisted and report 454.301→459.994 refreshed → P9 176 traces with 0 failures. Also verified D-103: after stopping the backend, slider recomputation failure shows a clear alert. 12 screenshots verified by the vision sub-agent over two rounds, 12/12 PASS. Evidence: `v10-screenshots/*.png` (12 files), `carbonledger-report.pdf`, `activity-detail.csv`, `category-summary.csv` |
+| V-11 | Upload defenses | ✅ Pass | Empty file / disguised extension / corrupted PDF → 200 with per-file ok:false (ERR_FILE_CORRUPT / ERR_FILE_FORMAT_UNSUPPORTED, consistent with the PRD 3.2 batch semantics); 11MB → middleware 413 ERR_FILE_TOO_LARGE (streamed rejection); 51 files → 422 ERR_ENUM_INVALID. Evidence: `v02_v03_v08_v11.json` |
+| V-12 | Embedding batch defenses | ✅ Pass | Regression cases D-18/V-12 + D-66 (explicit failure after short-response retry) |
+| V-13 | Documentation reconciliation | ✅ Pass | README revision: test count 48→49 (48 unit/e2e + 1 upload), the three-caliber line counts 5,828/9,049/10,851 match the measurements verbatim, and the NFR-504 section adds a second-round defect register citation; the 741 factors/commands/error codes/environment variables table rechecked for consistency |
+| V-14 | Defect register closure | ✅ Pass | `DEFECT_REGISTER_2026-10-15.md`: 6 entries D-101~D-106, 4 fixed (each citing passing verification), 1 intentionally retained (D-105 with rationale), 1 documentation fix (D-102); every row of the R-01~R-33 verification table is closed; no "to be fixed" items and no decision-less entries |
 
-## 7.3 不回归确认
+## 7.3 No-Regression Confirmation
 
-- 基线 48 项全部保留且通过（修复 D-101 后 48/48 × 3 轮稳定），新增回归后 49/49。
-- 演示数据集端到端（mock）：20 单据 → 20 记录 → 20 核算 → 十章报告，引用覆盖 100%、无效锚点 0，与基线一致。
-- 不依赖密钥与公网的验证脚本本轮实际运行：`verify_factor_store.js` PASS、`verify_consistency.js`（本地）PASS、四个数据集校验脚本 PASS、`verify_upload` 套件（test.sh 内）PASS。五个真实适配器脚本仅守卫复核（含 exit 2 前置检查），未在无密钥环境运行。
+- All 48 baseline items retained and passing (after the D-101 fix, 48/48 stable across 3 rounds); 49/49 after adding the new regression.
+- Demo dataset end-to-end (mock): 20 documents → 20 records → 20 calculations → ten-chapter report, citation coverage 100%, 0 invalid anchors, consistent with the baseline.
+- Verification scripts that need no keys or public network were actually run this round: `verify_factor_store.js` PASS, `verify_consistency.js` (local) PASS, four dataset validation scripts PASS, `verify_upload` suite (within test.sh) PASS. The five real-adapter scripts were only guard-checked (including the exit 2 precheck) and were not run in the keyless environment.
 
-## 7.4 二次复查
+## 7.4 Secondary Review
 
-- 对本轮四个代码修复逐一反向审查：D-101（快照时机在首次上传之后，祖先目录已入基线集合，判据保持"逃逸可检出"）；D-104（缓存失效链完整：saveFactors→删除→写指纹→再失效；元数据文档不进入因子列表；verify_factor_store 兼容）；D-103（重算前置空错误态，成功/失败均收敛）；D-106（无脚本解析该行，判定逻辑与口径零改动）。
-- 同类问题横向扫描：全库 `tmpdir()` 遍历仅 D-07 用例一处（已隔离）；前端静默 catch 复查（auth 降级属既定口径、library 深链失败有优雅回退且不阻断主流程）；静态文件加载集合仅因子库一处。零新增发现。
-- 结论：**零悬空条目**。
+- Reverse review of each of this round's four code fixes: D-101 (the snapshot timing is after the first upload, the ancestor directories are already in the baseline set, and the criterion remains "escapes are detectable"); D-104 (the cache-invalidation chain is complete: saveFactors → delete → write fingerprint → invalidate again; metadata documents do not enter the factor list; verify_factor_store compatibility); D-103 (recompute with a pre-cleared empty error state, converging on both success and failure); D-106 (no script parses that line, the decision logic and caliber are unchanged).
+- Horizontal scan for similar issues: `tmpdir()` traversal across the repo appears in only one place, the D-07 case (already isolated); frontend silent catch review (auth degradation falls under the established caliber, and library deep-link failure has a graceful fallback that does not block the main flow); the static-file loading set covers only the factor store. Zero new findings.
+- Conclusion: **zero dangling entries**.
 
-## 红线自查
+## Red-Line Self-Check
 
-无部署命令；未打印/提交任何密钥；未削弱任何测试或判定逻辑（D-106 仅修正输出文本）；未改统计口径；未扩大模型允许清单；未引入新运行时依赖；验收结果如实记录（A-5 超限如实标注豁免链）。
+No deployment commands; no keys printed or committed; no test or decision logic weakened (D-106 only corrects output text); no statistical caliber changed; the model allowlist not expanded; no new runtime dependencies introduced; acceptance results recorded faithfully (the A-5 overage truthfully marks the exemption chain).
 
 ---
 
-## 最终收口复验（第三轮合并前复审收口 HEAD `a56d9bc`，2026-10-16）
+## Final Wrap-Up Re-verification (pre-merge third-round review wrap-up HEAD `a56d9bc`, 2026-10-16)
 
-> 7.1/7.2 上表产出于第二轮收口（49 用例时代）；此后合并前复审（D-107~D-111，见登记册
-> 附录与修复报告第九节）合入最终提交 `a56d9bc`。本节在**最终 HEAD** 上对自动验收电池
-> 整体重跑一遍，并逐项核对任务书第九章核对单。全程 mock 模式（未注入 `GEMINI_API_KEY`，
-> 未运行五个真实适配器验证脚本），**零 Gemini / Google Cloud API 调用，增量费用 $0**。
+> The tables in 7.1/7.2 were produced at the second-round wrap-up (the 49-case era); the subsequent
+> pre-merge review (D-107~D-111, see the defect register appendix and section 9 of the fix report)
+> was merged into the final commit `a56d9bc`. This section re-runs the entire automated acceptance
+> battery on the **final HEAD** and checks the audit brief's chapter-9 checklist item by item. Mock
+> mode throughout (no `GEMINI_API_KEY` injected, the five real-adapter verification scripts not
+> run), **zero Gemini / Google Cloud API calls, incremental cost $0**.
 
-### A-1 ~ A-7 于 HEAD `a56d9bc` 重跑结果
+### A-1 ~ A-7 Re-run Results on HEAD `a56d9bc`
 
-| 项 | 结果 | 关键记录 |
+| Item | Result | Key Notes |
 |---|---|---|
-| A-1 `npm run build` | ✅ | 前端 37 模块 + 后端语法检查 OK |
-| A-2 `npm test` | ✅ | **51/51**（backend 50 + upload 1；含 D-107/D-108 新增用例与 D-104/D-111 断言） |
-| A-3 `npm run smoke` | ✅ | SMOKE OK（health 200、SIGTERM 关停后端口释放无残留） |
-| A-4 `npm run scan-secrets` | ✅ | 0 命中、退出码 0 |
-| A-5 `bash scripts/count_lines.sh` | ✅（豁免在案） | A=5,870 / **B=9,149** / **C=10,951**（较第二轮 +42 行为 D-107~D-111 修复与其回归测试，已并入 D-102 账目）；T-052 豁免链不变；README 已同步为同值（逐字核对） |
-| A-6 `node eval/run.js` | ✅ | 11/11 PASS，仅汇总既有证据（本次运行仅改 run_at 时间戳，已还原） |
-| A-7 `git status` | ✅ | 干净；`git ls-files` 对 .env / frontend/.env / dist / 本地存储零命中 |
+| A-1 `npm run build` | ✅ | Frontend 37 modules + backend syntax check OK |
+| A-2 `npm test` | ✅ | **51/51** (backend 50 + upload 1; includes the new D-107/D-108 cases and the D-104/D-111 assertions) |
+| A-3 `npm run smoke` | ✅ | SMOKE OK (health 200, port released with no residual listeners after SIGTERM shutdown) |
+| A-4 `npm run scan-secrets` | ✅ | 0 hits, exit code 0 |
+| A-5 `bash scripts/count_lines.sh` | ✅ (exemption on file) | A=5,870 / **B=9,149** / **C=10,951** (+42 lines versus the second round, from the D-107~D-111 fixes and their regression tests, already folded into the D-102 ledger); the T-052 exemption chain unchanged; README synced to the same values (verbatim check) |
+| A-6 `node eval/run.js` | ✅ | 11/11 PASS, summarizing existing evidence only (this run changed only the run_at timestamp, already restored) |
+| A-7 `git status` | ✅ | Clean; `git ls-files` shows zero hits for .env / frontend/.env / dist / local storage |
 
-B-7 复核：本地启动 → `/healthz` 返回 `{"status":"ok"}` → SIGTERM 关停后 8080 端口释放、
-无残留进程（手动 `kill -INT` 在 Git Bash/win32 对原生进程不投递属环境语义，冒烟脚本
-的 SIGTERM 关停验证为准）。
+B-7 recheck: local start → `/healthz` returns `{"status":"ok"}` → after SIGTERM shutdown port 8080 is
+released with no residual processes (manual `kill -INT` not being delivered to native processes
+under Git Bash/win32 is an environment semantic; the smoke script's SIGTERM shutdown verification
+is authoritative).
 
-### 第三轮改动（a56d9bc）复查
+### Review of Third-Round Changes (a56d9bc)
 
-对 D-107~D-111 全部代码改动逐文件反向审查：`last_run_error` 为响应附加字段且
-`GET /report` 仍在 `requireTaskOwner` 守卫内（越权矩阵语义不变）；因子缓存代次计数
-（读前记 g、写前比对）逻辑正确且 `_` 前缀守卫复用既有错误码；`lastErrors` 有 1000 上界、
-消息截断 200 字符；`verify_acceptance.js` C4 仅容错退出码、无输出时仍抛出。未发现新增
-问题；V-02/V-03/V-08/V-09/V-11 的 HTTP 级证据产出的代码路径未被该提交改变语义。
+A file-by-file reverse review of all D-107~D-111 code changes: `last_run_error` is an appended
+response field and `GET /report` remains inside the `requireTaskOwner` guard (authorization-matrix
+semantics unchanged); the factor-cache generation counter (record g before reading, compare
+before writing) is logically correct and its `_` prefix guard reuses an existing error code;
+`lastErrors` has an upper bound of 1000 with messages truncated to 200 characters;
+`verify_acceptance.js` C4 tolerates only the exit code and still throws when there is no output.
+No new issues found; the code paths that produced the HTTP-level evidence for
+V-02/V-03/V-08/V-09/V-11 had their semantics unchanged by this commit.
 
-### 任务书第九章核对单逐项确认（HEAD `a56d9bc`）
+### Item-by-Item Confirmation of the Audit Brief's Chapter-9 Checklist (HEAD `a56d9bc`)
 
-- [x] 阶段一基线快照已存档（`BASELINE_SNAPSHOT_2026-10-14.md`、`BASELINE_SNAPSHOT_2026-10-15.md`，B-1~B-8 全记录）
-- [x] R-01~R-33 逐条核实并登记处置结论（登记册 2026-10-15 附表 33 行全闭环，无悬空）
-- [x] 八域检查点全部过完（两轮 REVIEW_PHASE2/FIX_REPORT；本轮第三轮改动复查为补充）
-- [x] 全部 P0 已修复且各有通过的回归验证（第一轮 D-04~D-07 四条 P0，回归随套件 51/51 通过）
-- [x] 全部 P1 已修复且各有通过的回归验证（含第二轮 D-101）
-- [x] P2 已修复或已记录处置决策（第二轮 D-104、第三轮 D-107/D-108 修复；其余在第一/二轮登记册附理由）
-- [x] P3 每条有显式决策（D-102/D-103/D-105/D-106/D-109/D-110/D-111 等，修复或附理由保留）
-- [x] A-1~A-7 自动验收全绿（本节上表，最终 HEAD 重跑）
-- [x] V-01~V-14 全部通过并留证（7.2 表 + `progress/evidence/audit2-2026-10-15/`；自动化部分 V-01~V-07/V-09/V-11/V-12 随 51/51 套件在最终 HEAD 重跑通过；V-10 十二截图证据产于第二轮收口，其后仅 P6 错误路径变更并已按 D-103/D-107 单独复验）
-- [x] 二次复查完成且零悬空（7.4 节 + 第三轮 code-reviewer 复审 D-107~D-111 全闭环 + 本节第三轮改动复查）
-- [x] 五项交付物齐备（登记册 2026-10-15 含第三轮追加、修复报告含第九节、README 已对账 51/5,870/9,149/10,951、验收记录含本节、提交序列见 git log）
-- [x] 全程未触犯红线（两轮记录 + 本节复验：无部署、零密钥输出、零测试弱化、零口径改动、零新依赖；全程 mock 零费用）
+- [x] Phase-one baseline snapshots archived (`BASELINE_SNAPSHOT_2026-10-14.md`, `BASELINE_SNAPSHOT_2026-10-15.md`, with B-1~B-8 fully recorded)
+- [x] R-01~R-33 verified one by one with disposition conclusions recorded (all 33 rows of the 2026-10-15 defect register appendix closed, no dangling)
+- [x] All eight-domain checkpoints completed (two rounds of REVIEW_PHASE2/FIX_REPORT; this round's third-round change review as a supplement)
+- [x] All P0s fixed, each with passing regression verification (four first-round P0s, D-04~D-07, with regressions passing in the 51/51 suite)
+- [x] All P1s fixed, each with passing regression verification (including second-round D-101)
+- [x] P2s fixed or with disposition decisions recorded (second-round D-104 and third-round D-107/D-108 fixed; the rest carry rationale in the first/second-round defect registers)
+- [x] Every P3 has an explicit decision (D-102/D-103/D-105/D-106/D-109/D-110/D-111, etc., either fixed or retained with rationale)
+- [x] A-1~A-7 automated acceptance all green (the table above in this section, re-run on the final HEAD)
+- [x] V-01~V-14 all passing with evidence retained (the 7.2 table + `progress/evidence/audit2-2026-10-15/`; the automated parts V-01~V-07/V-09/V-11/V-12 re-run and pass in the 51/51 suite on the final HEAD; the V-10 twelve-screenshot evidence was produced at the second-round wrap-up, after which only the P6 error path changed and it was re-verified separately per D-103/D-107)
+- [x] Secondary review complete with zero dangling (section 7.4 + the third-round code-reviewer review of D-107~D-111 fully closed + this section's third-round change review)
+- [x] All five deliverables in place (the 2026-10-15 defect register including the third-round additions, the fix report including section 9, README reconciled to 51/5,870/9,149/10,951, this acceptance record including this section, and the commit sequence per git log)
+- [x] No red lines crossed throughout (two rounds of records + this section's re-verification: no deployment, zero key output, zero test weakening, zero caliber changes, zero new dependencies; mock mode throughout at zero cost)
 
-**结论**：任务书五阶段完成；最终 HEAD `a56d9bc` 上 A-1~A-7 全绿、核对单 12 项全勾、
-登记册（D-01~D-68 + D-101~D-111）零悬空。任务完成。
+**Conclusion**: All five phases of the audit brief complete; on the final HEAD `a56d9bc` A-1~A-7
+are all green, all 12 checklist items are ticked, and the defect register (D-01~D-68 +
+D-101~D-111) has zero dangling entries. Task complete.
 
 ---
 
-## 第四轮复验（收口后，HEAD `6809059`，2026-10-16）
+## Fourth-Round Re-verification (post-wrap-up, HEAD `6809059`, 2026-10-16)
 
-> 应任务书执行指令对最终收口 HEAD 做整体复验：重跑全部基线/验收电池、核对登记册与
-> R-01~R-33 处置闭环、抽验关键修复点在位。全程 mock 模式（未注入 `GEMINI_API_KEY`、
-> 未运行五个真实适配器验证脚本、无任何部署），**零 Gemini / Google Cloud API 调用，
-> 增量费用 $0**。环境 Node v24.12.0 / Git Bash (win32)。
+> Per the audit brief's execution instructions, an overall re-verification of the final wrap-up
+> HEAD: re-run all baseline/acceptance batteries, check the defect register and R-01~R-33
+> disposition closure, and spot-check that key fixes are in place. Mock mode throughout (no
+> `GEMINI_API_KEY` injected, the five real-adapter verification scripts not run, no deployment of
+> any kind), **zero Gemini / Google Cloud API calls, incremental cost $0**. Environment Node
+> v24.12.0 / Git Bash (win32).
 
-### 基线与自动验收电池重跑结果
+### Baseline and Automated Acceptance Battery Re-run Results
 
-| 项 | 结果 | 关键记录 |
+| Item | Result | Key Notes |
 |---|---|---|
 | B-1 `npm install` | ✅ | 0 vulnerabilities |
-| B-2/A-1 `npm run build` | ✅ | 前端 37 模块 + 后端语法检查 OK |
-| B-3/A-2 `npm test` | ✅ | **51/51**（backend 50 + upload 1），与第三轮收口一致 |
-| B-4/A-3 `npm run smoke` | ✅ | health `{"status":"ok"}`、SMOKE OK |
-| B-5/A-4 `npm run scan-secrets` | ✅ | 0 命中、退出码 0 |
-| B-6/A-5 `bash scripts/count_lines.sh` | ✅（豁免在案） | A=5,870 / B=9,149 / C=10,951，与第三轮逐字一致；T-052 豁免链不变 |
-| B-7 健康检查 | ✅ | `/healthz` 200 → SIGTERM 干净退出、无残留监听 |
-| B-8/A-6 `node eval/run.js` | ✅ | 11/11 PASS（仅汇总既有证据；run_at 时间戳漂移已还原） |
-| A-7 `git status` | ✅ | 干净；`git ls-files` 对 .env / frontend/.env / dist / 本地存储 / __pycache__ 零命中 |
+| B-2/A-1 `npm run build` | ✅ | Frontend 37 modules + backend syntax check OK |
+| B-3/A-2 `npm test` | ✅ | **51/51** (backend 50 + upload 1), consistent with the third-round wrap-up |
+| B-4/A-3 `npm run smoke` | ✅ | health `{"status":"ok"}`, SMOKE OK |
+| B-5/A-4 `npm run scan-secrets` | ✅ | 0 hits, exit code 0 |
+| B-6/A-5 `bash scripts/count_lines.sh` | ✅ (exemption on file) | A=5,870 / B=9,149 / C=10,951, verbatim-consistent with the third round; the T-052 exemption chain unchanged |
+| B-7 health check | ✅ | `/healthz` 200 → clean SIGTERM exit, no residual listeners |
+| B-8/A-6 `node eval/run.js` | ✅ | 11/11 PASS (existing evidence summarized only; the run_at timestamp drift already restored) |
+| A-7 `git status` | ✅ | Clean; `git ls-files` shows zero hits for .env / frontend/.env / dist / local storage / __pycache__ |
 
-### 闭环与在位抽验
+### Closure and In-Place Spot Checks
 
-- **登记册**：`DEFECT_REGISTER_2026-10-15.md` 附录 A 处置表 R-01~R-33 共 33 条全部
-  闭环（32 条修复完好/不成立结论维持，R-25 残余与 R-30/R-33 按既定口径保留并附理由），
-  无"待修复"无决策条目。
-- **回归用例在位**：V-01~V-07、V-09、V-12（对应 D-04~D-08/D-10/D-11/D-13~D-16/D-18/
-  D-19/D-21/D-24/D-34/D-37）均在套件内并随 51/51 通过；V-08/V-10/V-11/V-13/V-14 沿用
-  第二/三轮 HTTP 级与浏览器级证据（其代码路径自 a56d9bc 后未变更）。
-- **关键修复点抽查**：`requireTaskOwner` 路由守卫 18 处（server.js）；CSV 公式注入
-  中和（exportService 3 处）；`safeFilename` + 存储键净化（fileService.js:26,83）；
-  情景 `persist:false` 隔离（scenarios.js:16-17）。全部在位。
+- **Defect register**: all 33 entries in the R-01~R-33 disposition table in appendix A of
+  `DEFECT_REGISTER_2026-10-15.md` are closed (32 with fixes intact / the "not applicable"
+  conclusions maintained; the R-25 residual and R-30/R-33 retained under the established caliber
+  with rationale), with no "to be fixed" items and no decision-less entries.
+- **Regression cases in place**: V-01~V-07, V-09, V-12 (corresponding to D-04~D-08/D-10/D-11/D-13~D-16/D-18/
+  D-19/D-21/D-24/D-34/D-37) are all in the suite and pass with the 51/51; V-08/V-10/V-11/V-13/V-14 reuse
+  the second/third-round HTTP-level and browser-level evidence (their code paths have not changed
+  since a56d9bc).
+- **Key fix spot checks**: the `requireTaskOwner` route guard in 18 places (server.js); CSV formula-injection
+  neutralization (3 places in exportService); `safeFilename` + storage key sanitization (fileService.js:26,83);
+  scenario `persist:false` isolation (scenarios.js:16-17). All in place.
 
-### 结论
+### Conclusion
 
-第四轮复验 **A-1~A-7 全绿、零悬空、零新增缺陷**。第三轮收口结论维持：
-任务书第九章核对单 12 项全勾，五项交付物齐备，任务完成状态确认。
+The fourth-round re-verification shows **A-1~A-7 all green, zero dangling, zero new defects**.
+The third-round wrap-up conclusion holds: all 12 items of the audit brief's chapter-9 checklist
+are ticked, all five deliverables are in place, and the task-complete status is confirmed.
 
 ---
 
-## 第五轮独立复审（收口后，HEAD `1253890`，2026-10-16）
+## Fifth-Round Independent Review (post-wrap-up, HEAD `1253890`, 2026-10-16)
 
-> 不引用既有记录、以源码与 HTTP 实测为唯一依据的独立复审：
-> (1) R-01~R-33 逐条在源码层面重新定位修复实证；(2) 对 V-02/V-03/V-09/V-11
-> 四个安全关键场景在本地 HTTP 服务上以可注入令牌校验器（`buildApp({verifyToken})`）
-> 重跑全矩阵。全程 mock 模式、零外部 API 调用、零部署，**增量费用 $0**。
-> 验证脚本运行于系统临时沙箱（`%TEMP%/r5-audit-*`），不进入仓库、不计行数预算。
+> An independent review that cites no prior records and relies solely on source code and HTTP
+> measurements: (1) re-locating the fix evidence for R-01~R-33 one by one at the source level;
+> (2) re-running the full matrix for the four security-critical scenarios V-02/V-03/V-09/V-11
+> on a local HTTP service using an injectable token verifier (`buildApp({verifyToken})`).
+> Mock mode throughout, zero external API calls, zero deployment, **incremental cost $0**.
+> The verification scripts ran in a system temporary sandbox (`%TEMP%/r5-audit-*`), do not
+> enter the repository, and are not counted against the line budget.
 
-### R-01 ~ R-33 源码级逐条核实（全部与登记册处置一致）
+### Item-by-Item Source-Level Verification of R-01 ~ R-33 (all consistent with the defect register dispositions)
 
-| 疑点 | 本轮独立核实到的代码实证 |
+| Concern | Code evidence independently verified this round |
 |---|---|
-| R-01 | `fileService.js:128-129` 转换表含自环/重试边；`pipeline.js:89-92` extracting 状态在单元循环**外**、每文档仅设一次 |
-| R-02 | `scenarios.js:16-17` `persist:false`，情景只算不落库 |
-| R-03 | `server.js` 全部 16 条任务级路由（详情/文档×4/units/duplicate/status/run/dashboard/report×2/review×2/candidates/audit/traces）均挂 `requireTaskOwner`；`/api/tasks` 列表过滤他人属主（194-204） |
-| R-04 | `server.js` 令牌校验器可注入（58）；`storage/index.js:16-18` 键包含性校验（resolve 后必须位于根内） |
-| R-05 | `ai/client.js:72` redactParts 两处调用；上游错误体不入异常（188-190 注释 + 实现） |
-| R-06 | `pages/core.jsx:317-321` P3 取 `api.dashboard().records`；`pages/analysis.jsx:14-18` P4 取 `api.candidates()`（T-052 拆分后的新结构下修复仍成立） |
-| R-07 | `reportService.js:90-97` anchor() 单次 kg→t 换算，范围分解/逐条/总量/情景四类锚点同一路径 |
-| R-08 | `exportService.js` csvEscape 前缀中和（3 处引用） |
-| R-09 | `server.js:27` multer `fileSize:10MB, files:50` 流式拒绝；442-443 LIMIT_* → 结构化错误码 |
-| R-10/R-32 | `server.js:77-91` CORS 精确串比较白名单（畸形 Origin 不崩溃）；102-105 限流 socket 键 + TRUST_PROXY 显式 + 桶上限 10000 + 非法阈值回退 60 |
-| R-11 | `reviewQueue.js:13` getTaskRecord 全动作（edit/assign/exclude/close）双重校验；127 `_` 前缀守卫（D-111） |
-| R-12 | `reviewQueue.js:81-82` 补丁数值有限性+正数校验；`pipelineModelCalls.js:52-58` 抽取校验 finite；`calculation.js` 核算守卫（测试覆盖） |
-| R-13 | `config.js:85-122` coerce + RANGES 越界回退；`pipeline.js:259` 并发数 NaN/0 守卫；`ai/client.js` 重试分类（fatal 不重试） |
-| R-14 | `reportService.js:258-269` 情景锚点按任务内情景集合存在性校验 |
-| R-15 | `store/index.js:41` 损坏文件告警；52-57 write-then-rename 原子写 |
-| R-16 | `recall.js:34-47` 关键词真实分数流入（priority 加成 0.02），无硬编码置信度 |
-| R-17 | `backend/src/queue` 目录不存在，全库无引用 |
-| R-18 | `ai/client.js:224-252` 超时 + 向量数量校验 + 元素形状校验 + 一次重试后显式失败 |
-| R-19 | `normalization.js:109-114` 词边界代码表识别，不支持币种诚实 null |
-| R-20 | 处置"不成立"复核：服务端不解压 XLSX（仅子串校验 + 10MB 上限），维持原结论 |
-| R-21 | `fileService.js:61` pdf-lib 解析计数，损坏即拒 |
-| R-22 | `exportService.js:39-44` error→reject 不悬挂；122-123 60 行截断披露 |
-| R-23 | 五个 `*_real.js` 脚本均含 GEMINI_API_KEY 前置检查 + exit 2 守卫 |
-| R-24 | `Dockerfile:20` HEALTHCHECK；`firebase.json:12-16` nosniff/DENY/HSTS/CSP 齐备 |
-| R-25 | `server.js:286-287` ratio 0..1 校验入 /run |
-| R-26 | `vite.config.js:9-10` 代理含 /factors；api.js encodeURIComponent 2 处 |
-| R-27 | `pipelineModelCalls.js:198`、`documentUnits.js:30` 记录/单元标识 randomUUID |
-| R-28 | `server.js:372-375` 复核动作同步 recalculate + generateReportForTask 重建 |
-| R-29 | `taskService.js:12-16` 类型/长度/ISO 日期/先后顺序/枚举校验 |
-| R-30/R-33(4)(5) | 有意保留口径不变（差异表与 README 记录在案） |
-| R-31 | 空循环/死分支已移除，本轮全库扫描无死导出 |
+| R-01 | `fileService.js:128-129` conversion table contains self-loops/retry edges; the `pipeline.js:89-92` extracting status is set outside the unit loop, once per document |
+| R-02 | `scenarios.js:16-17` `persist:false`, scenarios compute only and do not persist |
+| R-03 | All 16 task-level routes in `server.js` (detail/documents×4/units/duplicate/status/run/dashboard/report×2/review×2/candidates/audit/traces) carry `requireTaskOwner`; the `/api/tasks` list filters tasks owned by others (194-204) |
+| R-04 | `server.js` token verifier is injectable (58); `storage/index.js:16-18` key containment check (after resolve, must be inside the root) |
+| R-05 | `ai/client.js:72` two redactParts calls; upstream error bodies do not enter exceptions (188-190 comment + implementation) |
+| R-06 | `pages/core.jsx:317-321` P3 takes `api.dashboard().records`; `pages/analysis.jsx:14-18` P4 takes `api.candidates()` (the fix still holds under the new structure after the T-052 split) |
+| R-07 | `reportService.js:90-97` anchor() performs a single kg→t conversion, with range breakdown / per-record / total / scenario anchors sharing one path |
+| R-08 | `exportService.js` csvEscape prefix neutralization (3 references) |
+| R-09 | `server.js:27` multer `fileSize:10MB, files:50` streamed rejection; 442-443 LIMIT_* → structured error codes |
+| R-10/R-32 | `server.js:77-91` CORS exact-string comparison whitelist (malformed Origin does not crash); 102-105 rate-limit socket key + explicit TRUST_PROXY + bucket cap of 10000 + illegal threshold fallback of 60 |
+| R-11 | `reviewQueue.js:13` getTaskRecord double-checks all actions (edit/assign/exclude/close); 127 `_` prefix guard (D-111) |
+| R-12 | `reviewQueue.js:81-82` patch numeric finiteness + positivity checks; `pipelineModelCalls.js:52-58` extraction validates finite; `calculation.js` accounting guard (test-covered) |
+| R-13 | `config.js:85-122` coerce + RANGES out-of-range fallback; `pipeline.js:259` concurrency NaN/0 guard; `ai/client.js` retry classification (fatal is not retried) |
+| R-14 | `reportService.js:258-269` scenario anchors validated against the existence of the task's scenario set |
+| R-15 | `store/index.js:41` corrupted-file warning; 52-57 write-then-rename atomic write |
+| R-16 | `recall.js:34-47` real keyword scores flow through (priority bonus 0.02), no hardcoded confidence |
+| R-17 | `backend/src/queue` directory does not exist, no references across the repo |
+| R-18 | `ai/client.js:224-252` timeout + vector count validation + element shape validation + explicit failure after a single retry |
+| R-19 | `normalization.js:109-114` word-boundary code table recognition, honest null for unsupported currencies |
+| R-20 | Disposition "not applicable" recheck: the server does not decompress XLSX (substring check only + 10MB cap), the original conclusion maintained |
+| R-21 | `fileService.js:61` pdf-lib parse count, rejected if corrupted |
+| R-22 | `exportService.js:39-44` error→reject with no hanging; 122-123 60-line truncation disclosure |
+| R-23 | All five `*_real.js` scripts include the GEMINI_API_KEY precheck + exit 2 guard |
+| R-24 | `Dockerfile:20` HEALTHCHECK; `firebase.json:12-16` nosniff/DENY/HSTS/CSP all present |
+| R-25 | `server.js:286-287` ratio 0..1 validation into /run |
+| R-26 | `vite.config.js:9-10` proxy includes /factors; api.js encodeURIComponent in 2 places |
+| R-27 | `pipelineModelCalls.js:198`, `documentUnits.js:30` record/unit identifiers via randomUUID |
+| R-28 | `server.js:372-375` review actions synchronously recalculate + generateReportForTask rebuild |
+| R-29 | `taskService.js:12-16` type/length/ISO date/order/enum validation |
+| R-30/R-33(4)(5) | Intentionally retained caliber unchanged (recorded in the diff table and README) |
+| R-31 | Empty loops/dead branches removed, no dead exports found in this round's repo-wide scan |
 
-### HTTP 级安全场景独立复跑（本地服务，mock 模式）
+### Independent Re-run of HTTP-Level Security Scenarios (local service, mock mode)
 
-| 项 | 结果 | 实测记录 |
+| Item | Result | Measured Record |
 |---|---|---|
-| V-02 越权矩阵 | ✅ | 16 路由 × 3 身份 × {有属主, 无属主}：有属主对匿名/错 token 全部 403 ERR_FORBIDDEN、属主放行（业务 4xx 属通过）；无属主三身份全部放行 |
-| V-03 路径穿越 | ✅ | 5 个恶意名（`../` 链、`..\..\`、`C:\abs\`、`/abs/`、`sub/../../`，均带合法 .pdf 后缀 + 真实 PDF 字节）全部净化为 basename 落盘（escape1..5.pdf），5 文件全部位于存储根内，沙箱与 %TEMP% 零逃逸工件 |
-| V-09 限流/CORS | ✅ | RATE_LIMIT=3 实例：第 4 次 429 ERR_RATE_LIMITED；伪造 X-Forwarded-For=9.9.9.9 不分桶仍 429；evil Origin 无 ACAO 头；localhost:5173 精确回显；畸形 Origin `http://[::invalid` 返回 200 无 5xx |
-| V-11 上传防御 | ✅ | 空文件/伪装扩展(.txt 装 PDF 字节)/损坏 PDF → 200 + 逐文件 ok:false；11MB → 413 ERR_FILE_TOO_LARGE（流式拒绝）；51 文件 → 422 ERR_ENUM_INVALID |
+| V-02 authorization matrix | ✅ | 16 routes × 3 identities × {owned, unowned}: owned tasks return 403 ERR_FORBIDDEN for anonymous/wrong token, the owner is allowed (business 4xx counts as pass); unowned tasks allow all three identities |
+| V-03 path traversal | ✅ | 5 malicious names (`../` chains, `..\..\`, `C:\abs\`, `/abs/`, `sub/../../`, each with a legal .pdf suffix + real PDF bytes) all sanitized to basename on disk (escape1..5.pdf), all 5 files inside the storage root, zero escape artifacts in the sandbox and %TEMP% |
+| V-09 rate limiting/CORS | ✅ | RATE_LIMIT=3 instance: the 4th request returns 429 ERR_RATE_LIMITED; forged X-Forwarded-For=9.9.9.9 is not bucketed separately and still 429; evil Origin has no ACAO header; localhost:5173 echoed exactly; malformed Origin `http://[::invalid` returns 200 with no 5xx |
+| V-11 upload defenses | ✅ | Empty file / disguised extension (.txt carrying PDF bytes) / corrupted PDF → 200 + per-file ok:false; 11MB → 413 ERR_FILE_TOO_LARGE (streamed rejection); 51 files → 422 ERR_ENUM_INVALID |
 
-### 附带观察（无需修复）
+### Incidental Observations (no fix required)
 
-- 恶意文件名带**非法扩展名**（如 `../evil.txt`）时在扩展名校验层即被拒（ok:false
-  ERR_FILE_FORMAT_UNSUPPORTED，不落盘）——同样满足 V-03"拒绝或规范化"口径；带合法
-  扩展名时走存储路径并被 basename 净化，两条路径均已覆盖。
-- 验证脚本进程退出时的 libuv 断言（`UV_HANDLE_CLOSING`）为 D-68 已登记的
-  Windows 环境语义，与业务行为无关。
+- A malicious file name with an **illegal extension** (e.g., `../evil.txt`) is rejected at the
+  extension validation layer (ok:false ERR_FILE_FORMAT_UNSUPPORTED, not written to disk) —
+  equally satisfying the V-03 "reject or normalize" caliber; with a legal extension it goes
+  down the storage path and is sanitized to basename. Both paths are covered.
+- The libuv assertion (`UV_HANDLE_CLOSING`) at verification-script process exit is the Windows
+  environment semantic already recorded in D-68 and unrelated to business behavior.
 
-### 结论
+### Conclusion
 
-第五轮独立复审：**R-01~R-33 源码实证 33/33 一致、HTTP 级安全场景 4/4 通过、
-零新增缺陷、零悬空**。第三/四轮结论维持，任务书完成状态最终确认。
+Fifth-round independent review: **33/33 of the R-01~R-33 source-code evidence consistent,
+4/4 HTTP-level security scenarios passing, zero new defects, zero dangling**. The
+third/fourth-round conclusions hold, and the audit brief's completed status is finally confirmed.

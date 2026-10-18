@@ -1,245 +1,179 @@
-# 缺陷登记册（第二轮全面审查）— 2026-10-15
+# Defect Register (Second-Round Comprehensive Review) — 2026-10-15
 
-> 编号决策（任务书未覆盖事项，按最保守方式处理）：第一轮登记册
-> `DEFECT_REGISTER_2026-10-14.md` 已占用 D-01…D-68。为避免跨轮次编号歧义，本轮自
-> **D-101** 起编号；引用第一轮缺陷时写明“第一轮 D-xx”。本决策已在本头部记录。
+> Numbering decision (matters not covered by the audit brief, handled in the most conservative way): the first-round register `DEFECT_REGISTER_2026-10-14.md` already occupied D-01…D-68. To avoid cross-round numbering ambiguity, this round numbers from **D-101** onward; when citing a first-round defect, write "first-round D-xx". This decision is recorded here in the header.
 
 ---
 
 ## D-101
 
-- **来源**：阶段一基线（B-3 失败）
-- **严重度**：P1（阻塞强制验收门 `npm test`）
-- **位置**：`backend/test/regression.test.js:154-171`（D-07/V-03 用例）
-- **描述**：该用例为证明“穿越文件名不会逃逸存储根”，前后两次遍历**整个 OS 临时目录**
-  （本机当前 2,100+ 条目），并断言两次遍历差集中除存储根内文件外无新增。本机存在与
-  本仓库无关的常驻进程（Vite SSR 缓存写入器，产物含 `__vite_ssr_import__`、
-  `requestSocialBalanceProgram`，均非本仓库符号，且在测试运行结束后仍在写入），在两次
-  遍历之间向临时目录写入新文件，触发 `file escaped storage root` 误报。防御逻辑本身
-  （`safeFilename`、`LocalFileStorage#path` 包含性校验）此前断言全部通过，非真实穿越。
-- **核实证据**：`npm test` 稳定复现（backend 套件 46 过 1 败）；逃逸路径
-  `Temp\rx-vNgq-y-GZJg-GdcO_k\ssr\<sha1>` 的 birthtime 在测试运行窗口内、文件内容为
-  Vite SSR 变换缓存；`grep -rn 'requestSocialBalanceProgram|__vite_ssr' backend frontend
-  scripts eval data` 零命中。
-- **修复方案**：测试改为在专用沙箱目录内建存储根，只遍历沙箱目录——保持“逃逸可检出”
-  语义（穿越仍会落到沙箱外并可断言），但与机器上其他进程隔离。
-- **验证方式**：`npm test` 全绿（48 项）；重复运行 3 次无抖动。
-- **状态**：已修复（2026-10-15，测试改为专用沙箱 `reg-tvs-`，存储根置于沙箱三层之下，
-  逃逸仍可检出；实测 48/48 × 3 轮）
+- **Source**: Stage 1 baseline (B-3 failure)
+- **Severity**: P1 (blocks the mandatory acceptance gate `npm test`)
+- **Location**: `backend/test/regression.test.js:154-171` (D-07/V-03 case)
+- **Description**: To prove that "traversal filenames do not escape the storage root", this case traverses the **entire OS temp directory** twice before and after (2,100+ entries on this machine currently), asserting that in the symmetric difference of the two traversals there are no new files other than those inside the storage root. This machine has resident processes unrelated to this repository (Vite SSR cache writer; artifacts contain `__vite_ssr_import__`, `requestSocialBalanceProgram`, none of which are symbols of this repository, and it is still writing after the test run ends) that write new files into the temp directory between the two traversals, triggering the `file escaped storage root` false positive. The defense logic itself (`safeFilename`, `LocalFileStorage#path` containment check) passed all assertions beforehand; it is not a real escape.
+- **Verification evidence**: `npm test` reproduces stably (backend suite 46 pass, 1 fail); the birthtime of the escape path `Temp\rx-vNgq-y-GZJg-GdcO_k\ssr\<sha1>` falls within the test run window, and the file content is a Vite SSR transform cache; `grep -rn 'requestSocialBalanceProgram|__vite_ssr' backend frontend scripts eval data` returns zero hits.
+- **Fix plan**: Change the test to create the storage root inside a dedicated sandbox directory, traversing only the sandbox directory — preserving the "escape is detectable" semantics (a traversal would still land outside the sandbox and be assertable), but isolating it from other processes on the machine.
+- **Verification method**: `npm test` fully green (48 items); 3 repeated runs without flakiness.
+- **Status**: Fixed (2026-10-15, test changed to a dedicated sandbox `reg-tvs-`, storage root placed three levels below the sandbox, escapes still detectable; measured 48/48 × 3 rounds)
 
 ## D-102
 
-- **来源**：阶段一基线（B-6）
-- **严重度**：P3（文档对账）
-- **位置**：`README.md:217-222`（Code size 段）
-- **描述**：README 记录 B=8,944 / C=10,739，当前实测 B=8,978 / C=10,780——最后提交
-  （7635e44）新增约 34/41 行后未同步数值。NFR-504 超支本身有维护者书面豁免（T-052），
-  非新缺陷；本轮修复的行数增减亦需在结题时同步更新该段。
-- **核实证据**：`bash scripts/count_lines.sh` 实测 vs README 文本比对。
-- **修复方案**：V-13 文档对账时更新为最终实测值，并注明第二轮审查的增量。
-- **验证方式**：V-13（README 对账）。
-- **状态**：已修复（2026-10-15，README 测试数 48→49、三口径 5,828/9,049/10,851 与收口
-  实测逐字一致，NFR-504 段落补引第二轮登记册；V-13 通过）
+- **Source**: Stage 1 baseline (B-6)
+- **Severity**: P3 (documentation reconciliation)
+- **Location**: `README.md:217-222` (Code size section)
+- **Description**: README records B=8,944 / C=10,739; the current measured values are B=8,978 / C=10,780 — after the last commit (7635e44) added about 34/41 lines, the figures were not synced. The NFR-504 overrun itself has a written waiver from the maintainer (T-052) and is not a new defect; the line-count changes fixed this round must also be synced in this section at wrap-up.
+- **Verification evidence**: `bash scripts/count_lines.sh` measured values vs README text comparison.
+- **Fix plan**: Update to the final measured values during V-13 documentation reconciliation, and note the increment from the second-round review.
+- **Verification method**: V-13 (README reconciliation).
+- **Status**: Fixed (2026-10-15, README test count 48→49, the three figures 5,828/9,049/10,851 match the closing measured values verbatim, the NFR-504 section adds a citation to the second-round register; V-13 passed)
 
 ## D-103
 
-- **来源**：阶段二新发现（域 C，R-25 修复的残余）
-- **严重度**：P3（错误不可见，违反 PRD 9.2"每个错误都有恢复路径"）
-- **位置**：`frontend/src/pages/analysis.jsx:187`（P6 比例滑块 onBlur）
-- **描述**：P6 滑块失焦触发按新比例重算（`api.runPipeline(taskId, ratio)` + 重取报告），
-  但 `catch { /* report stays */ }` 静默吞掉全部失败：重算失败时页面无任何提示，数值停留
-  在旧比例结果上，用户无从得知。上一轮独立审查修复的是**初次加载**路径（`load` 的
-  setErr/Err 渲染），onBlur 重算路径的静默吞错未被覆盖。
-- **核实证据**：代码核对（analysis.jsx:185-190）；对照 execution_log T-052-S2 审查表中
-  "P6 吞报告错误"项仅覆盖 load 路径。
-- **修复方案**：onBlur 的 catch 改为把错误消息写入一个可见的 note/错误行（与页面既有
-  `note` 模式一致），保留旧报告数据。
-- **验证方式**：V-10 手工走查（P6 步骤：停掉后端触发重算失败，确认页面显示错误）。
-- **状态**：已修复（2026-10-15，onBlur 的 catch 改为 `setRunErr` 并在滑块下方以
-  `role=alert` 错误行显示"重算失败+下方数字来自上一次运行"；构建通过；V-10 复验）
+- **Source**: Stage 2 new finding (domain C, residual from the R-25 fix)
+- **Severity**: P3 (errors invisible, violating PRD 9.2 "every error has a recovery path")
+- **Location**: `frontend/src/pages/analysis.jsx:187` (P6 ratio slider onBlur)
+- **Description**: When the P6 slider loses focus it triggers a recalculation at the new ratio (`api.runPipeline(taskId, ratio)` + re-fetch report), but `catch { /* report stays */ }` silently swallows all failures: when the recalculation fails the page shows no indication, the numbers remain the old-ratio result, and the user has no way to know. The previous independent review fixed the **initial load** path (`load`'s setErr/Err rendering); the silent swallowing on the onBlur recalculation path was not covered.
+- **Verification evidence**: Code check (analysis.jsx:185-190); comparison with the "P6 swallows report errors" item in the execution_log T-052-S2 review sheet, which only covered the load path.
+- **Fix plan**: Change the onBlur catch to write the error message into a visible note/error line (consistent with the page's existing `note` pattern), keeping the old report data.
+- **Verification method**: V-10 manual walkthrough (P6 step: stop the backend to trigger a recalculation failure, confirm the page shows an error).
+- **Status**: Fixed (2026-10-15, the onBlur catch changed to `setRunErr` and displays a "recalculation failed + the numbers below come from the previous run" error line below the slider with `role=alert`; build passed; V-10 re-verified)
 
 ## D-104
 
-- **来源**：阶段二新发现（域 D/B，数据新鲜度）
-- **严重度**：P2（生产存储数据正确性：因子库内容更新后遗留幽灵行）
-- **位置**：`backend/src/services/factorLibrary.js:69-76`（`loadFactorLibrary`）
-- **描述**：`loadFactorLibrary` 的幂等条件只有数量相等（`existing.length === raw.factors.length`
-  即跳过），且刷新时只做 upsert、从不删除文件中已移除的行。两个后果：(1) **因子删除**
-  （去中国化提交实际发生：743→741，剔除 china/hong kong/Macau/Taiwan 行）后，既有库
-  （生产 Firestore 或长期本地库）会保留 2 条已从数据文件删除的幽灵因子，召回与选择仍可
-  命中它们；(2) **数量不变的内容变更**（如重命名）被数量相等误判为"无需刷新"。
-- **核实证据**：代码核对（saveFactors 仅 put 无 delete；skip 条件仅数量）；git log
-  `0c86ed4..7635e44` 中 `data/factors/emission_factors.json` 因子数 743→741 的实际变更；
-  4 个数据校验脚本只验证"文件自洽"，不覆盖"旧库刷新"路径。
-- **修复方案**：加载时以数据文件内容的 SHA-256 指纹判断是否需要刷新；刷新时 upsert 全量
-  并**删除文件中已不存在的行**；指纹存于集合内以下划线开头的元数据文档，`listFactors`
-  过滤 `_` 前缀文档使其不出现在因子列表。
-- **验证方式**：新增回归测试（预置含已删除因子/同数量旧值的库 → 重新加载 → 幽灵行被清、
-  变更值被刷新、元数据文档不进入列表）。
-- **状态**：已修复（2026-10-15，`loadFactorLibrary` 改为内容指纹判定 + 刷新时删除文件中
-  已不存在的行；`listFactors` 过滤 `_` 前缀元数据文档；回归测试 D-104 通过，套件 49/49，
-  `verify_factor_store.js` PASS。部署注意：既有库首次启动会因指纹缺失全量刷新一次并清理
-  幽灵行——这正是修复意图）
+- **Source**: Stage 2 new finding (domain D/B, data freshness)
+- **Severity**: P2 (production stored-data correctness: ghost rows left after factor library content update)
+- **Location**: `backend/src/services/factorLibrary.js:69-76` (`loadFactorLibrary`)
+- **Description**: The idempotence condition of `loadFactorLibrary` is only count equality (`existing.length === raw.factors.length` means skip), and on refresh it only upserts, never deleting rows already removed from the file. Two consequences: (1) after a **factor deletion** (which actually happened in the de-Sinicization commit: 743→741, removing the china/hong kong/Macau/Taiwan rows), an existing library (production Firestore or a long-lived local library) retains 2 ghost factors already deleted from the data file, and recall and selection can still hit them; (2) a **content change with unchanged count** (e.g., a rename) is misjudged by count equality as "no refresh needed".
+- **Verification evidence**: Code check (saveFactors only puts, no delete; skip condition is count only); the actual change in `data/factors/emission_factors.json` from 743→741 factors in git log `0c86ed4..7635e44`; the 4 data validation scripts only verify "file self-consistency" and do not cover the "old library refresh" path.
+- **Fix plan**: At load time, use a SHA-256 fingerprint of the data file content to decide whether a refresh is needed; on refresh, upsert the full set and **delete rows that no longer exist in the file**; store the fingerprint in a metadata document inside the collection prefixed with an underscore, and have `listFactors` filter out `_`-prefixed documents so they do not appear in the factor list.
+- **Verification method**: New regression test (pre-seed a library containing a deleted factor / same-count old value → reload → ghost rows cleared, changed values refreshed, the metadata document does not enter the list).
+- **Status**: Fixed (2026-10-15, `loadFactorLibrary` switched to content-fingerprint determination + deletes rows no longer in the file on refresh; `listFactors` filters `_`-prefixed metadata documents; regression test D-104 passed, suite 49/49, `verify_factor_store.js` PASS. Deployment note: an existing library will do a full refresh once and clean up ghost rows on first startup due to the missing fingerprint — this is exactly the intent of the fix)
 
 ## D-105
 
-- **来源**：阶段二新发现（域 A/B 交界，观察项）
-- **严重度**：P3
-- **位置**：`backend/src/server.js:315-317`（GET dashboard → `recalculateTask` → 持久化核算）
-- **描述**：GET `/api/tasks/:id/dashboard` 每次调用都会经 `computeEmission` 重写
-  `calculations` 与确定性 id 的核算审计行（值不变、时间戳刷新）。副作用 GET 不合 HTTP
-  语义；Firestore 上每次访问产生 2N 次写。前端 useData 仅挂载时取一次，无轮询，放大有界；
-  该行为同时承担"复核改动后自愈账本"的职能（有意设计）。
-- **核实证据**：代码路径核对（reviewQueue.recalculateTask 调 computeEmission 默认
-  persist=true；前端无 dashboard 轮询）。
-- **修复方案**：不修改代码。处置：**有意保留**——重算确定性（同输入同输出）、id 稳定
-  （覆盖而非增长）、并保持复核后账本自愈语义；如未来引入轮询需改为"仅在值变化时落库"。
-- **验证方式**：本条记录即处置（无需代码验证）；V-04/V-05 回归继续覆盖核算一致性。
-- **状态**：有意保留
+- **Source**: Stage 2 new finding (domain A/B boundary, observation item)
+- **Severity**: P3
+- **Location**: `backend/src/server.js:315-317` (GET dashboard → `recalculateTask` → persisted accounting)
+- **Description**: Every call to `GET /api/tasks/:id/dashboard` rewrites the `calculations` accounting audit rows with deterministic ids via `computeEmission` (values unchanged, timestamp refreshed). A side-effecting GET is not HTTP-semantic; each access on Firestore produces 2N writes. The frontend useData only fetches once on mount, with no polling, so the amplification is bounded; this behavior also serves the function of "self-healing ledger after review changes" (intentionally designed).
+- **Verification evidence**: Code path check (reviewQueue.recalculateTask calls computeEmission with default persist=true; no dashboard polling on the frontend).
+- **Fix plan**: Do not modify the code. Disposition: **intentionally retained** — the recalculation is deterministic (same input, same output), the ids are stable (overwrite rather than grow), and the post-review ledger self-healing semantics are preserved; if polling is introduced in the future, change it to "persist only when the value changes".
+- **Verification method**: This entry is itself the disposition (no code verification required); V-04/V-05 regression continues to cover accounting consistency.
+- **Status**: Intentionally retained
 
 ---
 
 ## D-106
 
-- **来源**：阶段四新发现（A-5 执行时发现）
-- **严重度**：P3（脚本输出失实，非判定错误）
-- **位置**：`scripts/count_lines.sh:40`
-- **描述**：结论行固定打印 `hard cap met under every figure`，与实际无关——当前
-  C=10,851 已超 10,000 硬上限，输出却在 FAIL 的同时声称"每个口径都满足硬上限"，
-  误导审计读数。判定逻辑（STATUS 计算）本身正确。
-- **核实证据**：A-5 实测输出 vs 数值。
-- **修复方案**：仅修正输出文本按实际口径数值陈述（`figure C $EVERYTHING vs 10,000
-  hard cap: met/exceeded`）；判定逻辑与统计口径零改动（红线 3.4.4）。
-- **验证方式**：A-5 复跑，输出与数值一致。
-- **状态**：已修复（2026-10-15，结论行按实际数值陈述；复核无其他脚本解析该行，
-  verify_acceptance.js 的 C4 解析的是 B./C. 数据行不受影响；A-5 复跑输出一致）
+- **Source**: Stage 4 new finding (discovered during A-5 execution)
+- **Severity**: P3 (script output misrepresents facts, not a judgment error)
+- **Location**: `scripts/count_lines.sh:40`
+- **Description**: The conclusion line unconditionally prints `hard cap met under every figure`, regardless of the actual values — C=10,851 has now exceeded the 10,000 hard cap, yet the output claims "the hard cap is met under every figure" while reporting FAIL, misleading audit readings. The judgment logic (STATUS computation) itself is correct.
+- **Verification evidence**: A-5 measured output vs the values.
+- **Fix plan**: Only correct the output text to state the actual figures (`figure C $EVERYTHING vs 10,000 hard cap: met/exceeded`); zero changes to the judgment logic and statistical basis (red line 3.4.4).
+- **Verification method**: Re-run A-5, output consistent with the values.
+- **Status**: Fixed (2026-10-15, the conclusion line states the actual values; review confirmed no other script parses this line, and the C4 parsing in verify_acceptance.js parses the B./C. data lines and is unaffected; A-5 re-run output consistent)
 
 ---
 
-## 附录 A 疑点 R-01 ~ R-33 逐条核实结论（第二轮，HEAD 7635e44）
+## Appendix A: Item-by-item verification conclusions for review findings R-01 ~ R-33 (second round, HEAD 7635e44)
 
-> 核实方法：逐域通读全部源码（见修复报告"审查范围"）+ 既有回归测试运行 + 4 个数据校验
-> 脚本。第一轮登记编号列为本轮追溯用。结论含义：**修复完好**＝第一轮修复在 HEAD 仍成立；
-> **不成立**＝疑点核实证伪；**有意保留**＝按第一轮既定口径文档化保留。
+> Verification method: read-through of all source code domain by domain (see the "review scope" of the fix report) + running the existing regression tests + the 4 data validation scripts. The first-round numbering column is for traceability in this round. Meaning of conclusions: **fix intact** = the first-round fix still holds at HEAD; **not substantiated** = the finding was disproven by verification; **intentionally retained** = documented and retained per the first-round established criteria.
 
-| 疑点 | 第一轮编号 | 本轮核实结论 |
+| Finding | First-round number | This-round verification conclusion |
 |---|---|---|
-| R-01 多页状态机自环崩溃 | D-04 | 修复完好（extracting 每文档仅设一次；转换表含重试边；回归测试 D-04/V-01 过） |
-| R-02 情景污染正式账本 | D-05 | 修复完好（computeEmission persist:false；回归测试过） |
-| R-03 任务级接口越权 | D-06 | 修复完好（requireTaskOwner 覆盖含 T-052 新增路由 /units /candidates /audit /api/tasks；回归测试过） |
-| R-04 路径穿越 | D-07 | 修复完好（safeFilename + 存储包含性校验）；回归测试自身的隔离缺陷另立 D-101 |
-| R-05 追踪泄露文档字节/上游响应体 | D-08 | 修复完好（redactParts；上游体不入错误；回归测试过） |
-| R-06 P3/P4 取数字段错误 | D-09 | 修复完好（P3/P4 从 dashboard/candidates 接口取数） |
-| R-07 范围锚点单位换算错误 | D-10 | 修复完好（anchor 只换算一次；回归断言锚点=仪表盘吨值） |
-| R-08 CSV 公式注入 | D-11 | 修复完好（csvEscape 前缀中和；回归测试过） |
-| R-09 上传中间件无限制 | D-12 | 修复完好（multer fileSize/files 限制 + 鉴权先于缓冲） |
-| R-10 限流键可伪造/桶无界/畸形 Origin | D-13 | 修复完好（socket 键 + TRUST_PROXY 显式；桶上限 10000；精确串比较白名单；回归测试过） |
-| R-11 复核动作跨任务 | D-14/D-62 | 修复完好（getTaskRecord + requireTaskOwner 双重校验；回归测试过） |
-| R-12 非有限数值全链路 | D-14/D-15/D-65 | 修复完好（抽取校验、补丁校验、核算守卫三层；回归测试过） |
-| R-13 配置非法值 | D-16/D-63 | 修复完好（严格 coerce + range 回退；并发数守卫；回归测试过） |
-| R-14 情景锚点存在性 | D-19 | 修复完好（按任务内情景集合校验；回归测试过） |
-| R-15 本地存储原子性/静默重置 | D-20 | 修复完好（write-then-rename + 解析失败告警日志） |
-| R-16 候选置信度硬编码 | D-21 | 修复完好（召回通道真实分数流入评估；分布键固定三档；回归测试过） |
-| R-17 队列抽象死代码 | D-23 | 修复完好（已整体移除，全库无引用，本轮复核确认目录不存在） |
-| R-18 嵌入批次短响应 | D-18/D-66 | 修复完好（数量+元素形状双校验、一次重试后显式失败；回归测试过） |
-| R-19 币种识别顺序 | D-22（去中国化提交重写识别表） | 修复完好（词边界代码表、不支持币种诚实 null、裸 ¥ 最低优先；回归测试过） |
-| R-20 XLSX 解压放大 | D-25 | 不成立（服务端不解压 XLSX，仅子串校验 + 10MB 上限；维持第一轮结论） |
-| R-21 页数字节正则 | D-26 | 修复完好（pdf-lib 解析计数，损坏即拒；回归测试过） |
-| R-22 PDF 生成悬挂/除零/截断 | D-27 | 修复完好（error→reject、空表头守卫、60 行截断披露） |
-| R-23 验证脚本无密钥守卫 | D-24/D-28 | 修复完好（五个真实脚本全部 exit 2 守卫；收集器拒绝 mock 证据；本轮逐一复核） |
-| R-24 容器健康检查/托管安全头 | D-29/D-37 | 修复完好（HEALTHCHECK node fetch、CSP/HSTS/帧保护/嗅探保护齐备；us-central1 迁移一致） |
-| R-25 P6 滑块死功能 | D-30 | 修复完好（ratio 传入 /run 并验证 0..1）；残余 onBlur 静默吞错 → 本轮 D-103 |
-| R-26 代理未覆盖因子接口/URL 编码 | D-39/D-41 | 修复完好（vite 代理含 /factors；factorDetail/traces encodeURIComponent） |
-| R-27 查重时机/审计标识碰撞 | D-32 | 修复完好（审计 id 随机后缀）；查重时机子点维持第一轮"不成立/影响可忽略"结论 |
-| R-28 陈旧核算残留 | D-33 | 修复完好（复核动作同步重建报告；completed 文档重载记录；重跑替换旧 id） |
-| R-29 任务创建浅校验 | D-34 | 修复完好（字符串/长度/ISO 日期/先后顺序/枚举；回归测试过） |
-| R-30 适配器行为差异 | D-35 | 有意保留（第一轮已列差异表；本轮确认 firestore.js 未再改动，差异未扩大） |
-| R-31 报告空循环/追踪死分支 | D-23/D-31/D-64 | 修复完好（已移除；本轮全引用扫描确认无新死导出） |
-| R-32 CORS 通配 | D-37 | 修复完好（精确白名单，默认含本项目实际域名 myproject-dc19d.web.app，与 .firebaserc 一致） |
-| R-33 前端令牌存储/请求层 | D-38 | 修复完好（(1)(2)(3) 超时/res.ok/头序）；(4)(5) localStorage 匿名令牌与刷新降级按第一轮口径有意保留（匿名身份无 PII、可用性取舍，README 已记录） |
+| R-01 Multi-page state machine self-loop crash | D-04 | Fix intact (extracting set only once per document; transition table includes a retry edge; regression tests D-04/V-01 pass) |
+| R-02 Scenario pollutes the official ledger | D-05 | Fix intact (computeEmission persist:false; regression tests pass) |
+| R-03 Task-level endpoint privilege escalation | D-06 | Fix intact (requireTaskOwner covers routes including T-052's new /units /candidates /audit /api/tasks; regression tests pass) |
+| R-04 Path traversal | D-07 | Fix intact (safeFilename + storage containment check); the isolation defect in the regression test itself is filed separately as D-101 |
+| R-05 Traces leak document bytes / upstream response body | D-08 | Fix intact (redactParts; upstream body not in errors; regression tests pass) |
+| R-06 P3/P4 take numbers from the wrong field | D-09 | Fix intact (P3/P4 take numbers from the dashboard/candidates endpoints) |
+| R-07 Range anchor unit conversion error | D-10 | Fix intact (anchor converted only once; regression asserts anchor = dashboard tonnage) |
+| R-08 CSV formula injection | D-11 | Fix intact (csvEscape prefix neutralization; regression tests pass) |
+| R-09 Unrestricted upload middleware | D-12 | Fix intact (multer fileSize/files limits + authentication before buffering) |
+| R-10 Rate-limit keys forgeable / buckets unbounded / malformed Origin | D-13 | Fix intact (socket keys + explicit TRUST_PROXY; bucket cap 10000; exact string comparison whitelist; regression tests pass) |
+| R-11 Review actions across tasks | D-14/D-62 | Fix intact (getTaskRecord + requireTaskOwner dual validation; regression tests pass) |
+| R-12 Non-finite values across the full chain | D-14/D-15/D-65 | Fix intact (three layers: extraction validation, patch validation, accounting guard; regression tests pass) |
+| R-13 Illegal configuration values | D-16/D-63 | Fix intact (strict coerce + range fallback; concurrency guard; regression tests pass) |
+| R-14 Scenario anchor existence | D-19 | Fix intact (validated against the scenario set within the task; regression tests pass) |
+| R-15 Local storage atomicity / silent reset | D-20 | Fix intact (write-then-rename + warning log on parse failure) |
+| R-16 Candidate confidence hardcoded | D-21 | Fix intact (real scores from the recall channel flow into evaluation; distribution keys fixed to three tiers; regression tests pass) |
+| R-17 Queue abstraction dead code | D-23 | Fix intact (removed entirely, no references repo-wide; this round's review confirmed the directory no longer exists) |
+| R-18 Embedding batch short response | D-18/D-66 | Fix intact (count + element shape dual validation; explicit failure after one retry; regression tests pass) |
+| R-19 Currency identification order | D-22 (identification table rewritten in the de-Sinicization commit) | Fix intact (word-boundary code table, honest null for unsupported currencies, bare ¥ lowest priority; regression tests pass) |
+| R-20 XLSX decompression amplification | D-25 | Not substantiated (the server does not decompress XLSX, only substring validation + 10MB cap; first-round conclusion upheld) |
+| R-21 Page count byte regex | D-26 | Fix intact (pdf-lib parse counting, reject on corruption; regression tests pass) |
+| R-22 PDF generation hangs / division by zero / truncation | D-27 | Fix intact (error→reject, empty table header guard, 60-row truncation disclosure) |
+| R-23 Validation scripts lack a key guard | D-24/D-28 | Fix intact (all five real scripts have exit 2 guards; collectors reject mock evidence; reviewed one by one this round) |
+| R-24 Container health check / managed security headers | D-29/D-37 | Fix intact (HEALTHCHECK node fetch, CSP/HSTS/frame protection/sniffing protection all present; us-central1 migration consistent) |
+| R-25 P6 slider dead functionality | D-30 | Fix intact (ratio passed to /run and validated 0..1); residual onBlur silent swallowing → this round's D-103 |
+| R-26 Proxy does not cover factor endpoints / URL encoding | D-39/D-41 | Fix intact (vite proxy includes /factors; factorDetail/traces encodeURIComponent) |
+| R-27 Deduplication timing / audit identifier collision | D-32 | Fix intact (audit id random suffix); the deduplication timing sub-point upholds the first-round "not substantiated / negligible impact" conclusion |
+| R-28 Stale calculation residue | D-33 | Fix intact (review actions rebuild the report synchronously; completed documents reload records; reruns replace old ids) |
+| R-29 Shallow task creation validation | D-34 | Fix intact (string/length/ISO date/order/enum; regression tests pass) |
+| R-30 Adapter behavior differences | D-35 | Intentionally retained (difference table already listed in the first round; this round confirms firestore.js has not been modified again, and the differences have not widened) |
+| R-31 Report empty loop / trace dead branches | D-23/D-31/D-64 | Fix intact (removed; this round's full reference scan confirmed no new dead exports) |
+| R-32 CORS wildcard | D-37 | Fix intact (exact whitelist, default includes this project's actual domain myproject-dc19d.web.app, consistent with .firebaserc) |
+| R-33 Frontend token storage / request layer | D-38 | Fix intact ((1)(2)(3) timeout / res.ok / header order); (4)(5) localStorage anonymous token and refresh degradation are intentionally retained per the first-round criteria (anonymous identity has no PII, a usability trade-off, documented in README) |
 
 ---
 
-## 二次复查结论（第二轮收口）
+## Second Re-review Conclusion (Second-Round Wrap-up)
 
-- 本轮登记 D-101 ~ D-106 共 6 条，闭环状态：**4 已修复**（D-101 测试隔离、D-103 P6 吞错、
-  D-104 因子库幽灵行、D-106 统计输出失实，均配回归测试或验收场景）、**1 有意保留**
-  （D-105 副作用 GET，附理由）、**1 文档修复**（D-102 README 对账）。无"待修复"条目。
-- 对四个代码修复的反向审查与同类横向扫描（详见验收记录 7.4）：零新增、零悬空。
-- R-01 ~ R-33 全部疑点逐条核实并给出最终处置（见上表）：32 条修复完好/不成立结论维持，
-  R-25 残余与 R-30/R-33 既定保留口径不变，其中本轮新增的 D-103 即 R-25 的残余修复。
+- This round registered D-101 ~ D-106, 6 items in total, closure status: **4 fixed** (D-101 test isolation, D-103 P6 error swallowing, D-104 factor library ghost rows, D-106 statistics output misrepresentation, all with regression tests or acceptance scenarios), **1 intentionally retained** (D-105 side-effecting GET, with reasons), **1 documentation fix** (D-102 README reconciliation). No "to be fixed" items.
+- The reverse review of the four code fixes and the horizontal scan of similar issues (detailed in acceptance record 7.4): zero new, zero dangling.
+- All findings R-01 ~ R-33 were verified item by item with final dispositions (see the table above): 32 fix-intact/not-substantiated conclusions upheld, the R-25 residual and the R-30/R-33 established retention criteria unchanged, where the new D-103 this round is the R-25 residual fix.
 
 ---
 
-## 合并前独立复审（code-reviewer，2026-10-15 第三轮）
+## Independent Re-review Before Merge (code-reviewer, 2026-10-15 third round)
 
-> 交付收口后、合并主分支前的独立复审，对本轮全部代码改动（含未提交守卫）复查，
-> 发现以下问题并全部按闭环处理（编号续 D-107 起）。
+> An independent review after delivery wrap-up and before merging into the main branch, re-examining all code changes this round (including uncommitted guards); the following issues were found and all handled to closure (numbered continuing from D-107).
 
 ## D-107
 
-- **来源**：合并前复审（code-reviewer 发现 #1/#3）
-- **严重度**：P2（D-103 修复对其主要失败形态无效）
-- **位置**：`backend/src/server.js`（GET /report 吞运行错误）、`frontend/src/pages/analysis.jsx`（P6）
-- **描述**：`POST /run` 立即返回 202，后台流水线失败被 `launchRun` 记日志吞掉；`GET /report`
-  对在飞运行的 rejection 执行 `running.catch(() => {})` 后返回**旧报告**且 HTTP 200。真实
-  AI 模式下，P6 滑块重算的后台失败两个 await 全部成功 → 不进 catch → 仍是静默旧值
-  （D-103 已修的只是"网络层失败"一种形态）。另：报告请求 60s 超时会把"仍在重算"误报为
-  "重算失败"。
-- **修复方案**：GET /report 捕获在飞运行错误并随响应返回 `last_run_error`；P6 重算后读取
-  该字段并显示；catch 区分超时（提示"仍在重算"）与真失败。
-- **验证方式**：本地 mock 服务实测（人为制造后台失败：上传损坏存储态触发 run 失败）+
-  `npm test` 不回归 + V-08/V-10 证据链复核。
-- **状态**：已修复（2026-10-15，taskRuns 增加 lastErrors（成功清除、上限1000）；GET /report 响应附 last_run_error；P6 显示该错误并区分"仍在重算"与真失败。回归用例 D-107（成功运行 null→失败运行错误随报告返回）通过；套件 51/51）
+- **Source**: Pre-merge re-review (code-reviewer findings #1/#3)
+- **Severity**: P2 (the D-103 fix is ineffective against its main failure mode)
+- **Location**: `backend/src/server.js` (GET /report swallows run errors), `frontend/src/pages/analysis.jsx` (P6)
+- **Description**: `POST /run` returns 202 immediately; background pipeline failures are swallowed and logged by `launchRun`; `GET /report` executes `running.catch(() => {})` for in-flight run rejections and then returns the **old report** with HTTP 200. In real AI mode, both awaits for the P6 slider recalculation background failure succeed → the catch is not entered → it is still a silent old value (D-103 only fixed the one mode of "network-layer failure"). Additionally: a report request's 60s timeout misreports "still recalculating" as "recalculation failed".
+- **Fix plan**: GET /report captures in-flight run errors and returns `last_run_error` with the response; P6 reads this field after recalculation and displays it; the catch distinguishes timeout (prompts "still recalculating") from genuine failure.
+- **Verification method**: Local mock service live test (deliberately causing a background failure: upload a corrupted storage state to trigger a run failure) + `npm test` no regression + V-08/V-10 evidence chain re-check.
+- **Status**: Fixed (2026-10-15, taskRuns adds lastErrors (cleared on success, capped at 1000); GET /report response carries last_run_error; P6 displays this error and distinguishes "still recalculating" from genuine failure. Regression case D-107 (successful run null → failed run error returned with report) passed; suite 51/51)
 
 ## D-108
 
-- **来源**：合并前复审（code-reviewer 发现 #2）
-- **严重度**：P2（仅生产 Firestore 形态可触发）
-- **位置**：`backend/src/services/factorLibrary.js`（listFactors 检查后置缓存）
-- **描述**：`listFactors` 是 check-then-set 缓存：在刷新流程最后一次失效之后才 resolve 的
-  并发读，会把**刷新中途快照**写回缓存且再无人失效——实例级库列表保留幽灵行/旧值/
-  `embedding:null`（语义通道退化为 sim=-1）。本地 LocalFileStore 微任务即完成，实际仅
-  Firestore 网络延迟可触发；但 D-104 的修复语义在生产上会被此竞态绕过。
-- **修复方案**：代次计数（generation）：每次失效 +1；`listFactors` 仅当代次未跨失效时
-  写缓存。
-- **验证方式**：新增/扩展回归断言（失效后并发读不缓存旧快照）；`npm test` 不回归。
-- **状态**：已修复（2026-10-15，代次计数：失效 +1，listFactors 跨失效的读不写缓存。回归用例 D-108 通过；套件 51/51）
+- **Source**: Pre-merge re-review (code-reviewer finding #2)
+- **Severity**: P2 (only triggerable in the production Firestore form)
+- **Location**: `backend/src/services/factorLibrary.js` (listFactors post-check caching)
+- **Description**: `listFactors` is a check-then-set cache: a concurrent read that resolves after the last invalidation of the refresh flow writes the **mid-refresh snapshot** back to the cache and nothing invalidates it again — the instance-level factor list retains ghost rows / old values / `embedding:null` (the semantic channel degrades to sim=-1). The local LocalFileStore completes within a microtask, so only Firestore network latency can trigger this in practice; but the fix semantics of D-104 would be bypassed by this race in production.
+- **Fix plan**: Generation counting (generation): +1 on each invalidation; `listFactors` writes to the cache only when the generation has not crossed an invalidation.
+- **Verification method**: New/extended regression assertions (concurrent reads after invalidation do not cache the old snapshot); `npm test` no regression.
+- **Status**: Fixed (2026-10-15, generation counting: +1 on invalidation, listFactors reads across an invalidation do not write to the cache. Regression case D-108 passed; suite 51/51)
 
 ## D-109
 
-- **来源**：合并前复审（code-reviewer 发现 #4）
-- **严重度**：P3（测试检出窗口缺陷）
-- **位置**：`backend/test/regression.test.js`（D-07/V-03 用例）
-- **描述**：`before` 快照在**第一个**恶意上传（`../../escape plan.pdf`）之后才拍，该载荷
-  的逃逸（若 safeFilename 回归）已在基线集合中，断言放行——第一载荷不在检出窗口内。
-- **修复方案**：预创建存储根目录后立即拍 before 快照，三个恶意上传全部纳入差分窗口
-  （存储根为沙箱三层之下，逃逸仍落在沙箱内且根外，可检出）。
-- **验证方式**：`npm test`（用例通过）+ 人为去掉 safeFilename 的临时验证（可选）。
-- **状态**：已修复（2026-10-15，预创建存储根后先拍快照，三个恶意载荷全部进入检出窗口；用例通过）
+- **Source**: Pre-merge re-review (code-reviewer finding #4)
+- **Severity**: P3 (test detection window defect)
+- **Location**: `backend/test/regression.test.js` (D-07/V-03 case)
+- **Description**: The `before` snapshot is taken only **after** the first malicious upload (`../../escape plan.pdf`); that payload's escape (if safeFilename regressed) is already in the baseline set and the assertion lets it through — the first payload is not within the detection window.
+- **Fix plan**: Take the before snapshot immediately after pre-creating the storage root directory, bringing all three malicious uploads into the differential window (the storage root is three levels below the sandbox, escapes still land inside the sandbox but outside the root, detectable).
+- **Verification method**: `npm test` (case passes) + an optional temporary validation by manually removing safeFilename.
+- **Status**: Fixed (2026-10-15, snapshot taken first after pre-creating the storage root, all three malicious payloads enter the detection window; case passed)
 
 ## D-110
 
-- **来源**：合并前复审（code-reviewer 发现 #6，既有缺陷、本轮暴露）
-- **严重度**：P3（验收链路正确性）
-- **位置**：`scripts/verify_acceptance.js:273`（C4 execFileSync 无 try/catch）
-- **描述**：`count_lines.sh` 以退出码 1 结束（预算 FAIL），`execFileSync` 对非零退出抛异常
-  → 验收脚本在 C4 崩溃，其自带的豁免识别逻辑无法执行。T-052 预算豁免后（B>7,000）该
-  脚本在本仓库必然崩溃；第一轮引用的 C4 豁免证据产于预算未超限时代。
-- **修复方案**：C4 捕获非零退出并读取 stdout 判定（判定条件不变：达标或豁免标记二选一）。
-- **验证方式**：`PUBLIC_BASE=<本地服务> node scripts/verify_acceptance.js` 全量跑通且 C4
-  正常给出豁免结论。
-- **状态**：已修复（2026-10-15，C4 捕获非零退出读取 stdout，无输出时仍抛出。本地全量复跑 verify_acceptance：C4 以豁免结论 PASS，脚本完整跑到 OVERALL（仅 B1/B3 两个公网部署检查因本地 BASE 不可达而 FAIL，属预期；其余 functional 8/8 + compliance 3/5 + engineering 5/5，B4/N1/N2 全过）。输出归档 verify_acceptance_local.txt）
+- **Source**: Pre-merge re-review (code-reviewer finding #6, pre-existing defect, exposed this round)
+- **Severity**: P3 (acceptance chain correctness)
+- **Location**: `scripts/verify_acceptance.js:273` (C4 execFileSync without try/catch)
+- **Description**: `count_lines.sh` ends with exit code 1 (budget FAIL), and `execFileSync` throws on a non-zero exit → the acceptance script crashes at C4, and its built-in waiver recognition logic cannot execute. After the T-052 budget waiver (B>7,000), this script necessarily crashes in this repository; the C4 waiver evidence cited in the first round was produced when the budget was not exceeded.
+- **Fix plan**: C4 catches the non-zero exit and reads stdout for determination (determination condition unchanged: either meeting the target or the waiver mark).
+- **Verification method**: `PUBLIC_BASE=<local service> node scripts/verify_acceptance.js` runs fully and C4 correctly gives the waiver conclusion.
+- **Status**: Fixed (2026-10-15, C4 catches the non-zero exit and reads stdout, still throwing when there is no output. Local full re-run of verify_acceptance: C4 PASS with the waiver conclusion, the script runs through to OVERALL completely (only B1/B3, the two public deployment checks, FAIL due to the local BASE being unreachable, as expected; the rest: functional 8/8 + compliance 3/5 + engineering 5/5, B4/N1/N2 all pass). Output archived as verify_acceptance_local.txt)
 
 ## D-111
 
-- **来源**：合并前复审（code-reviewer 发现 #5b，纵深防御）
-- **严重度**：P3（当前存储无污染行，属潜在路径）
-- **位置**：`backend/src/services/reviewQueue.js`（recalculateTask）
-- **描述**：守卫修复之前被污染的 match 行（`selected_factor_id` 指向非因子文档）会使
-  `recalculateTask` 在 `computeEmission` 抛错 → dashboard/复核接口 500 且不可自愈。当前
-  `data/.local-store/matches.json` 60 行核查零可疑，属潜在路径。
-- **修复方案**：recalculateTask 对 factor 形状（数值 value + activity_unit）不合格时跳过
-  该记录（不入聚合），接口不再 500。
-- **验证方式**：回归断言（预置污染 match → dashboard 200、该记录无核算）。
-- **状态**：已修复（2026-10-15，recalculateTask 对非因子行（无数值 value 或无 activity_unit）跳过。回归断言（污染 match → 不抛错、calcs=0）通过；套件 51/51）
+- **Source**: Pre-merge re-review (code-reviewer finding #5b, defense in depth)
+- **Severity**: P3 (the current store has no contaminated rows; it is a potential path)
+- **Location**: `backend/src/services/reviewQueue.js` (recalculateTask)
+- **Description**: Match rows contaminated before the guard fix (`selected_factor_id` pointing to a non-factor document) make `recalculateTask` throw in `computeEmission` → dashboard/review endpoints return 500 and cannot self-heal. The current `data/.local-store/matches.json` has 60 rows checked with zero suspicious; it is a potential path.
+- **Fix plan**: recalculateTask skips the record when the factor shape (numeric value + activity_unit) fails validation (it is not included in aggregation), and the endpoint no longer returns 500.
+- **Verification method**: Regression assertion (pre-seed a contaminated match → dashboard 200, no accounting for that record).
+- **Status**: Fixed (2026-10-15, recalculateTask skips non-factor rows (no numeric value or no activity_unit). Regression assertion (contaminated match → does not throw, calcs=0) passed; suite 51/51)

@@ -31,7 +31,7 @@ large/small, Metals, Plastics: HDPE/LDPE/PET/PP/PS/PVC, Paper and board;
 Freighting goods sheet has 234 rows covering road/rail/sea/air). Identified
 gaps and supplementary sources (USEEIO) are recorded.
 
-## Verification 3 — G0 gate conditions: PASS → "G0 通过"
+## Verification 3 — G0 gate conditions: PASS → "G0 passed"
 
 | G0 exit condition | Evidence |
 |---|---|
@@ -39,4 +39,4 @@ gaps and supplementary sources (USEEIO) are recorded.
 | Skeleton initialized, locally one-command buildable & runnable | `bash scripts/build.sh` 3x success + `bash scripts/smoke.sh` 3x success (T-003 evidence) |
 | Basic self-test script executable | `bash scripts/test.sh` exit 0, pass=8 fail=0, negative control verified (T-003 evidence) |
 
-Conclusion recorded in the execution log: **G0 通过** (2026-10-12).
+Conclusion recorded in the execution log: **G0 passed** (2026-10-12).
