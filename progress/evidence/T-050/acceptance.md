@@ -42,9 +42,11 @@ Demo task used as the reference: task_4d4a28a0
 
 ## Post-production steps — pending
 - [ ] Video subtitles are English (final check after recording) — the English subtitle script in deliverables/video_script.md is the source for the burned-in captions
-- [ ] Export the deck to PDF (10-14 pages) and upload the video — render deliverables/deck_draft.md to PDF and publish the recording
+- [x] Export the deck to PDF (10-14 pages) — render deliverables/deck_draft.md to PDF
+  - Done: `deliverables/CarbonLedger_Deck.pdf` (13 pages, 16:9, 334 KB ≤ 5 MB; zero CJK per text extraction; cover carries the verbatim title, track and value proposition; p.8 metrics match README eval table 11/11 PASS; per-page raster check shows no overflow). Built by `deliverables/build_deck.py`, verified by `deliverables/verify_deck.py`.
+- [ ] Upload the video — publish the recording
 
 ## Verdict
 - Automated items: functional 8/8, compliance 5/5, engineering 5/5 — **PASS**
 - G6 engineering part: **PASSED** (README complete, every automatable acceptance item executed, deck draft and video script ready)
-- G6 in full still requires the human items above (video recording, real-person usability test, deck PDF export).
+- G6 in full still requires the human items above (video recording, real-person usability test, video upload).

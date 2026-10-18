@@ -19,6 +19,7 @@ output/
 # Secrets and credentials — never commit any of these
 .env
 .env.*
+!.env.example
 *.key
 *.pem
 service-account*.json
